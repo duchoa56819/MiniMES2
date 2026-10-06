@@ -348,17 +348,20 @@ class PLCPipelineSimulator:
                     """, (p_id, side, now_str, m_temp, b_press, s_press))
 
                 elif state == "COMPLETED":
-                    # Automatic unload and reload simulation after 10 ticks
-                    if random.random() < 0.25:
-                        cursor.execute("""
-                            UPDATE curing_press_cavities
-                            SET state = 'CURING', cure_elapsed_seconds = 0,
-                                mold_temp_c = 170.0, bladder_press_bar = 21.0, steam_press_bar = 15.1,
-                                bladder_cycle_count = bladder_cycle_count + 1
-                            WHERE press_id = ? AND cavity_side = ?
-                        """, (p_id, side))
+                    # Automatic unload cured tire & trigger QC inspection directly into DB
+                    if random.random() < 0.35:
+                        self._simulate_curing_and_qc(cursor, p_id, side, cav, now_str)
 
                 curing_updates.append((p_id, side, m_temp, b_press))
+
+            # Periodic Banbury Batch Telemetry (Every 8 ticks)
+            if self.total_ticks % 8 == 0:
+                self._simulate_mixer_batch(cursor, now_str)
+
+            # Periodic TBM Green Tire Building (Every 12 ticks)
+            if self.total_ticks % 12 == 0:
+                self._simulate_tbm_green_tire_build(cursor, now_str)
+
 
             # -----------------------------------------------------------------
             # 5. SYNCHRONIZE OPC-UA & MODBUS FRAMES FOR CURING
@@ -384,7 +387,169 @@ class PLCPipelineSimulator:
             "sample_packets": generated_packets[:4]
         }
 
+    def _simulate_mixer_batch(self, cursor, now_str: str):
+        """Simulates periodic Banbury mixer batch discharge and inserts into batch_process_telemetry."""
+        self.mixer_batch_count += 1
+        batch_id = f"BAT-{datetime.now().strftime('%Y%m')}-{self.mixer_batch_count:04d}"
+        sku = "PCR-205-55R16-91V"
+
+        is_defect = (self.scenario == "DEFECT_SPIKE" and random.random() < 0.75)
+        if is_defect:
+            dump_temp = 168.5 + random.uniform(2.0, 6.0)
+            mooney = 66.0 + random.uniform(3.0, 7.0)
+            bladder_p = 18.2 + random.uniform(-0.5, 0.4)
+            cord_tension = 520.0 + random.uniform(20.0, 60.0)
+            def_code = "DEF-CUR-001"
+            def_name = "Bọt khí hông lốp do tụt áp bàng bọng"
+        else:
+            dump_temp = 158.0 + random.gauss(0, 1.2)
+            mooney = 58.0 + random.gauss(0, 1.0)
+            bladder_p = 21.0 + random.gauss(0, 0.2)
+            cord_tension = 450.0 + random.gauss(0, 7.0)
+            def_code = None
+            def_name = None
+
+        cursor.execute("""
+            INSERT INTO batch_process_telemetry (
+                batch_id, tire_serial, timestamp, sku, mooney_viscosity_ml,
+                scorch_time_ts2_min, cure_time_tc90_min, dump_temp_c, rotor_energy_kwh,
+                carbon_dispersion_pct, tread_gauge_thickness_mm, barrel_temp_zone4_c,
+                extruder_head_pressure_bar, cord_tension_n, stitch_roller_press_bar,
+                drum_expansion_diam_mm, splice_overlap_width_mm, internal_bladder_press_bar,
+                mold_temp_upper_c, mold_temp_lower_c, steam_dome_press_bar,
+                vacuum_exhaust_time_sec, bladder_cycle_age,
+                is_defective, defect_code, defect_name
+            ) VALUES (
+                ?, NULL, ?, ?, ?, 3.5, 8.2, ?, 185.0, 96.5, 8.5, 105.0, 145.0, ?, 4.2,
+                420.0, 12.0, ?, 170.0, 170.1, 15.1, 12.0, 140,
+                ?, ?, ?
+            )
+        """, (
+            batch_id, now_str, sku, round(mooney, 1), round(dump_temp, 1),
+            round(cord_tension, 1), round(bladder_p, 1), 1 if is_defect else 0, def_code, def_name
+        ))
+
+
+    def _simulate_tbm_green_tire_build(self, cursor, now_str: str):
+        """Simulates periodic Green Tire completion and adds to production_green_tires & work_orders."""
+        self.tbm_built_count += 1
+        now = datetime.now()
+        date_prefix = now.strftime('%Y%m%d')
+
+        count_today = cursor.execute("""
+            SELECT count(*) FROM production_green_tires WHERE build_timestamp LIKE ?
+        """, (f"{now.strftime('%Y-%m-%d')}%",)).fetchone()[0]
+
+        gt_barcode = f"GT-{date_prefix}-{(count_today + 1):04d}"
+
+        wo = cursor.execute("SELECT wo_id, sku FROM work_orders WHERE status = 'IN_PROGRESS' LIMIT 1").fetchone()
+        if not wo:
+            wo = cursor.execute("SELECT wo_id, sku FROM work_orders LIMIT 1").fetchone()
+        wo_id = wo["wo_id"] if wo else "WO-2026-001"
+        sku = wo["sku"] if wo else "PCR-205-55R16-91V"
+
+        lots = cursor.execute("SELECT lot_id, component_type FROM inventory_components WHERE status = 'AVAILABLE' LIMIT 7").fetchall()
+        lot_map = {r["component_type"]: r["lot_id"] for r in lots}
+
+        cursor.execute("""
+            INSERT INTO production_green_tires (
+                gt_barcode, wo_id, sku, tbm_machine_id, operator_id,
+                build_timestamp, actual_weight_kg,
+                tread_lot, sidewall_lot, belt1_lot, belt2_lot, ply_lot, bead_lot, innerliner_lot,
+                poka_yoke_status, status
+            ) VALUES (?, ?, ?, 'TBM-01', 'OP-1001', ?, ?, ?, ?, ?, ?, ?, ?, ?, 'VERIFIED_PASS', 'BUILT')
+        """, (
+            gt_barcode, wo_id, sku, now_str, round(9.25 + random.gauss(0, 0.08), 2),
+            lot_map.get("TREAD", "LOT-TRD-202610-01"),
+            lot_map.get("SIDEWALL", "LOT-SW-202610-01"),
+            lot_map.get("BELT_1", "LOT-BLT1-202610-01"),
+            lot_map.get("BELT_2", "LOT-BLT2-202610-01"),
+            lot_map.get("PLY", "LOT-PLY-202610-01"),
+            lot_map.get("BEAD", "LOT-BD-202610-01"),
+            lot_map.get("INNERLINER", "LOT-INL-202610-01")
+        ))
+
+        cursor.execute("""
+            UPDATE work_orders SET completed_qty = completed_qty + 1 WHERE wo_id = ?
+        """, (wo_id,))
+
+    def _simulate_curing_and_qc(self, cursor, p_id: str, side: str, cav: Any, now_str: str):
+        """Unloads completed tire, stamps permanent serial, and runs QC auto-inspection."""
+        now = datetime.now()
+        date_prefix = now.strftime('%Y%m%d')
+
+        count_cured = cursor.execute("""
+            SELECT count(*) FROM production_cured_tires WHERE cure_end_time LIKE ?
+        """, (f"{now.strftime('%Y-%m-%d')}%",)).fetchone()[0]
+        tire_serial = f"VN-T-{date_prefix}-{(100 + count_cured + 1):05d}"
+
+        # Fetch an uncured green tire
+        gt_cand = cursor.execute("""
+            SELECT gt_barcode FROM production_green_tires
+            WHERE gt_barcode NOT IN (SELECT gt_barcode FROM production_cured_tires)
+            ORDER BY build_timestamp ASC LIMIT 1
+        """).fetchone()
+
+        if not gt_cand:
+            # Generate a new green tire right away so curing can proceed
+            self._simulate_tbm_green_tire_build(cursor, now_str)
+            gt_cand = cursor.execute("""
+                SELECT gt_barcode FROM production_green_tires
+                WHERE gt_barcode NOT IN (SELECT gt_barcode FROM production_cured_tires)
+                ORDER BY build_timestamp DESC LIMIT 1
+            """).fetchone()
+
+        gt_barcode = gt_cand["gt_barcode"] if gt_cand else None
+        if not gt_barcode:
+            return
+
+        cursor.execute("""
+            INSERT OR REPLACE INTO production_cured_tires (
+                tire_serial, gt_barcode, sku, press_id, cavity_side, mold_id,
+                curing_recipe_id, cure_start_time, cure_end_time, actual_cure_sec,
+                avg_mold_temp_c, avg_bladder_press_bar, cure_quality_result, status
+            ) VALUES (?, ?, 'PCR-205-55R16-91V', ?, ?, 'MOLD-PCR-01', 'RCP-PCR-205-55R16',
+                      ?, ?, 780, 170.0, 21.0, 'PASS', 'INSPECTED')
+        """, (tire_serial, gt_barcode, p_id, side, now_str, now_str))
+
+        cursor.execute("UPDATE production_green_tires SET status = 'CURED' WHERE gt_barcode = ?", (gt_barcode,))
+
+        is_scrap = (self.scenario == "DEFECT_SPIKE" and random.random() < 0.6)
+        if is_scrap:
+            grade = "SCRAP"
+            passed = 0
+            v_code = "DEF-CUR-01"
+            rfv = round(92.0 + random.uniform(5.0, 15.0), 1)
+        else:
+            grade = "GRADE_A"
+            passed = 1
+            v_code = None
+            rfv = round(45.0 + random.gauss(0, 4.0), 1)
+
+        cursor.execute("""
+            INSERT OR REPLACE INTO quality_inspections (
+                tire_serial, inspection_timestamp, inspector_id,
+                visual_result, visual_defect_code, defect_location,
+                xray_result, xray_defect_code, belt_alignment_mm,
+                uniformity_rfv_n, uniformity_lfv_n, dynamic_balance_g,
+                final_grade, passed, disposition_notes
+            ) VALUES (?, ?, 'OP-3001', ?, ?, 'Tread Center', 'PASS', NULL, 0.4, ?, 22.0, 18.0, ?, ?, 'QC Inspector Automatic Verified')
+        """, (
+            tire_serial, now_str, "FAIL" if is_scrap else "PASS", v_code,
+            rfv, grade, passed
+        ))
+
+        cursor.execute("""
+            UPDATE curing_press_cavities
+            SET state = 'CURING', cure_elapsed_seconds = 0,
+                mold_temp_c = 170.0, bladder_press_bar = 21.0, steam_press_bar = 15.1,
+                bladder_cycle_count = bladder_cycle_count + 1,
+                current_gt_barcode = NULL
+            WHERE press_id = ? AND cavity_side = ?
+        """, (p_id, side))
+
     def _run_loop(self):
+
         """Continuous background thread loop."""
         while self.running:
             try:

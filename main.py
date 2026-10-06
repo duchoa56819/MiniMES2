@@ -28,6 +28,7 @@ from app.routers import (
     routing,
     ai,
     bottleneck,
+    shap_root_cause,
 )
 
 
@@ -75,6 +76,7 @@ app.include_router(stream.router)
 app.include_router(routing.router)
 app.include_router(ai.router)
 app.include_router(bottleneck.router)
+app.include_router(shap_root_cause.router)
 
 
 # Mount Static Assets

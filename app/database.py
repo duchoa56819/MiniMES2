@@ -79,6 +79,8 @@ def init_db(force: bool = False):
         if force:
             cursor.execute("PRAGMA foreign_keys = OFF;")
             cursor.executescript("""
+                DROP TABLE IF EXISTS shap_root_cause_reports;
+                DROP TABLE IF EXISTS batch_process_telemetry;
                 DROP TABLE IF EXISTS bottleneck_forecasts;
                 DROP TABLE IF EXISTS dynamic_routing_rules;
                 DROP TABLE IF EXISTS ai_anomaly_logs;
@@ -450,6 +452,53 @@ def init_db(force: bool = False):
                 throughput_gain_forecast_pct REAL DEFAULT 15.0
             );
 
+            -- =========================================================
+            -- 11. MULTIVARIATE BATCH PROCESS TELEMETRY & SHAP ROOT CAUSE
+            -- =========================================================
+            CREATE TABLE IF NOT EXISTS batch_process_telemetry (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                batch_id TEXT NOT NULL,
+                tire_serial TEXT,
+                timestamp TEXT NOT NULL,
+                sku TEXT NOT NULL,
+                mooney_viscosity_ml REAL NOT NULL,
+                scorch_time_ts2_min REAL NOT NULL,
+                cure_time_tc90_min REAL NOT NULL,
+                dump_temp_c REAL NOT NULL,
+                rotor_energy_kwh REAL NOT NULL,
+                carbon_dispersion_pct REAL NOT NULL,
+                tread_gauge_thickness_mm REAL NOT NULL,
+                barrel_temp_zone4_c REAL NOT NULL,
+                extruder_head_pressure_bar REAL NOT NULL,
+                cord_tension_n REAL NOT NULL,
+                stitch_roller_press_bar REAL NOT NULL,
+                drum_expansion_diam_mm REAL NOT NULL,
+                splice_overlap_width_mm REAL NOT NULL,
+                internal_bladder_press_bar REAL NOT NULL,
+                mold_temp_upper_c REAL NOT NULL,
+                mold_temp_lower_c REAL NOT NULL,
+                steam_dome_press_bar REAL NOT NULL,
+                vacuum_exhaust_time_sec REAL NOT NULL,
+                bladder_cycle_age INTEGER NOT NULL,
+                is_defective BOOLEAN NOT NULL DEFAULT 0,
+                defect_code TEXT,
+                defect_name TEXT
+            );
+
+            CREATE TABLE IF NOT EXISTS shap_root_cause_reports (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                created_at TEXT NOT NULL,
+                defect_spike_category TEXT NOT NULL,
+                total_batches_analyzed INTEGER NOT NULL,
+                spike_defect_rate_pct REAL NOT NULL,
+                baseline_defect_rate_pct REAL NOT NULL,
+                top_root_cause_feature TEXT NOT NULL,
+                top_root_cause_importance REAL NOT NULL,
+                global_importance_json TEXT NOT NULL,
+                decision_rules_json TEXT NOT NULL,
+                corrective_action_recommendation TEXT NOT NULL
+            );
+
             -- Create Performance Indexes for real-time querying
             CREATE INDEX IF NOT EXISTS idx_green_tire_sku ON production_green_tires(sku);
             CREATE INDEX IF NOT EXISTS idx_green_tire_wo ON production_green_tires(wo_id);
@@ -461,6 +510,9 @@ def init_db(force: bool = False):
             CREATE INDEX IF NOT EXISTS idx_cycle_machine ON production_cycle_telemetry(machine_id, timestamp);
             CREATE INDEX IF NOT EXISTS idx_bottleneck_time ON bottleneck_forecasts(timestamp);
             CREATE INDEX IF NOT EXISTS idx_routing_source ON dynamic_routing_rules(source_station);
+            CREATE INDEX IF NOT EXISTS idx_batch_telemetry_time ON batch_process_telemetry(timestamp);
+            CREATE INDEX IF NOT EXISTS idx_batch_defective ON batch_process_telemetry(is_defective);
+            CREATE INDEX IF NOT EXISTS idx_batch_serial ON batch_process_telemetry(tire_serial);
         """)
 
 

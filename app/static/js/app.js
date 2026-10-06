@@ -68,6 +68,7 @@ function switchTab(tabId) {
   if (tabId === 'gateway') loadGatewayConnectors();
   if (tabId === 'ai') loadAiTab();
   if (tabId === 'bottleneck') loadBottleneckTab();
+  if (tabId === 'shap') loadShapTab();
 }
 
 function openModal(id) {
@@ -2476,6 +2477,373 @@ async function loadDynamicRoutingRules() {
     console.error('Error loading routing rules:', err);
   }
 }
+
+// ============================================================================
+// TAB 11: MULTIVARIATE FEATURE IMPORTANCE & DECISION TREES / SHAP
+// ============================================================================
+
+let currentGlobalShapData = null;
+let currentLocalShapData = null;
+
+async function loadShapTab() {
+  await loadGlobalShapImportance();
+  await loadDecisionTreeRules();
+  await loadShapSamplePicker();
+  await explainCurrentSample();
+}
+
+async function loadGlobalShapImportance() {
+  try {
+    const res = await fetch('/api/shap/global-importance');
+    const data = await res.json();
+    currentGlobalShapData = data;
+
+    // KPI 1: Defect rate
+    const defectRateEl = document.getElementById('shap-kpi-defect-rate');
+    if (defectRateEl) defectRateEl.textContent = `${data.recent_defect_rate_pct}%`;
+
+    const spikePillEl = document.getElementById('shap-kpi-spike-pill');
+    if (spikePillEl) {
+      if (data.is_spike_active) {
+        spikePillEl.className = 'status-pill pill-red';
+        spikePillEl.textContent = 'ĐỘT BIẾN LỖI';
+      } else {
+        spikePillEl.className = 'status-pill pill-green';
+        spikePillEl.textContent = 'BÌNH THƯỜNG';
+      }
+    }
+
+    // KPI 2: Top Root Cause
+    const topCause = data.top_root_cause || {};
+    const topCauseEl = document.getElementById('shap-kpi-top-cause');
+    if (topCauseEl) topCauseEl.textContent = topCause.feature_name || 'Áp Suất Bàng Bọng';
+
+    const topAreaEl = document.getElementById('shap-kpi-top-area');
+    if (topAreaEl) topAreaEl.textContent = `${topCause.area || 'CURING'} (${topCause.category || 'Lưu Hóa'})`;
+
+    // KPI 3: Top Share
+    const topShareEl = document.getElementById('shap-kpi-top-share');
+    if (topShareEl) topShareEl.textContent = `${topCause.importance_share_pct || 0}%`;
+
+    const topValEl = document.getElementById('shap-kpi-top-val');
+    if (topValEl) topValEl.textContent = topCause.mean_abs_shap || '0.00';
+
+    // KPI 4: Features count
+    const featCountEl = document.getElementById('shap-kpi-features-count');
+    if (featCountEl) featCountEl.textContent = data.feature_ranking ? `${data.feature_ranking.length}` : '19';
+
+    // KPI 5: Model accuracy
+    const accEl = document.getElementById('shap-kpi-accuracy');
+    const f1El = document.getElementById('shap-kpi-f1');
+    if (accEl && data.model_metrics) accEl.textContent = Number(data.model_metrics.roc_auc).toFixed(2);
+    if (f1El && data.model_metrics) f1El.textContent = Number(data.model_metrics.f1).toFixed(2);
+
+    // Render Canvas
+    renderGlobalShapCanvas(data.feature_ranking || []);
+  } catch (err) {
+    console.error('Error loading global SHAP importance:', err);
+  }
+}
+
+function renderGlobalShapCanvas(features) {
+  const canvas = document.getElementById('shap-global-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width;
+  const h = canvas.height;
+
+  ctx.clearRect(0, 0, w, h);
+
+  // Background
+  ctx.fillStyle = '#070a13';
+  ctx.fillRect(0, 0, w, h);
+
+  if (!features || features.length === 0) return;
+
+  const top12 = features.slice(0, 12);
+  const maxVal = Math.max(...top12.map(f => f.mean_abs_shap), 0.01);
+
+  const padding = { top: 35, right: 90, bottom: 25, left: 240 };
+  const chartW = w - padding.left - padding.right;
+  const rowH = (h - padding.top - padding.bottom) / top12.length;
+
+  // Grid lines
+  ctx.strokeStyle = '#1e293b';
+  ctx.lineWidth = 1;
+  for (let step = 0; step <= 4; step++) {
+    const val = (maxVal / 4) * step;
+    const x = padding.left + (val / maxVal) * chartW;
+    ctx.beginPath();
+    ctx.moveTo(x, padding.top);
+    ctx.lineTo(x, h - padding.bottom);
+    ctx.stroke();
+
+    ctx.fillStyle = '#64748b';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(val.toFixed(3), x, h - padding.bottom + 15);
+  }
+
+  // Draw Bars
+  top12.forEach((f, idx) => {
+    const y = padding.top + idx * rowH;
+    const barLen = (f.mean_abs_shap / maxVal) * chartW;
+    const barH = rowH * 0.62;
+
+    // Gradient bar color based on rank
+    let grad = ctx.createLinearGradient(padding.left, 0, padding.left + barLen, 0);
+    if (idx < 2) {
+      grad.addColorStop(0, '#f43f5e');
+      grad.addColorStop(1, '#ef4444');
+    } else if (idx < 5) {
+      grad.addColorStop(0, '#f59e0b');
+      grad.addColorStop(1, '#fbbf24');
+    } else {
+      grad.addColorStop(0, '#0284c7');
+      grad.addColorStop(1, '#38bdf8');
+    }
+
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.roundRect(padding.left, y + (rowH - barH) / 2, Math.max(4, barLen), barH, 4);
+    ctx.fill();
+
+    // Feature Name label on the left
+    ctx.fillStyle = '#f8fafc';
+    ctx.font = 'bold 11px sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(`${idx + 1}. ${f.feature_name}`, padding.left - 12, y + rowH / 2 + 3);
+
+    // Area tag
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '9px monospace';
+    ctx.fillText(`[${f.area}]`, padding.left - 12, y + rowH / 2 + 13);
+
+    // Value and share text on the right
+    ctx.fillStyle = '#cbd5e1';
+    ctx.font = 'bold 10px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText(`${f.importance_share_pct}% (${f.mean_abs_shap.toFixed(3)})`, padding.left + barLen + 8, y + rowH / 2 + 4);
+  });
+}
+
+async function loadDecisionTreeRules() {
+  const container = document.getElementById('shap-rules-container');
+  if (!container) return;
+
+  try {
+    const res = await fetch('/api/shap/decision-rules');
+    const data = await res.json();
+    const rules = data.rules || [];
+
+    if (rules.length === 0) {
+      container.innerHTML = '<div style="color: #64748b; padding: 1rem;">Không có quy tắc nào vượt ngưỡng. Dây chuyền vận hành chuẩn SOP!</div>';
+      return;
+    }
+
+    container.innerHTML = rules.map((r, i) => {
+      const isCrit = r.defect_probability_pct >= 75.0;
+      const borderCol = isCrit ? '#ef4444' : '#f59e0b';
+      const pillClass = isCrit ? 'pill-red' : 'pill-yellow';
+
+      return `
+        <div style="background: #090e1a; border: 1.5px solid ${borderCol}; border-radius: 8px; padding: 1.25rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+            <div style="font-size: 0.95rem; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px;">
+              <span>🌲</span>
+              <span>QUY TẮC CÔNG NGHỆ #${i + 1} (${r.rule_id})</span>
+            </div>
+            <span class="status-pill ${pillClass}">XÁC SUẤT LỖI: ${r.defect_probability_pct}%</span>
+          </div>
+
+          <div style="background: #040711; border: 1px solid #1e293b; border-radius: 6px; padding: 0.75rem; margin-bottom: 0.75rem; font-family: var(--font-mono); font-size: 0.82rem; color: #38bdf8; line-height: 1.6;">
+            <strong>IF (NẾU):</strong><br>
+            ${r.conditions.map(c => `&bull; ${c}`).join('<br>')}<br>
+            <strong style="color: #f87171;">THEN (THÌ):</strong> Tỷ lệ phát sinh phế phẩm vọt lên <strong>${r.defect_probability_pct}%</strong> (${r.samples_affected} mẻ vi phạm)!
+          </div>
+
+          <div style="font-size: 0.82rem; color: #cbd5e1; line-height: 1.5;">
+            <strong style="color: #fbbf24;">Hành động khắc phục IATF 16949:</strong> ${r.action}
+          </div>
+        </div>
+      `;
+    }).join('');
+  } catch (err) {
+    console.error('Error loading decision tree rules:', err);
+  }
+}
+
+async function loadShapSamplePicker() {
+  const picker = document.getElementById('shap-sample-picker');
+  if (!picker) return;
+
+  try {
+    const res = await fetch('/api/shap/samples?limit=25');
+    const samples = await res.json();
+
+    picker.innerHTML = samples.map(s => {
+      const statusIcon = s.is_defective ? '🚨 [LỖI]' : '✅ [ĐẠT]';
+      const desc = s.is_defective ? (s.defect_name || 'Phế phẩm') : 'Chuẩn Grade A';
+      return `<option value="${s.tire_serial}">${statusIcon} ${s.tire_serial} (${s.batch_id} - ${desc})</option>`;
+    }).join('');
+  } catch (err) {
+    console.error('Error loading samples picker:', err);
+  }
+}
+
+async function explainSelectedSample() {
+  const picker = document.getElementById('shap-sample-picker');
+  const sampleId = picker ? picker.value : null;
+  await explainCurrentSample(sampleId);
+}
+
+async function explainCurrentSample(sampleId = null) {
+  const container = document.getElementById('shap-waterfall-container');
+  if (!container) return;
+
+  container.innerHTML = '<div style="color: #94a3b8; font-size: 0.85rem;">⏳ Đang tính toán phân rã lực TreeSHAP cho mẻ lốp này...</div>';
+
+  try {
+    const res = await fetch('/api/shap/explain-batch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sample_id: sampleId })
+    });
+    const data = await res.json();
+    currentLocalShapData = data;
+
+    const meta = data.batch_meta || {};
+    const riskPct = (data.predicted_defect_probability * 100).toFixed(1);
+    const isHigh = data.is_high_risk;
+    const borderCol = isHigh ? '#ef4444' : '#10b981';
+    const bgCol = isHigh ? 'rgba(239, 68, 68, 0.12)' : 'rgba(16, 185, 129, 0.1)';
+    const pillClass = isHigh ? 'pill-red' : 'pill-green';
+
+    const topPos = (data.waterfall_breakdown || []).filter(f => f.impact_direction === 'PUSH_DEFECT').slice(0, 4);
+    const topNeg = (data.waterfall_breakdown || []).filter(f => f.impact_direction === 'MITIGATE').slice(0, 3);
+    const rec = data.recommendation || {};
+
+    container.innerHTML = `
+      <div style="background: ${bgCol}; border: 1.5px solid ${borderCol}; border-radius: 8px; padding: 1.25rem; margin-bottom: 1.25rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1rem;">
+          <div>
+            <div style="font-size: 1.1rem; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px;">
+              <span>${isHigh ? '🚨' : '✅'}</span>
+              <span>Giám Định SHAP Chi Tiết: ${meta.tire_serial || 'MẺ SẢN XUẤT'}</span>
+            </div>
+            <div style="font-size: 0.82rem; color: #94a3b8; margin-top: 3px;">
+              Mã Mẻ Luyện: <strong>${meta.batch_id}</strong> &bull; Tình trạng: <strong>${meta.defect_name}</strong>
+            </div>
+          </div>
+          <div style="display: flex; gap: 0.75rem; align-items: center;">
+            <div style="text-align: right;">
+              <div style="font-size: 0.78rem; color: #94a3b8;">Xác Suất Hỏng Dự Đoán:</div>
+              <div style="font-size: 1.3rem; font-weight: 800; color: ${isHigh ? '#f87171' : '#34d399'}; font-family: var(--font-mono);">
+                ${riskPct}%
+              </div>
+            </div>
+            <span class="status-pill ${pillClass}">MỨC ĐỘ: ${isHigh ? 'RỦI RO CAO' : 'AN TOÀN'}</span>
+          </div>
+        </div>
+
+        <!-- Waterfall Force Bars -->
+        <div style="background: #090e1a; border: 1px solid #1e293b; border-radius: 6px; padding: 1rem; margin-bottom: 1rem;">
+          <div style="font-size: 0.88rem; font-weight: 600; color: #fff; margin-bottom: 0.75rem; display: flex; justify-content: space-between;">
+            <span>Biểu Đồ Lực Đóng Góp SHAP (Waterfall Decomposition):</span>
+            <span style="font-size: 0.8rem; color: #94a3b8;">Xác suất nền (Base Value): ${(data.base_rate * 100).toFixed(1)}%</span>
+          </div>
+
+          <div style="margin-bottom: 0.75rem;">
+            <div style="font-size: 0.8rem; font-weight: 600; color: #f87171; margin-bottom: 0.4rem;">
+              🔺 Các Yếu Tố Kéo Tăng Nguy Cơ Lỗi (Positive Drivers &bull; Phá hủy chất lượng):
+            </div>
+            ${topPos.map(p => `
+              <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.82rem; padding: 0.35rem 0; border-bottom: 1px dashed #1e293b;">
+                <div>
+                  <strong style="color: #fff;">${p.feature_name}</strong>: 
+                  <span style="color: #f87171; font-family: var(--font-mono);">${p.actual_value} ${p.unit}</span>
+                  <span style="color: #64748b; font-size: 0.75rem;">(Chuẩn: ${p.nominal_value} ${p.unit}, Lệch: ${p.deviation > 0 ? '+' : ''}${p.deviation})</span>
+                </div>
+                <div style="color: #f87171; font-weight: 700; font-family: var(--font-mono);">
+                  +${(p.shap_value * 100).toFixed(1)}% rủi ro
+                </div>
+              </div>
+            `).join('')}
+          </div>
+
+          <div>
+            <div style="font-size: 0.8rem; font-weight: 600; color: #34d399; margin-bottom: 0.4rem;">
+              🔻 Các Yếu Tố Triệt Tiêu Nguy Cơ Lỗi (Negative Drivers &bull; Vận hành chuẩn):
+            </div>
+            ${topNeg.map(n => `
+              <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.82rem; padding: 0.35rem 0; border-bottom: 1px dashed #1e293b;">
+                <div>
+                  <strong style="color: #fff;">${n.feature_name}</strong>: 
+                  <span style="color: #34d399; font-family: var(--font-mono);">${n.actual_value} ${n.unit}</span>
+                  <span style="color: #64748b; font-size: 0.75rem;">(Chuẩn: ${n.nominal_value} ${n.unit})</span>
+                </div>
+                <div style="color: #34d399; font-weight: 700; font-family: var(--font-mono);">
+                  ${(n.shap_value * 100).toFixed(1)}% rủi ro
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <!-- Actionable Engineering Recommendation -->
+        <div style="background: rgba(255, 255, 255, 0.04); border-left: 4px solid #38bdf8; padding: 0.85rem 1rem; border-radius: 4px; font-size: 0.84rem; line-height: 1.5;">
+          <div style="color: #38bdf8; font-weight: 700; margin-bottom: 0.3rem;">📋 CHẨN ĐOÁN KỸ THUẬT & KHUYẾN NGHỊ KHẮC PHỤC (IATF 16949 / CAPA):</div>
+          <div style="color: #e2e8f0; margin-bottom: 0.4rem;"><strong>Chẩn đoán:</strong> ${rec.diagnosis || '--'}</div>
+          <div style="color: #fca5a5; margin-bottom: 0.4rem;"><strong>Nguyên nhân gốc rễ:</strong> ${rec.root_cause || '--'}</div>
+          <div style="color: #cbd5e1; white-space: pre-line;"><strong style="color: #fbbf24;">Biện pháp xử lý:</strong><br>${rec.corrective_action || '--'}</div>
+        </div>
+      </div>
+    `;
+  } catch (err) {
+    container.innerHTML = `<div style="color: #ef4444; font-size: 0.85rem;">Lỗi phân tích SHAP: ${err}</div>`;
+  }
+}
+
+async function simulateShapSpike(scenario) {
+  const feedbackEl = document.getElementById('shap-simulation-feedback');
+  if (feedbackEl) {
+    feedbackEl.style.display = 'block';
+    feedbackEl.innerHTML = '<div style="color: #94a3b8; font-size: 0.85rem;">⏳ Đang đưa kịch bản đột biến vào mô hình XAI và tính toán lại ma trận SHAP...</div>';
+  }
+
+  try {
+    const res = await fetch('/api/shap/simulate-spike', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ scenario })
+    });
+    const data = await res.json();
+
+    if (feedbackEl) {
+      feedbackEl.innerHTML = `
+        <div style="background: rgba(6, 182, 212, 0.12); border: 1.5px solid #06b6d4; border-radius: 6px; padding: 0.85rem; font-size: 0.85rem; color: #e2e8f0;">
+          <strong>⚡ Đã kích hoạt kịch bản:</strong> Tỷ lệ lỗi xưởng tăng lên <strong>${data.recent_defect_rate_pct}%</strong>! SHAP đã chỉ điểm chính xác căn nguyên hàng đầu: <strong style="color: #f87171;">${data.top_root_cause.feature_name} (${data.top_root_cause.importance_share_pct}%)</strong>.
+        </div>
+      `;
+    }
+
+    await loadShapTab();
+  } catch (err) {
+    alert(`Lỗi kích hoạt mô phỏng: ${err}`);
+  }
+}
+
+async function retrainShapModels() {
+  try {
+    const res = await fetch('/api/shap/retrain', { method: 'POST' });
+    const data = await res.json();
+    alert(`✅ ${data.message}\nROC-AUC: ${data.metrics.roc_auc}\nF1-Score: ${data.metrics.f1}\nSố mẻ phân tích: ${data.total_samples}`);
+    await loadShapTab();
+  } catch (err) {
+    alert(`Lỗi tái huấn luyện XAI: ${err}`);
+  }
+}
+
 
 
 

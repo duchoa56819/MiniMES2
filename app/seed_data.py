@@ -451,6 +451,11 @@ def seed_database():
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, rules)
 
+    # 17. Seed SHAP Multivariate Batch Process Telemetry
+    from app.services.shap_analyzer import shap_engine
+    shap_engine.seed_telemetry_dataset_if_empty(force=True)
+    shap_engine.train_models()
+
 
 
 

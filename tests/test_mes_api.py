@@ -550,6 +550,58 @@ def test_14_dynamic_bottleneck_prediction_and_rerouting():
     print(f"[PASS] Restored Standard Routing: 100% flow returned to SOP baseline lines")
 
 
+def test_15_shap_multivariate_root_cause_analysis():
+    """
+    Test Suite 15: Multivariate Feature Importance & Decision Trees / SHAP Root Cause Analysis.
+    Verifies TreeSHAP explainability, decision rule extraction, and defect spike root-cause attribution.
+    """
+    # 1. Test SHAP Status Endpoint
+    st_res = client.get("/api/shap/status")
+    assert st_res.status_code == 200
+    st_data = st_res.json()
+    assert st_data["status"] == "OPERATIONAL"
+    assert st_data["monitored_features_count"] >= 18
+    assert st_data["is_trained"] is True
+    print(f"[PASS] SHAP AI Engine Status: Monitored Features={st_data['monitored_features_count']}, Batches Analyzed={st_data['total_batches_analyzed']} (ROC-AUC={st_data['metrics']['roc_auc']})")
+
+    # 2. Test Global Feature Importance Ranking
+    imp_res = client.get("/api/shap/global-importance")
+    assert imp_res.status_code == 200
+    imp_data = imp_res.json()
+    assert len(imp_data["feature_ranking"]) >= 15
+    top_rc = imp_data["top_root_cause"]
+    assert "feature_key" in top_rc
+    assert top_rc["importance_share_pct"] > 0
+    print(f"[PASS] Global SHAP Feature Importance: Top Culprit='{top_rc['feature_key']}' ({top_rc['importance_share_pct']}% impact share across plant)")
+
+    # 3. Test Decision Tree Rule Extraction
+    rules_res = client.get("/api/shap/decision-rules")
+    assert rules_res.status_code == 200
+    rules_data = rules_res.json()
+    assert rules_data["total_rules"] > 0
+    r1 = rules_data["rules"][0]
+    assert "conditions_text" in r1
+    assert r1["defect_probability_pct"] >= 50.0
+    print(f"[PASS] Decision Tree Rule Mining: {rules_data['total_rules']} operational If-Then rules extracted (Top Rule Defect Rate={r1['defect_probability_pct']}%)")
+
+    # 4. Test Local SHAP Waterfall Explanation for Defective Tire
+    explain_res = client.post("/api/shap/explain-batch")
+    assert explain_res.status_code == 200
+    exp_data = explain_res.json()
+    assert "predicted_defect_probability" in exp_data
+    assert "waterfall_breakdown" in exp_data
+    assert len(exp_data["waterfall_breakdown"]) >= 15
+    top_culprit = exp_data["top_culprit"]
+    print(f"[PASS] Local SHAP Waterfall Analysis: Batch={exp_data['batch_meta']['batch_id']}, Risk={exp_data['predicted_defect_probability']} (Primary Driver='{top_culprit['feature_key']}', SHAP={top_culprit['shap_value']})")
+
+    # 5. Test Defect Spike Simulation & Root Cause Attribution
+    spike_res = client.post("/api/shap/simulate-spike", json={"scenario": "BLADDER_PRESSURE_DROP"})
+    assert spike_res.status_code == 200
+    spike_data = spike_res.json()
+    assert spike_data["total_analyzed_batches"] > 0
+    print(f"[PASS] Defect Spike Root Cause Discovery: Simulated 'BLADDER_PRESSURE_DROP' -> Pinpointed Top Driver: {spike_data['top_root_cause']['feature_key']}")
+
+
 if __name__ == "__main__":
     seed_database()
     print("\n" + "="*60)
@@ -569,6 +621,7 @@ if __name__ == "__main__":
     test_12_read_replica_and_frankenstein_trap()
     test_13_ai_anomaly_detection()
     test_14_dynamic_bottleneck_prediction_and_rerouting()
+    test_15_shap_multivariate_root_cause_analysis()
     print("="*60)
     print("   ALL MES BUSINESS LOGIC & API TESTS PASSED 100%!")
     print("="*60 + "\n")

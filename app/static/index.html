@@ -69,6 +69,9 @@
     <button class="tab-btn" onclick="switchTab('bottleneck')">
       🔀 10. Dự Báo Cổ Chai & Điều Hướng <span class="badge" style="background-color: #ec4899; color: #fff;">AI 2-4h Forecast</span>
     </button>
+    <button class="tab-btn" onclick="switchTab('shap')">
+      🔬 11. Phân Tích Đa Biến SHAP <span class="badge" style="background-color: #06b6d4; color: #fff;">XAI TreeSHAP</span>
+    </button>
   </nav>
 
   <!-- MAIN VIEWPORT -->
@@ -1151,6 +1154,138 @@
               </tbody>
             </table>
           </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- TAB 11: MULTIVARIATE FEATURE IMPORTANCE & DECISION TREES / SHAP     -->
+    <!-- =================================================================== -->
+    <section id="pane-shap" class="tab-pane">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">🔬 Phân Tích Đa Biến & Định Vị Căn Nguyên Gốc (Feature Importance & Decision Trees / SHAP)</div>
+            <div class="card-subtitle">Ứng dụng Trí tuệ Nhân tạo giải thích được (Explainable AI - TreeSHAP & Decision Trees) phân tích 19+ thông số mẻ luyện kín, đùn cán, thành hình và lưu hóa để chỉ điểm chính xác yếu tố gây ra tỷ lệ lỗi đột biến</div>
+          </div>
+          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <button class="btn btn-secondary btn-sm" onclick="loadGlobalShapImportance()">📊 Phân Tích Toàn Cục (Global SHAP)</button>
+            <button class="btn btn-primary btn-sm" onclick="retrainShapModels()">⚡ Tái Huấn Luyện XAI</button>
+          </div>
+        </div>
+
+        <!-- Top KPI Grid -->
+        <div class="kpi-grid" style="margin-bottom: 1.5rem;">
+          <div class="kpi-card red">
+            <div class="kpi-title">Tỷ Lệ Phế Phẩm Hiện Tại</div>
+            <div class="kpi-value"><span id="shap-kpi-defect-rate">7.8</span><span class="kpi-unit">%</span></div>
+            <div class="kpi-foot">
+              <span>Định mức: <strong>1.8%</strong></span>
+              <span class="status-pill pill-red" id="shap-kpi-spike-pill">ĐỘT BIẾN LỖI</span>
+            </div>
+          </div>
+
+          <div class="kpi-card cyan">
+            <div class="kpi-title">Căn Nguyên Hàng Đầu (Top Culprit)</div>
+            <div class="kpi-value"><span id="shap-kpi-top-cause" style="font-size: 1.25rem;">Áp Suất Bàng Bọng</span></div>
+            <div class="kpi-foot">
+              <span>Công đoạn: <strong id="shap-kpi-top-area">Lưu Hóa (CP-02)</strong></span>
+              <span class="status-pill pill-yellow">THỦ PHẠM CHÍNH</span>
+            </div>
+          </div>
+
+          <div class="kpi-card purple">
+            <div class="kpi-title">Mức Đóng Góp Ảnh Hưởng (SHAP)</div>
+            <div class="kpi-value"><span id="shap-kpi-top-share">36.4</span><span class="kpi-unit">%</span></div>
+            <div class="kpi-foot">
+              <span>Điểm SHAP: <strong id="shap-kpi-top-val">0.0825</strong></span>
+              <span>Độ lệch: <strong style="color: #f87171;">-2.5 bar</strong></span>
+            </div>
+          </div>
+
+          <div class="kpi-card blue">
+            <div class="kpi-title">Tham Số Đa Biến Giám Sát</div>
+            <div class="kpi-value"><span id="shap-kpi-features-count">19</span><span class="kpi-unit">thông số</span></div>
+            <div class="kpi-foot">
+              <span>Bao phủ: <strong>Luyện &bull; Đùn &bull; TBM &bull; Lò</strong></span>
+            </div>
+          </div>
+
+          <div class="kpi-card green">
+            <div class="kpi-title">Độ Tin Cậy Mô Hình XAI</div>
+            <div class="kpi-value"><span id="shap-kpi-accuracy">1.00</span><span class="kpi-unit">AUC</span></div>
+            <div class="kpi-foot">
+              <span>F1-Score: <strong id="shap-kpi-f1">0.96</strong></span>
+              <span class="status-pill pill-green">RẤT CHÍNH XÁC</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Global SHAP Feature Importance Canvas -->
+        <div class="card" style="margin-bottom: 1.5rem; background: #0c101d; border: 1px solid #1e293b;">
+          <div class="card-header" style="padding-bottom: 0.75rem;">
+            <div>
+              <div class="card-title" style="font-size: 0.95rem;">📊 Xếp Hạng Đa Biến Mức Độ Quan Trọng Toàn Cục: mean(|SHAP value|)</div>
+              <div class="card-subtitle">Đo lường mức độ ảnh hưởng của từng thông số vào việc làm tăng nguy cơ phế phẩm trên toàn nhà máy</div>
+            </div>
+            <div style="font-size: 0.8rem; color: #94a3b8;">
+              Thuật toán: <strong>TreeSHAP (Cooperative Game Theory)</strong>
+            </div>
+          </div>
+          <div style="padding: 1rem;">
+            <canvas id="shap-global-canvas" width="950" height="380" style="width: 100%; height: 380px; background: #070a13; border: 1px solid #1e293b; border-radius: 8px;"></canvas>
+          </div>
+        </div>
+
+        <!-- Local SHAP Waterfall Breakdown for Single Batch/Tire -->
+        <div class="card" style="margin-bottom: 1.5rem; background: #0f172a; border: 1px solid #334155;">
+          <div class="card-header">
+            <div>
+              <div class="card-title" style="font-size: 0.95rem; color: #f8fafc;">🔍 Giải Thích Nguyên Nhân Gốc Chi Tiết Từng Lốp / Từng Mẻ (Local Waterfall Breakdown)</div>
+              <div class="card-subtitle">Chỉ rõ tại sao một chiếc lốp cụ thể bị hỏng: Tác nhân kéo tăng rủi ro lỗi (+) vs Tác nhân triệt tiêu (-)</div>
+            </div>
+            <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+              <select class="form-control" id="shap-sample-picker" style="max-width: 260px; font-size: 0.82rem;" onchange="explainSelectedSample()">
+                <option value="">-- Chọn mẻ lốp kiểm tra --</option>
+              </select>
+              <button class="btn btn-primary btn-sm" onclick="explainCurrentSample()">Phân Tích Mẻ Này</button>
+            </div>
+          </div>
+
+          <div id="shap-waterfall-container" style="padding: 1.25rem;">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+
+        <!-- Decision Tree If-Then Rules Mining Panel -->
+        <div class="card" style="margin-bottom: 1.5rem; background: #0c101d; border: 1px solid #1e293b;">
+          <div class="card-header">
+            <div>
+              <div class="card-title" style="font-size: 0.95rem;">🌲 Quy Tắc Vận Hành Khai Phá Từ Cây Quyết Định (Decision Tree Operational Rules)</div>
+              <div class="card-subtitle">Trích xuất điều kiện logic If-Then rõ ràng giúp kỹ sư công nghệ và quản đốc phân xưởng ban hành hướng dẫn thao tác chuẩn (SOP)</div>
+            </div>
+          </div>
+          <div id="shap-rules-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 1rem; padding: 1.25rem;">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+
+        <!-- Defect Spike Simulation Sandbox -->
+        <div class="card" style="background: #0f172a; border: 1px solid #334155;">
+          <div class="card-header">
+            <div>
+              <div class="card-title" style="font-size: 0.95rem; color: #f8fafc;">🧪 Hộp Thử Nghiệm Kịch Bản Đột Biến Lỗi (Defect Spike Simulation Sandbox)</div>
+              <div class="card-subtitle">Cố tình kích hoạt các cụm sự cố công nghệ thực tế để kiểm tra năng lực "bắt bệnh" và chỉ điểm chính xác của SHAP</div>
+            </div>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              <button class="btn btn-secondary btn-sm" onclick="simulateShapSpike('BLADDER_PRESSURE_DROP')">🔥 Đột Biến: Bọt Khí Hông Lốp (Sụt Áp Bàng)</button>
+              <button class="btn btn-secondary btn-sm" onclick="simulateShapSpike('UNDER_CURE_TEMPERATURE')">⚠️ Đột Biến: Lưu Hóa Non (Tụt Nhiệt Khuôn)</button>
+              <button class="btn btn-secondary btn-sm" onclick="simulateShapSpike('BANBURY_OVERHEAT')">⚡ Đột Biến: Bóc Tách Gai (Nhiệt Luyện Quá Cao)</button>
+              <button class="btn btn-secondary btn-sm" onclick="simulateShapSpike('NORMAL')">↺ Khôi Phục Vận Hành Ổn Định</button>
+            </div>
+          </div>
+          <div id="shap-simulation-feedback" style="display: none; padding: 1rem; border-top: 1px solid #1e293b;"></div>
         </div>
 
       </div>

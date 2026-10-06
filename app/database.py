@@ -79,6 +79,15 @@ def init_db(force: bool = False):
         if force:
             cursor.execute("PRAGMA foreign_keys = OFF;")
             cursor.executescript("""
+                DROP TABLE IF EXISTS graph_order_risk_scores;
+                DROP TABLE IF EXISTS graph_risk_propagation_runs;
+                DROP TABLE IF EXISTS graph_genealogy_edges;
+                DROP TABLE IF EXISTS shap_root_cause_reports;
+                DROP TABLE IF EXISTS batch_process_telemetry;
+                DROP TABLE IF EXISTS bottleneck_forecasts;
+                DROP TABLE IF EXISTS dynamic_routing_rules;
+                DROP TABLE IF EXISTS ai_anomaly_logs;
+                DROP TABLE IF EXISTS production_cycle_telemetry;
                 DROP TABLE IF EXISTS tire_rework_history;
                 DROP TABLE IF EXISTS quality_inspections;
                 DROP TABLE IF EXISTS production_cured_tires;
@@ -382,6 +391,163 @@ def init_db(force: bool = False):
                 content_html TEXT NOT NULL
             );
 
+            -- =========================================================
+            -- 9. AI UNSUPERVISED ANOMALY DETECTION & PRODUCTIVITY LOGS
+            -- =========================================================
+            CREATE TABLE IF NOT EXISTS ai_anomaly_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp TEXT NOT NULL,
+                entity_id TEXT NOT NULL,
+                entity_type TEXT CHECK(entity_type IN ('MACHINE', 'TIRE', 'WIP_BUFFER')) NOT NULL,
+                model_type TEXT CHECK(model_type IN ('ISOLATION_FOREST', 'AUTOENCODER', 'ENSEMBLE')) NOT NULL,
+                takt_time_sec REAL NOT NULL,
+                wip_queue_time_min REAL NOT NULL,
+                anomaly_score REAL NOT NULL,
+                severity TEXT CHECK(severity IN ('INFO', 'WARNING', 'CRITICAL')) NOT NULL,
+                root_cause_diagnosis TEXT NOT NULL,
+                mitigation_action TEXT NOT NULL,
+                status TEXT CHECK(status IN ('DETECTED', 'ACKNOWLEDGED', 'RESOLVED')) DEFAULT 'DETECTED'
+            );
+
+            CREATE TABLE IF NOT EXISTS production_cycle_telemetry (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp TEXT NOT NULL,
+                machine_id TEXT NOT NULL,
+                cycle_type TEXT CHECK(cycle_type IN ('TBM_BUILD', 'CURING_CYCLE', 'QC_SCAN')) NOT NULL,
+                sku TEXT NOT NULL,
+                actual_takt_sec REAL NOT NULL,
+                target_takt_sec REAL NOT NULL,
+                takt_deviation_sec REAL NOT NULL,
+                wip_queue_dwell_min REAL NOT NULL,
+                temp_deviation_c REAL DEFAULT 0.0,
+                pressure_deviation_bar REAL DEFAULT 0.0
+            );
+
+            -- =========================================================
+            -- 10. DYNAMIC BOTTLENECK PREDICTION & MATERIAL REROUTING
+            -- =========================================================
+            CREATE TABLE IF NOT EXISTS bottleneck_forecasts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp TEXT NOT NULL,
+                horizon_hours INTEGER NOT NULL,
+                current_bottleneck_station TEXT NOT NULL,
+                predicted_bottleneck_station TEXT NOT NULL,
+                shift_detected BOOLEAN NOT NULL DEFAULT 0,
+                shift_probability REAL NOT NULL,
+                station_bli_scores TEXT NOT NULL,
+                predicted_wip_levels TEXT NOT NULL,
+                root_cause_factors TEXT NOT NULL,
+                reroute_action_needed BOOLEAN NOT NULL DEFAULT 0,
+                recommended_plan TEXT,
+                status TEXT CHECK(status IN ('PREDICTED', 'REROUTED', 'NORMALIZED')) DEFAULT 'PREDICTED'
+            );
+
+            CREATE TABLE IF NOT EXISTS dynamic_routing_rules (
+                rule_id TEXT PRIMARY KEY,
+                source_station TEXT NOT NULL,
+                target_station TEXT NOT NULL,
+                alternate_station TEXT NOT NULL,
+                material_type TEXT NOT NULL,
+                is_diverted BOOLEAN DEFAULT 0,
+                divert_ratio_pct REAL DEFAULT 0.0,
+                divert_reason TEXT,
+                activated_at TEXT,
+                throughput_gain_forecast_pct REAL DEFAULT 15.0
+            );
+
+            -- =========================================================
+            -- 11. MULTIVARIATE BATCH PROCESS TELEMETRY & SHAP ROOT CAUSE
+            -- =========================================================
+            CREATE TABLE IF NOT EXISTS batch_process_telemetry (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                batch_id TEXT NOT NULL,
+                tire_serial TEXT,
+                timestamp TEXT NOT NULL,
+                sku TEXT NOT NULL,
+                mooney_viscosity_ml REAL NOT NULL,
+                scorch_time_ts2_min REAL NOT NULL,
+                cure_time_tc90_min REAL NOT NULL,
+                dump_temp_c REAL NOT NULL,
+                rotor_energy_kwh REAL NOT NULL,
+                carbon_dispersion_pct REAL NOT NULL,
+                tread_gauge_thickness_mm REAL NOT NULL,
+                barrel_temp_zone4_c REAL NOT NULL,
+                extruder_head_pressure_bar REAL NOT NULL,
+                cord_tension_n REAL NOT NULL,
+                stitch_roller_press_bar REAL NOT NULL,
+                drum_expansion_diam_mm REAL NOT NULL,
+                splice_overlap_width_mm REAL NOT NULL,
+                internal_bladder_press_bar REAL NOT NULL,
+                mold_temp_upper_c REAL NOT NULL,
+                mold_temp_lower_c REAL NOT NULL,
+                steam_dome_press_bar REAL NOT NULL,
+                vacuum_exhaust_time_sec REAL NOT NULL,
+                bladder_cycle_age INTEGER NOT NULL,
+                is_defective BOOLEAN NOT NULL DEFAULT 0,
+                defect_code TEXT,
+                defect_name TEXT
+            );
+
+            CREATE TABLE IF NOT EXISTS shap_root_cause_reports (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                created_at TEXT NOT NULL,
+                defect_spike_category TEXT NOT NULL,
+                total_batches_analyzed INTEGER NOT NULL,
+                spike_defect_rate_pct REAL NOT NULL,
+                baseline_defect_rate_pct REAL NOT NULL,
+                top_root_cause_feature TEXT NOT NULL,
+                top_root_cause_importance REAL NOT NULL,
+                global_importance_json TEXT NOT NULL,
+                decision_rules_json TEXT NOT NULL,
+                corrective_action_recommendation TEXT NOT NULL
+            );
+
+            -- =========================================================
+            -- 10. GRAPH MACHINE LEARNING: GENEALOGY RISK CONTAGION
+            -- =========================================================
+            CREATE TABLE IF NOT EXISTS graph_genealogy_edges (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                source_id TEXT NOT NULL,
+                source_type TEXT NOT NULL,
+                target_id TEXT NOT NULL,
+                target_type TEXT NOT NULL,
+                relation_type TEXT NOT NULL,
+                weight REAL DEFAULT 1.0,
+                metadata_json TEXT,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE TABLE IF NOT EXISTS graph_risk_propagation_runs (
+                run_id TEXT PRIMARY KEY,
+                suspect_node_id TEXT NOT NULL,
+                suspect_node_type TEXT NOT NULL,
+                defect_description TEXT NOT NULL,
+                algorithm TEXT NOT NULL,
+                propagation_hops INTEGER DEFAULT 3,
+                critical_wos_count INTEGER DEFAULT 0,
+                high_risk_wos_count INTEGER DEFAULT 0,
+                total_tires_at_risk INTEGER DEFAULT 0,
+                blast_radius_summary_json TEXT,
+                quarantine_applied INTEGER DEFAULT 0,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                authorized_badge TEXT
+            );
+
+            CREATE TABLE IF NOT EXISTS graph_order_risk_scores (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                run_id TEXT NOT NULL,
+                wo_id TEXT NOT NULL,
+                risk_score REAL NOT NULL,
+                risk_tier TEXT NOT NULL,
+                tires_at_risk INTEGER DEFAULT 0,
+                primary_transmission_vector TEXT NOT NULL,
+                shortest_infection_path TEXT NOT NULL,
+                recommended_action TEXT NOT NULL,
+                action_status TEXT DEFAULT 'PENDING',
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (run_id) REFERENCES graph_risk_propagation_runs(run_id)
+            );
+
             -- Create Performance Indexes for real-time querying
             CREATE INDEX IF NOT EXISTS idx_green_tire_sku ON production_green_tires(sku);
             CREATE INDEX IF NOT EXISTS idx_green_tire_wo ON production_green_tires(wo_id);
@@ -389,6 +555,17 @@ def init_db(force: bool = False):
             CREATE INDEX IF NOT EXISTS idx_quality_serial ON quality_inspections(tire_serial);
             CREATE INDEX IF NOT EXISTS idx_wo_status ON work_orders(status);
             CREATE INDEX IF NOT EXISTS idx_components_lot ON inventory_components(lot_id);
+            CREATE INDEX IF NOT EXISTS idx_anomaly_time ON ai_anomaly_logs(timestamp);
+            CREATE INDEX IF NOT EXISTS idx_cycle_machine ON production_cycle_telemetry(machine_id, timestamp);
+            CREATE INDEX IF NOT EXISTS idx_bottleneck_time ON bottleneck_forecasts(timestamp);
+            CREATE INDEX IF NOT EXISTS idx_routing_source ON dynamic_routing_rules(source_station);
+            CREATE INDEX IF NOT EXISTS idx_batch_telemetry_time ON batch_process_telemetry(timestamp);
+            CREATE INDEX IF NOT EXISTS idx_batch_defective ON batch_process_telemetry(is_defective);
+            CREATE INDEX IF NOT EXISTS idx_batch_serial ON batch_process_telemetry(tire_serial);
+            CREATE INDEX IF NOT EXISTS idx_graph_edge_src ON graph_genealogy_edges(source_id);
+            CREATE INDEX IF NOT EXISTS idx_graph_edge_tgt ON graph_genealogy_edges(target_id);
+            CREATE INDEX IF NOT EXISTS idx_graph_runs_suspect ON graph_risk_propagation_runs(suspect_node_id);
+            CREATE INDEX IF NOT EXISTS idx_graph_scores_run ON graph_order_risk_scores(run_id);
         """)
 
 

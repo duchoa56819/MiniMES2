@@ -65,9 +65,11 @@ Luyện Kín Banbury  ───>  Bán Thành Phẩm    ───>  Thành Hình
 
 ---
 
-## 3. KIẾN TRÚC CƠ SỞ DỮ LIỆU CHUẨN ISA-95 (DATABASE SCHEMA)
+## 3. KIẾN TRÚC CƠ SỞ DỮ LIỆU CHUẨN ISA-95 & MÔ HÌNH THỰC THỂ (DATABASE SCHEMA & ER DIAGRAM)
 
-Cơ sở dữ liệu được xây dựng trên SQLite Engine hiệu năng cao với WAL mode (`PRAGMA journal_mode = WAL`) và cơ chế toàn vẹn ràng buộc khóa ngoại nghiêm ngặt:
+> 📊 **Đặc Tả Toàn Diện & Sơ Đồ Mermaid ER**: Toàn bộ sơ đồ thiết kế 27 bảng dữ liệu, khóa chính, khóa ngoại và từ điển dữ liệu chuẩn ANSI/ISA-95 Level 3 & IATF 16949 được biên soạn chi tiết tại tệp [`docs/DATABASE_SCHEMA.md`](docs/DATABASE_SCHEMA.md).
+
+Cơ sở dữ liệu được xây dựng trên SQLite Engine hiệu năng cao với WAL mode (`PRAGMA journal_mode = WAL`), cơ chế chống khóa chết (`PRAGMA busy_timeout = 60000`), phân tách Read-Replica chỉ đọc và cơ chế toàn vẹn ràng buộc khóa ngoại nghiêm ngặt:
 
 ### 3.1. Nhóm Dữ Liệu Danh Mục Nền Tảng (Master Data)
 - `master_areas`: Phân vùng 6 khu vực sản xuất theo cấp bậc ISA-95 (MIXING, PREP, TBM, CURING, FINISHING, WAREHOUSE).
@@ -77,6 +79,7 @@ Cơ sở dữ liệu được xây dựng trên SQLite Engine hiệu năng cao v
 - `master_curing_recipes`: Đơn công nghệ lưu hóa: Nhiệt độ khuôn setpoint (170°C), Áp suất hơi platen (15 bar), Áp suất bàng bọng nở (21 bar), Thời gian nén nhiệt (780 giây), Ngưỡng mỏi bàng bọng (350 lần).
 - `master_defect_codes`: Thư viện 12 mã khuyết tật tiêu chuẩn ngành lốp (Song ngữ Việt - Anh): Bọt khí hông lốp, Lệch tâm hoa gai, Bavia quá dài, Móp méo tanh, Khuyết hoa gai, Đè mép mành thép X-Ray, Dãn cách mành không đều, Dị vật kim loại, Lực RFV vượt ngưỡng, Mất cân bằng động, Non lưu hóa.
 - `master_operators`: Quản lý 8 công nhân viên vận hành bậc 1 đến bậc 5 theo các Ca làm việc (Ca A, Ca B, Ca C).
+- `master_documents`: Quản lý tài liệu SOP/Work Instructions điện tử và ECN.
 
 ### 3.2. Nhóm Bán Thành Phẩm & Điều Độ Lệnh (Inventory & Planning)
 - `inventory_components`: Quản lý kho cuộn/giá chứa bán thành phẩm theo Số lô Barcode (`LOT-TRD-...`, `LOT-SW-...`), thời gian sản xuất, vị trí giá đỡ và **hạn sử dụng (Shelf-life)**.
@@ -87,8 +90,17 @@ Cơ sở dữ liệu được xây dựng trên SQLite Engine hiệu năng cao v
 - `curing_press_cavities`: Trạng thái thời gian thực của từng hộc khuôn lò lưu hóa (Hộc L/Trái và Hộc R/Phải): Trạng thái (EMPTY, LOADED, CURING, COMPLETED), Nhiệt độ khuôn cảm biến PLC, Áp suất bàng bọng, Thời gian đếm ngược chu kỳ chín, và Bộ đếm tuổi thọ bàng bọng.
 - `production_cured_tires`: Bảng ghi nhận lốp chín sau khi dỡ khỏi lò: Khắc Số Sê-ri Vĩnh Viễn (`VN-T-YYYYMMDD-XXXXX`), liên kết ngược về mã lốp sống GT, lò ép, hộc khuôn, thời gian nén nhiệt thực tế, thông số lưu hóa trung bình.
 - `quality_inspections`: Bảng ghi nhận kết quả kiểm tra KCS độc lập: Soi ngoại quan, Soi cấu trúc X-Ray, Đo lực biến thiên hướng kính RFV, LFV, Khối lượng mất cân bằng động (g), Cấp phân loại tự động (`GRADE_A`, `GRADE_B`, `REWORK`, `SCRAP`), và Ghi chú xử lý.
+- `tire_rework_history`: Nhật ký sửa hàng có khóa **Anti-Loop Interlock** tối đa 2 lần sửa chữa.
 - `curing_telemetry_history`: Lịch sử vi phân nhiệt áp lưu hóa theo từng giây phục vụ phân tích SPC/CPK.
 - `equipment_downtime_logs`: Nhật ký dừng máy sự cố/thay khuôn/bảo trì định kỳ phục vụ tính toán OEE.
+
+### 3.4. Nhóm Tích Hợp IIoT & Trí Tuệ Nhân Tạo (IIoT Gateway & Industrial AI Suite)
+- `gateway_connectors`: Cấu hình 5 giao thức công nghiệp kết nối PLC/SCADA (OPC-UA, OPC-DA, Modbus-TCP, MQTT, Sockets).
+- `production_cycle_telemetry`: Dữ liệu chuỗi thời gian Takt Time và thời gian chờ hàng WIP.
+- `ai_anomaly_logs`: Nhật ký phát hiện bất thường Takt Time (Isolation Forest & Deep Autoencoders).
+- `bottleneck_forecasts` & `dynamic_routing_rules`: Dự báo tắc nghẽn 2-4h và ma trận điều hướng luồng vật tư động.
+- `batch_process_telemetry` & `shap_root_cause_reports`: Phân tích căn nguyên đa biến XAI (TreeSHAP & Decision Trees) trên 19 thông số mẻ.
+- `graph_genealogy_edges`, `graph_risk_propagation_runs` & `graph_order_risk_scores`: Mạng đồ thị phả hệ tri thức (Heterogeneous MPNN & RWR Diffusion) dự báo bán kính lây lan IATF 16949 Section 8.7.
 
 ---
 

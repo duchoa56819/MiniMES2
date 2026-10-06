@@ -204,8 +204,9 @@ def test_08_protocol_gateway():
 
 def test_09_anti_skip_routing_enforcement():
     # Scenario A: Green tire tries to skip Curing and jump directly to Finishing / QC
+    gt_skip = test_04_tbm_build_green_tire()
     skip_curing_res = client.post("/api/routing/verify-transition", json={
-        "identifier": "GT-20261006-0019",
+        "identifier": gt_skip,
         "target_stage": "FINISHING"
     })
     assert skip_curing_res.status_code == 200
@@ -435,6 +436,248 @@ def test_12_read_replica_and_frankenstein_trap():
     print(f"[PASS] Frankenstein Trap Blocked: Out-of-order delayed packet prevented from regressing tire location!")
 
 
+def test_13_ai_anomaly_detection():
+    # 1. Test AI Model Status & Initialization
+    status_res = client.get("/api/ai/status")
+    assert status_res.status_code == 200
+    status_data = status_res.json()
+    assert status_data["status"] == "OPERATIONAL"
+    assert status_data["is_trained"] is True
+    assert "isolation_forest" in status_data["models"]
+    assert "deep_autoencoder" in status_data["models"]
+    print(f"[PASS] AI Service Health: Isolation Forest (100 Trees) & PyTorch Autoencoder (Loss Thresh: {status_data['models']['deep_autoencoder']['reconstruction_threshold']})")
+
+    # 2. Test Live Inference: Normal Cycle
+    norm_res = client.post("/api/ai/evaluate-live", json={
+        "machine_id": "TBM-01",
+        "cycle_type": "TBM_BUILD",
+        "sku": "PCR-205-55R16-91V",
+        "actual_takt_sec": 45.2,
+        "target_takt_sec": 45.0,
+        "wip_queue_dwell_min": 45.0,
+        "temp_deviation_c": 0.0,
+        "pressure_deviation_bar": 0.0
+    })
+    assert norm_res.status_code == 200
+    norm_data = norm_res.json()
+    assert norm_data["is_anomaly"] is False
+    assert norm_data["severity"] == "INFO"
+    print(f"[PASS] AI Normal Inference: Score={norm_data['ensemble_anomaly_score']} -> {norm_data['severity']}")
+
+    # 3. Test Live Inference: Severe Anomaly (Creeping Takt Time & WIP Jam)
+    anom_res = client.post("/api/ai/evaluate-live", json={
+        "machine_id": "CP-02",
+        "cycle_type": "CURING_CYCLE",
+        "sku": "PCR-205-55R16-91V",
+        "actual_takt_sec": 865.0,  # +85s Takt Creep!
+        "target_takt_sec": 780.0,
+        "wip_queue_dwell_min": 320.0,  # >5h queue delay!
+        "temp_deviation_c": -4.2,  # Mold thermal drop!
+        "pressure_deviation_bar": -2.1
+    })
+    assert anom_res.status_code == 200
+    anom_data = anom_res.json()
+    assert anom_data["is_anomaly"] is True
+    assert anom_data["severity"] in ("WARNING", "CRITICAL")
+    assert "Suy giảm" in anom_data["root_cause_diagnosis"] or "Tắc nghẽn" in anom_data["root_cause_diagnosis"] or "kéo dài" in anom_data["root_cause_diagnosis"]
+    print(f"[PASS] AI Anomaly Detection: Score={anom_data['ensemble_anomaly_score']} -> Severity={anom_data['severity']} (iForest={anom_data['isolation_forest_score']}, Autoencoder MSE={anom_data['autoencoder_mse_loss']})")
+
+    # 4. Test Factory-Wide Batch Cycle Scan
+    scan_res = client.get("/api/ai/scan-cycles")
+    assert scan_res.status_code == 200
+    scan_data = scan_res.json()
+    assert scan_data["total_scanned_cycles"] > 0
+    assert scan_data["total_anomalies_detected"] > 0
+    print(f"[PASS] Factory AI Batch Scan: {scan_data['total_scanned_cycles']} cycles analyzed, {scan_data['total_anomalies_detected']} productivity bottlenecks flagged (Plant Anomaly Index: {scan_data['plant_anomaly_index']})")
+
+
+def test_14_dynamic_bottleneck_prediction_and_rerouting():
+    """
+    Test Suite 14: Dynamic Bottleneck Prediction (2–4h horizon) & Automated Material Rerouting.
+    Verifies multi-horizon state forecasting, bottleneck shift detection, and automated diverting.
+    """
+    # 1. Test Status Endpoint
+    st_res = client.get("/api/bottleneck/status")
+    assert st_res.status_code == 200
+    st_data = st_res.json()
+    assert st_data["status"] == "OPERATIONAL"
+    assert "current_bottleneck_station" in st_data
+    assert "predicted_2h_station" in st_data
+    print(f"[PASS] Bottleneck AI Status: Current={st_data['current_bottleneck_station']} (BLI={st_data['current_bli']}), Predicted 2h={st_data['predicted_2h_station']}")
+
+    # 2. Test Multi-Horizon Forecast (1h, 2h, 3h, 4h)
+    fc_res = client.get("/api/bottleneck/forecast")
+    assert fc_res.status_code == 200
+    fc_data = fc_res.json()
+    assert len(fc_data["all_horizons"]) == 4
+    h2 = fc_data["forecast_2h"]
+    assert h2["horizon_hours"] == 2
+    assert "station_bli_scores" in h2
+    assert "recommended_plan" in h2
+    print(f"[PASS] Multi-Horizon AI Forecast: Horizon 2h Shift={h2['shift_detected']} (Prob={h2['shift_probability']}), Action Needed={h2['reroute_action_needed']}")
+
+    # 3. Test Simulation Surge (Steam Valve Latency on CP-02)
+    surge_res = client.post("/api/bottleneck/simulate-surge", json={"scenario": "CURING_VALVE_DEGRADE"})
+    assert surge_res.status_code == 200
+    surge_data = surge_res.json()
+    assert surge_data["scenario"] == "CURING_VALVE_DEGRADE"
+    fc_surge = surge_data["forecast"]["forecast_2h"]
+    assert "CP-02" in fc_surge["station_bli_scores"]
+    print(f"[PASS] Simulation Surge Injected: CP-02 Curing Valve Drift -> Forecasted Shift in 2h (BLI CP-02={fc_surge['station_bli_scores']['CP-02']})")
+
+    # 4. Test Automated Material Rerouting Execution
+    reroute_res = client.post("/api/bottleneck/apply-reroute")
+    assert reroute_res.status_code == 200
+    reroute_data = reroute_res.json()
+    assert reroute_data["success"] is True
+    assert reroute_data["expected_oee_protection_pct"] > 0
+    diverted_rules = [r for r in reroute_data["rules"] if r["is_diverted"] == 1]
+    assert len(diverted_rules) > 0
+    print(f"[PASS] MES Automated Material Rerouting: {len(diverted_rules)} rules diverted flow to alternate lines (CP-03/CP-04)")
+
+    # 5. Test Active Rules Retrieval
+    rules_res = client.get("/api/bottleneck/routing-rules")
+    assert rules_res.status_code == 200
+    rules = rules_res.json()
+    assert any(r["rule_id"] == "RULE-TBM-CURING-PRIMARY" and r["is_diverted"] == 1 for r in rules)
+    print(f"[PASS] Verified Dynamic Routing Table: RULE-TBM-CURING-PRIMARY active divert ratio={rules[0]['divert_ratio_pct']}%")
+
+    # 6. Test Reset Routing to SOP
+    reset_res = client.post("/api/bottleneck/reset-routing")
+    assert reset_res.status_code == 200
+    reset_data = reset_res.json()
+    assert reset_data["success"] is True
+    assert all(r["is_diverted"] == 0 for r in reset_data["rules"])
+    print(f"[PASS] Restored Standard Routing: 100% flow returned to SOP baseline lines")
+
+
+def test_15_shap_multivariate_root_cause_analysis():
+    """
+    Test Suite 15: Multivariate Feature Importance & Decision Trees / SHAP Root Cause Analysis.
+    Verifies TreeSHAP explainability, decision rule extraction, and defect spike root-cause attribution.
+    """
+    # 1. Test SHAP Status Endpoint
+    st_res = client.get("/api/shap/status")
+    assert st_res.status_code == 200
+    st_data = st_res.json()
+    assert st_data["status"] == "OPERATIONAL"
+    assert st_data["monitored_features_count"] >= 18
+    assert st_data["is_trained"] is True
+    print(f"[PASS] SHAP AI Engine Status: Monitored Features={st_data['monitored_features_count']}, Batches Analyzed={st_data['total_batches_analyzed']} (ROC-AUC={st_data['metrics']['roc_auc']})")
+
+    # 2. Test Global Feature Importance Ranking
+    imp_res = client.get("/api/shap/global-importance")
+    assert imp_res.status_code == 200
+    imp_data = imp_res.json()
+    assert len(imp_data["feature_ranking"]) >= 15
+    top_rc = imp_data["top_root_cause"]
+    assert "feature_key" in top_rc
+    assert top_rc["importance_share_pct"] > 0
+    print(f"[PASS] Global SHAP Feature Importance: Top Culprit='{top_rc['feature_key']}' ({top_rc['importance_share_pct']}% impact share across plant)")
+
+    # 3. Test Decision Tree Rule Extraction
+    rules_res = client.get("/api/shap/decision-rules")
+    assert rules_res.status_code == 200
+    rules_data = rules_res.json()
+    assert rules_data["total_rules"] > 0
+    r1 = rules_data["rules"][0]
+    assert "conditions_text" in r1
+    assert r1["defect_probability_pct"] >= 50.0
+    print(f"[PASS] Decision Tree Rule Mining: {rules_data['total_rules']} operational If-Then rules extracted (Top Rule Defect Rate={r1['defect_probability_pct']}%)")
+
+    # 4. Test Local SHAP Waterfall Explanation for Defective Tire
+    explain_res = client.post("/api/shap/explain-batch")
+    assert explain_res.status_code == 200
+    exp_data = explain_res.json()
+    assert "predicted_defect_probability" in exp_data
+    assert "waterfall_breakdown" in exp_data
+    assert len(exp_data["waterfall_breakdown"]) >= 15
+    top_culprit = exp_data["top_culprit"]
+    print(f"[PASS] Local SHAP Waterfall Analysis: Batch={exp_data['batch_meta']['batch_id']}, Risk={exp_data['predicted_defect_probability']} (Primary Driver='{top_culprit['feature_key']}', SHAP={top_culprit['shap_value']})")
+
+    # 5. Test Defect Spike Simulation & Root Cause Attribution
+    spike_res = client.post("/api/shap/simulate-spike", json={"scenario": "BLADDER_PRESSURE_DROP"})
+    assert spike_res.status_code == 200
+    spike_data = spike_res.json()
+    assert spike_data["total_analyzed_batches"] > 0
+    print(f"[PASS] Defect Spike Root Cause Discovery: Simulated 'BLADDER_PRESSURE_DROP' -> Pinpointed Top Driver: {spike_data['top_root_cause']['feature_key']}")
+
+
+def test_16_graph_ml_genealogy_risk_propagation():
+    # 1. Test Graph Engine Status
+    status_res = client.get("/api/graph/status")
+    assert status_res.status_code == 200
+    s_data = status_res.json()
+    assert s_data["status"] == "ONLINE"
+    assert "Graph Machine Learning" in s_data["model_family"]
+    assert s_data["graph_metrics"]["total_nodes"] > 50
+    assert s_data["graph_metrics"]["total_edges"] > 150
+    print(f"[PASS] Graph ML Engine Status: Nodes={s_data['graph_metrics']['total_nodes']}, Edges={s_data['graph_metrics']['total_edges']} (PyTorch GNN + RWR Diffusion Online)")
+
+    # 2. Test Graph Topology API
+    topo_res = client.get("/api/graph/topology")
+    assert topo_res.status_code == 200
+    t_data = topo_res.json()
+    assert len(t_data["nodes"]) > 50
+    assert len(t_data["edges"]) > 150
+    print(f"[PASS] Graph Topology Layout: Generated 2D coordinates for {len(t_data['nodes'])} nodes across 5 plant hierarchy columns")
+
+    # 3. Test Inventory Lots List
+    lots_res = client.get("/api/graph/lots")
+    assert lots_res.status_code == 200
+    assert len(lots_res.json()["component_lots"]) >= 10
+    print(f"[PASS] Traceability Components Catalog: {len(lots_res.json()['component_lots'])} inventory lots available for outbreak scan")
+
+    # 4. Test Defect Outbreak Simulation & Contagion Prediction
+    sim_res = client.post("/api/graph/simulate-outbreak", json={
+        "suspect_lot_id": "LOT-TRD-202610-01",
+        "defect_description": "Khuyết tật bọt khí cao su hông và phân tán muội than kém",
+        "authorized_badge": "OP-4001"
+    })
+    assert sim_res.status_code == 200
+    sim_data = sim_res.json()
+    assert sim_data["success"] is True
+    run_id = sim_data["run_id"]
+    wos = sim_data["work_order_assessments"]
+    assert len(wos) >= 5
+
+    # Check direct consumer WO-2026-001 (CRITICAL)
+    wo_001 = next(w for w in wos if w["wo_id"] == "WO-2026-001")
+    assert wo_001["risk_tier"] == "CRITICAL"
+    assert wo_001["risk_score"] >= 0.70
+    assert wo_001["primary_transmission_vector"] == "DIRECT_BOM_MATERIAL_CONSUMPTION"
+    print(f"[PASS] Direct Infection Pinpointed: {wo_001['wo_id']} -> Risk={wo_001['risk_score_pct']}% (Tier={wo_001['risk_tier']}, Vector={wo_001['primary_transmission_vector']})")
+
+    # Check secondary shared-machine order WO-2026-002 (HIGH_RISK)
+    wo_002 = next(w for w in wos if w["wo_id"] == "WO-2026-002")
+    assert wo_002["risk_tier"] in ("HIGH_RISK", "MEDIUM_RISK")
+    assert wo_002["primary_transmission_vector"] == "SHARED_MACHINE_RESIDUE"
+    print(f"[PASS] Secondary Cross-Contamination Detected: {wo_002['wo_id']} -> Risk={wo_002['risk_score_pct']}% (Vector={wo_002['primary_transmission_vector']})")
+
+    # Check isolated line order WO-2026-004 (LOW_RISK)
+    wo_004 = next(w for w in wos if w["wo_id"] == "WO-2026-004")
+    assert wo_004["risk_tier"] == "LOW_RISK"
+    assert wo_004["primary_transmission_vector"] == "ISOLATED_INDEPENDENT_LINE"
+    print(f"[PASS] Line Isolation Verified: {wo_004['wo_id']} -> Risk={wo_004['risk_score_pct']}% (Tier={wo_004['risk_tier']})")
+
+    # 5. Test 1-Click Graph Quarantine Containment
+    quar_res = client.post("/api/graph/execute-quarantine", json={
+        "run_id": run_id,
+        "authorized_badge": "OP-4001"
+    })
+    assert quar_res.status_code == 200
+    q_data = quar_res.json()
+    assert q_data["success"] is True
+    assert "WO-2026-001" in q_data["paused_work_orders"]
+    print(f"[PASS] 1-Click MES Containment Executed: Suspended Work Orders: {q_data['paused_work_orders']}")
+
+    # 6. Test Historical Runs Log
+    runs_res = client.get("/api/graph/runs")
+    assert runs_res.status_code == 200
+    assert len(runs_res.json()) >= 1
+    print(f"[PASS] Graph Audit Trail: {len(runs_res.json())} propagation runs logged for IATF 16949 compliance")
+
+
 if __name__ == "__main__":
     seed_database()
     print("\n" + "="*60)
@@ -452,9 +695,15 @@ if __name__ == "__main__":
     test_10_consecutive_defect_lockout_and_backpressure()
     test_11_rework_loop_and_emergency_lot_quarantine()
     test_12_read_replica_and_frankenstein_trap()
+    test_13_ai_anomaly_detection()
+    test_14_dynamic_bottleneck_prediction_and_rerouting()
+    test_15_shap_multivariate_root_cause_analysis()
+    test_16_graph_ml_genealogy_risk_propagation()
     print("="*60)
     print("   ALL MES BUSINESS LOGIC & API TESTS PASSED 100%!")
     print("="*60 + "\n")
+
+
 
 
 

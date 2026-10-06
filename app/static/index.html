@@ -63,6 +63,18 @@
     <button class="tab-btn" onclick="switchTab('gateway')">
       🌐 8. Cổng Giao Thức PLC & IIoT <span class="badge" style="background-color: #059669; color: #fff;">5 Giao Thức</span>
     </button>
+    <button class="tab-btn" onclick="switchTab('ai')">
+      🧠 9. Trí Tuệ Nhân Tạo & Bất Thường AI <span class="badge" style="background-color: #8b5cf6; color: #fff;">PyTorch & iForest</span>
+    </button>
+    <button class="tab-btn" onclick="switchTab('bottleneck')">
+      🔀 10. Dự Báo Cổ Chai & Điều Hướng <span class="badge" style="background-color: #ec4899; color: #fff;">AI 2-4h Forecast</span>
+    </button>
+    <button class="tab-btn" onclick="switchTab('shap')">
+      🔬 11. Phân Tích Đa Biến SHAP <span class="badge" style="background-color: #06b6d4; color: #fff;">XAI TreeSHAP</span>
+    </button>
+    <button class="tab-btn" onclick="switchTab('graph')">
+      🕸️ 12. Mạng Phả Hệ Graph ML <span class="badge" style="background-color: #f59e0b; color: #1e293b;">PyTorch GNN</span>
+    </button>
   </nav>
 
   <!-- MAIN VIEWPORT -->
@@ -775,6 +787,685 @@
           </div>
           <pre id="gateway-terminal-logs" style="background: #070a12; color: #38bdf8; font-family: var(--font-mono); font-size: 0.8rem; padding: 1rem; border-radius: 6px; max-height: 250px; overflow-y: auto; margin: 0; line-height: 1.4;">[SYSTEM] Sẵn sàng kiểm tra giao tiếp với 5 loại giao thức công nghiệp. Bấm '⚡ Test Handshake' trên từng cổng để kiểm tra ping thực tế...</pre>
         </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- TAB 9: AI ANOMALY DETECTION (ISOLATION FOREST & DEEP AUTOENCODER)   -->
+    <!-- =================================================================== -->
+    <section id="pane-ai" class="tab-pane">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">🧠 Hệ Thống Giám Sát Bất Thường AI Học Không Giám Sát (Unsupervised Anomaly Detection)</div>
+            <div class="card-subtitle">Khám phá suy giảm năng suất tiềm ẩn (Takt Creep, Micro-stoppages, Dội ngược đệm WIP) bằng mô hình Ensemble: Isolation Forest (100 Trees) & Deep Autoencoder (PyTorch 5-16-8-2-8-16-5)</div>
+          </div>
+          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <button class="btn btn-secondary btn-sm" onclick="loadAiStatus()">ℹ️ Trạng Thái AI</button>
+            <button class="btn btn-primary btn-sm" onclick="trainAiModels()">⚡ Tái Huấn Luyện AI</button>
+            <button class="btn btn-success btn-sm" onclick="scanAiCycles()">🔍 Quét Phân Tích Toàn Xưởng</button>
+          </div>
+        </div>
+
+        <!-- AI KPI Grid -->
+        <div class="kpi-grid" style="margin-bottom: 1.5rem;">
+          <div class="kpi-card purple">
+            <div class="kpi-title">Chỉ Số Dị Biệt Toàn Nhà Máy</div>
+            <div class="kpi-value"><span id="ai-kpi-anomaly-index">0.00</span><span class="kpi-unit">/1.0</span></div>
+            <div class="kpi-foot">
+              <span>Đánh giá: <strong id="ai-kpi-status-text">Bình Thường</strong></span>
+              <span class="status-pill pill-green" id="ai-kpi-status-pill">TỐI ƯU</span>
+            </div>
+          </div>
+
+          <div class="kpi-card blue">
+            <div class="kpi-title">Độ Lệch Takt Trung Bình (Creep)</div>
+            <div class="kpi-value"><span id="ai-kpi-takt-creep">0.0</span><span class="kpi-unit">giây</span></div>
+            <div class="kpi-foot">
+              <span>Mức tiêu chuẩn: &le; +2.0s</span>
+              <span>Hao hụt tiềm ẩn: <strong id="ai-kpi-loss-rate">0.0%</strong></span>
+            </div>
+          </div>
+
+          <div class="kpi-card red">
+            <div class="kpi-title">Chu Kỳ Bất Thường Phát Hiện</div>
+            <div class="kpi-value"><span id="ai-kpi-anomaly-count">0</span><span class="kpi-unit">chu kỳ</span></div>
+            <div class="kpi-foot">
+              <span>Nghiêm trọng (Critical): <strong id="ai-kpi-crit-count">0</strong></span>
+              <span>Cảnh báo (Warning): <strong id="ai-kpi-warn-count">0</strong></span>
+            </div>
+          </div>
+
+          <div class="kpi-card cyan">
+            <div class="kpi-title">Ngưỡng Tái Tạo Autoencoder (MSE)</div>
+            <div class="kpi-value"><span id="ai-kpi-ae-threshold">0.058</span><span class="kpi-unit">&theta;</span></div>
+            <div class="kpi-foot">
+              <span>Kiến trúc: <strong>5-16-8-2-8-16-5</strong></span>
+              <span>Latent Bottleneck: <strong>2D</strong></span>
+            </div>
+          </div>
+
+          <div class="kpi-card green">
+            <div class="kpi-title">Tập Dữ Liệu Chuẩn & Huấn Luyện</div>
+            <div class="kpi-value"><span id="ai-kpi-samples">1,200</span><span class="kpi-unit">mẫu</span></div>
+            <div class="kpi-foot">
+              <span>Thuật toán: <strong>iForest (100t) + PyTorch</strong></span>
+              <span>Contamination: <strong>8.0%</strong></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- AI Model Architecture & Diagnostics Theory Banner -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 1.25rem; margin-bottom: 1.5rem;">
+          <div style="background: #0f172a; border: 1px solid #1e293b; border-radius: 8px; padding: 1.25rem;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+              <strong style="color: #38bdf8; font-size: 0.95rem; display: flex; align-items: center; gap: 6px;">
+                🌲 1. Isolation Forest (Cây Phân Lập Ngẫu Nhiên)
+              </strong>
+              <span class="status-pill pill-cyan">Scikit-Learn 100 Trees</span>
+            </div>
+            <p style="font-size: 0.83rem; color: #94a3b8; line-height: 1.5; margin-bottom: 0.75rem;">
+              Phân lập các điểm dị biệt trong không gian đa chiều (Multi-dimensional Outliers). Do các điểm bất thường có giá trị cực đoan nên chúng bị chia cắt sớm ở các tầng nông của cây quyết định:
+            </p>
+            <div style="background: #090d16; padding: 0.5rem 0.75rem; border-radius: 6px; font-family: var(--font-mono); font-size: 0.78rem; color: #cbd5e1; margin-bottom: 0.75rem;">
+              s(x, n) = 2^(- E(h(x)) / c(n)) &rarr; Score &gt; 0.55: Điểm Dị Biệt
+            </div>
+            <ul style="font-size: 0.8rem; color: #cbd5e1; margin: 0; padding-left: 1.2rem; line-height: 1.5;">
+              <li>Bắt các cú trôi chu kỳ Takt time đột ngột (&gt; 15s).</li>
+              <li>Phát hiện tắc nghẽn hàng đợi WIP vượt ngưỡng đệm vật lý (&gt; 180 phút).</li>
+              <li>Hoạt động độc lập không cần dữ liệu gắn nhãn (Unsupervised).</li>
+            </ul>
+          </div>
+
+          <div style="background: #0f172a; border: 1px solid #1e293b; border-radius: 8px; padding: 1.25rem;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+              <strong style="color: #c084fc; font-size: 0.95rem; display: flex; align-items: center; gap: 6px;">
+                🧠 2. PyTorch Deep Autoencoder (Không Gian Ẩn 2 Chiều)
+              </strong>
+              <span class="status-pill pill-purple">Deep PyTorch 2.x</span>
+            </div>
+            <p style="font-size: 0.83rem; color: #94a3b8; line-height: 1.5; margin-bottom: 0.75rem;">
+              Mạng nơ-ron sâu phi tuyến nén vector 5 chiều qua nút thắt 2 chiều (Latent Space 2D) để học cấu trúc vận hành hoàn hảo của dây chuyền.
+            </p>
+            <div style="background: #090d16; padding: 0.5rem 0.75rem; border-radius: 6px; font-family: var(--font-mono); font-size: 0.78rem; color: #cbd5e1; margin-bottom: 0.75rem;">
+              Loss_MSE = (1/d) &Sigma; (x_i - x̂_i)^2 &gt; &theta; (Reconstruction Loss)
+            </div>
+            <ul style="font-size: 0.8rem; color: #cbd5e1; margin: 0; padding-left: 1.2rem; line-height: 1.5;">
+              <li>Phát hiện <strong>suy giảm ngầm (Micro-stoppages)</strong>: từng thông số riêng lẻ có vẻ hợp lệ nhưng quan hệ phi tuyến tương hỗ bị lệch chuẩn.</li>
+              <li>Bắt sớm lỗi tụt áp thủy lực, trễ van đảo chiều và trôi nhiệt độ buồng ép.</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- 2D Scatter Canvas & Live Distribution -->
+        <div class="card" style="margin-bottom: 1.5rem; background: #0c101d; border: 1px solid #1e293b;">
+          <div class="card-header" style="padding-bottom: 0.75rem;">
+            <div>
+              <div class="card-title" style="font-size: 0.95rem;">📈 Bản Đồ Dị Biệt Không Gian 2D (Takt Deviation vs WIP Queue Dwell)</div>
+              <div class="card-subtitle">Trục hoành: Độ lệch Takt máy (giây) &bull; Trục tung: Thời gian đệm WIP (phút) &bull; Kích thước chấm: Anomaly Score</div>
+            </div>
+            <div style="display: flex; gap: 0.75rem; align-items: center; font-size: 0.8rem;">
+              <span style="display: flex; align-items: center; gap: 5px;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #10b981; display: inline-block;"></span> Bình thường</span>
+              <span style="display: flex; align-items: center; gap: 5px;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #f59e0b; display: inline-block;"></span> Cảnh báo</span>
+              <span style="display: flex; align-items: center; gap: 5px;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #ef4444; display: inline-block;"></span> Bất thường nghiêm trọng</span>
+            </div>
+          </div>
+          <div style="padding: 1rem;">
+            <canvas id="ai-scatter-canvas" width="900" height="320" style="width: 100%; height: 320px; background: #070a13; border: 1px solid #1e293b; border-radius: 8px;"></canvas>
+          </div>
+        </div>
+
+        <!-- Live Simulation / Edge PLC Diagnostic Box -->
+        <div class="card" style="margin-bottom: 1.5rem; background: #0f172a; border: 1px solid #334155;">
+          <div class="card-header">
+            <div>
+              <div class="card-title" style="font-size: 0.95rem; color: #f8fafc;">⚡ Kiểm Thử Trực Tuyến Gói Dữ Liệu Chu Kỳ Máy (Edge PLC Live Simulator)</div>
+              <div class="card-subtitle">Mô phỏng đẩy dữ liệu chu kỳ thời gian thực từ PLC máy thành hình/lưu hóa vào bộ suy luận AI</div>
+            </div>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              <button class="btn btn-secondary btn-sm" onclick="setAiPreset('NORMAL')">Mẫu Bình Thường</button>
+              <button class="btn btn-secondary btn-sm" onclick="setAiPreset('TAKT_CREEP')">Mẫu Takt Trôi (Micro-stoppage)</button>
+              <button class="btn btn-secondary btn-sm" onclick="setAiPreset('QUEUE_CONGESTION')">Mẫu Nghẽn Đệm WIP</button>
+              <button class="btn btn-secondary btn-sm" onclick="setAiPreset('CURING_DRIFT')">Mẫu Sụt Áp & Nhiệt</button>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 1rem; margin-bottom: 1.25rem;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label">Thiết Bị (Machine ID)</label>
+              <input type="text" class="form-control" id="ai-sim-machine" value="TBM-01">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label">Loại Chu Kỳ</label>
+              <select class="form-control" id="ai-sim-cycletype">
+                <option value="BUILDING_STAGE1">Thành Hình Giai Đoạn 1</option>
+                <option value="BUILDING_STAGE2">Thành Hình Giai Đoạn 2</option>
+                <option value="CURING_CYCLE">Chu Kỳ Lưu Hóa Lốp</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label">Takt Thực Tế (s)</label>
+              <input type="number" step="0.1" class="form-control" id="ai-sim-actual-takt" value="45.2">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label">Takt Định Mức (s)</label>
+              <input type="number" step="0.1" class="form-control" id="ai-sim-target-takt" value="45.0">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label">WIP Chờ Đệm (phút)</label>
+              <input type="number" step="1" class="form-control" id="ai-sim-wip-dwell" value="65.0">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label">Lệch Nhiệt (°C)</label>
+              <input type="number" step="0.1" class="form-control" id="ai-sim-temp-dev" value="0.2">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label">Lệch Áp Suất (bar)</label>
+              <input type="number" step="0.1" class="form-control" id="ai-sim-press-dev" value="0.05">
+            </div>
+          </div>
+
+          <div style="display: flex; justify-content: flex-end; margin-bottom: 1rem;">
+            <button class="btn btn-primary" onclick="evaluateLiveCycleSim()">
+              🧠 Suy Luận AI Trực Tuyến (Evaluate Live Cycle)
+            </button>
+          </div>
+
+          <div id="ai-sim-result-box" style="display: none; margin-top: 1rem;"></div>
+        </div>
+
+        <!-- Anomaly Alert Logs Table -->
+        <div class="card" style="background: #0c101d; border: 1px solid #1e293b;">
+          <div class="card-header">
+            <div>
+              <div class="card-title" style="font-size: 0.95rem;">🚨 Nhật Ký Cảnh Báo Bất Thường AI (AI Anomalies Telemetry Log)</div>
+              <div class="card-subtitle">Tự động ghi nhận và phân loại độ nghiêm trọng, xác định nguyên nhân gốc rễ và đề xuất biện pháp khắc phục kỹ thuật</div>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="loadAiAnomalyLogs()">Làm Mới Nhật Ký</button>
+          </div>
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Mã Sự Kiện</th>
+                  <th>Thiết Bị</th>
+                  <th>Thời Điểm</th>
+                  <th>Điểm Dị Biệt (Ensemble)</th>
+                  <th>Mức Độ</th>
+                  <th>Chẩn Đoán Nguyên Nhân Gốc (Root Cause)</th>
+                  <th>Khuyến Nghị Khắc Phục (Action)</th>
+                  <th>Thao Tác</th>
+                </tr>
+              </thead>
+              <tbody id="ai-anomalies-table-body">
+                <tr>
+                  <td colspan="8" style="text-align: center; color: #64748b; padding: 2rem;">
+                    Đang tải nhật ký cảnh báo AI...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- TAB 10: DYNAMIC BOTTLENECK PREDICTION & AUTOMATED MATERIAL REROUTING -->
+    <!-- =================================================================== -->
+    <section id="pane-bottleneck" class="tab-pane">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">🔀 Dự Báo Cổ Chai Động (2–4h) & Tự Động Điều Hướng Luồng Vật Liệu (AI Dynamic Routing)</div>
+            <div class="card-subtitle">Ứng dụng mô hình cân bằng dòng chảy đa tầng (Multi-Horizon Flow Model) phát hiện sự dịch chuyển điểm tắc nghẽn và tự động bẻ ghi luồng sản xuất sang các dây chuyền thay thế</div>
+          </div>
+          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <button class="btn btn-secondary btn-sm" onclick="loadBottleneckForecast()">🔮 Chạy Dự Báo AI 2–4h</button>
+            <button class="btn btn-primary btn-sm" onclick="applyAiRerouting()">⚡ Kích Hoạt Tự Động Điều Hướng</button>
+            <button class="btn btn-secondary btn-sm" onclick="resetAiRouting()">↺ Khôi Phục Luồng Chuẩn</button>
+          </div>
+        </div>
+
+        <!-- Top KPI Grid -->
+        <div class="kpi-grid" style="margin-bottom: 1.5rem;">
+          <div class="kpi-card blue">
+            <div class="kpi-title">Cổ Chai Hiện Tại (T = Hiện Tại)</div>
+            <div class="kpi-value"><span id="bn-kpi-current-st">BUFFER_GREEN_TIRE</span></div>
+            <div class="kpi-foot">
+              <span>Chỉ số BLI: <strong id="bn-kpi-current-bli">0.78</strong></span>
+              <span class="status-pill pill-yellow">ĐANG NGHẼN</span>
+            </div>
+          </div>
+
+          <div class="kpi-card red">
+            <div class="kpi-title">Cổ Chai Dự Báo (T + 2h ~ 4h)</div>
+            <div class="kpi-value"><span id="bn-kpi-pred-st">CP-02</span></div>
+            <div class="kpi-foot">
+              <span>Xác suất dịch chuyển: <strong id="bn-kpi-shift-prob">88.5%</strong></span>
+              <span class="status-pill pill-red" id="bn-kpi-shift-pill">CÓ DỊCH CHUYỂN</span>
+            </div>
+          </div>
+
+          <div class="kpi-card purple">
+            <div class="kpi-title">Mức Đầy Giàn Đệm WIP Buffer</div>
+            <div class="kpi-value"><span id="bn-kpi-buffer-fill">68.5</span><span class="kpi-unit">%</span></div>
+            <div class="kpi-foot">
+              <span>Dung tích: <strong>120 Lốp Sống</strong></span>
+              <span id="bn-kpi-buffer-status" class="status-pill pill-yellow">CẢNH BÁO DỘI NGƯỢC</span>
+            </div>
+          </div>
+
+          <div class="kpi-card green">
+            <div class="kpi-title">Trạng Thái Bẻ Ghi Tự Động</div>
+            <div class="kpi-value"><span id="bn-kpi-reroute-status" style="font-size: 1.3rem;">CHUẨN BỊ BẺ GHI</span></div>
+            <div class="kpi-foot">
+              <span>Quy tắc: <strong>Bẻ 45% &rarr; CP-03/04</strong></span>
+              <span class="status-pill pill-green" id="bn-kpi-reroute-pill">SẴN SÀNG</span>
+            </div>
+          </div>
+
+          <div class="kpi-card cyan">
+            <div class="kpi-title">Sản Lượng OEE Được Bảo Vệ</div>
+            <div class="kpi-value"><span id="bn-kpi-protected-oee">+14.5</span><span class="kpi-unit">%</span></div>
+            <div class="kpi-foot">
+              <span>Tiết kiệm: <strong>~32 Lốp / Ca</strong></span>
+              <span>Thời gian chờ: <strong>-35.0s / lốp</strong></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Multi-Horizon Timeline Forecast Bar -->
+        <div class="card" style="margin-bottom: 1.5rem; background: #0c101d; border: 1px solid #1e293b;">
+          <div class="card-header" style="padding-bottom: 0.5rem;">
+            <div>
+              <div class="card-title" style="font-size: 0.95rem;">⏱️ Tiến Trình Dịch Chuyển Điểm Nghẽn Theo Thời Gian (Multi-Horizon Timeline)</div>
+              <div class="card-subtitle">Quan sát sự di chuyển của nút thắt cổ chai qua các mốc thời gian: Hiện tại &rarr; T+1h &rarr; T+2h &rarr; T+3h &rarr; T+4h</div>
+            </div>
+          </div>
+          <div id="bn-timeline-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; padding: 1rem;">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+
+        <!-- Plant Topology Dynamic Flow Canvas -->
+        <div class="card" style="margin-bottom: 1.5rem; background: #0c101d; border: 1px solid #1e293b;">
+          <div class="card-header" style="padding-bottom: 0.75rem;">
+            <div>
+              <div class="card-title" style="font-size: 0.95rem;">🌐 Sơ Đồ Mạng Lưới Sản Xuất & Luồng Điều Hướng Tự Động (Topology Flow Diagram)</div>
+              <div class="card-subtitle">Xanh Cyan: Tuyến luồng tiêu chuẩn (Standard SOP) &bull; Vàng / Hồng: Luồng bẻ ghi tự động (Automated Diverting) sang dây chuyền dự phòng</div>
+            </div>
+            <div style="display: flex; gap: 0.75rem; align-items: center; font-size: 0.8rem;">
+              <span style="display: flex; align-items: center; gap: 5px;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #10b981; display: inline-block;"></span> BLI &le; 50% (Thông suốt)</span>
+              <span style="display: flex; align-items: center; gap: 5px;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #f59e0b; display: inline-block;"></span> BLI 50-70% (Tải cao)</span>
+              <span style="display: flex; align-items: center; gap: 5px;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #ef4444; display: inline-block;"></span> BLI &ge; 70% (Cổ chai)</span>
+            </div>
+          </div>
+          <div style="padding: 1rem;">
+            <canvas id="bn-topology-canvas" width="950" height="340" style="width: 100%; height: 340px; background: #070a13; border: 1px solid #1e293b; border-radius: 8px;"></canvas>
+          </div>
+        </div>
+
+        <!-- Simulation Testing Sandbox -->
+        <div class="card" style="margin-bottom: 1.5rem; background: #0f172a; border: 1px solid #334155;">
+          <div class="card-header">
+            <div>
+              <div class="card-title" style="font-size: 0.95rem; color: #f8fafc;">🧪 Hộp Thử Nghiệm Kịch Bản Sốc Tải Xưởng (Production Surge Simulation Sandbox)</div>
+              <div class="card-subtitle">Kích hoạt các biến cố thực tế tại xưởng để kiểm thử thuật toán dự báo dịch chuyển cổ chai và phản xạ điều hướng của MES</div>
+            </div>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              <button class="btn btn-secondary btn-sm" onclick="simulateBottleneckSurge('CURING_VALVE_DEGRADE')">🔥 Sụt Áp Hơi Buồng Ép CP-02</button>
+              <button class="btn btn-secondary btn-sm" onclick="simulateBottleneckSurge('TBM_INFLOW_SURGE')">⚡ Sốc Tải Lốp Sống Từ TBM-01</button>
+              <button class="btn btn-secondary btn-sm" onclick="simulateBottleneckSurge('XR_HIGH_SCRAP')">🔍 Kẹt Trạm Soi Tia X (XR-01)</button>
+              <button class="btn btn-secondary btn-sm" onclick="simulateBottleneckSurge('NORMAL')">↺ Khôi Phục Bình Thường</button>
+            </div>
+          </div>
+          <div id="bn-simulation-feedback" style="display: none; padding: 1rem; border-top: 1px solid #1e293b;"></div>
+        </div>
+
+        <!-- Dynamic Routing Rules Matrix Table -->
+        <div class="card" style="background: #0c101d; border: 1px solid #1e293b;">
+          <div class="card-header">
+            <div>
+              <div class="card-title" style="font-size: 0.95rem;">📋 Ma Trận Quy Tắc Điều Hướng Động (Dynamic Routing & Diverting Matrix)</div>
+              <div class="card-subtitle">Các tuyến chuyển hướng tự động được MES thiết lập để bảo vệ nhịp chuyền khi phát hiện nguy cơ tắc nghẽn</div>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="loadDynamicRoutingRules()">Làm Mới Ma Trận</button>
+          </div>
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Mã Quy Tắc</th>
+                  <th>Nút Nguồn</th>
+                  <th>Tuyến Chuẩn (Đích)</th>
+                  <th>Tuyến Dự Phòng (Thay Thế)</th>
+                  <th>Loại Vật Liệu</th>
+                  <th>Tỷ Lệ Bẻ Ghi</th>
+                  <th>Trạng Thái Điều Hướng</th>
+                  <th>Hiệu Quả Dự Báo</th>
+                  <th>Thao Tác</th>
+                </tr>
+              </thead>
+              <tbody id="bn-rules-table-body">
+                <tr>
+                  <td colspan="9" style="text-align: center; color: #64748b; padding: 1.5rem;">
+                    Đang tải ma trận quy tắc điều hướng...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- TAB 11: MULTIVARIATE FEATURE IMPORTANCE & DECISION TREES / SHAP     -->
+    <!-- =================================================================== -->
+    <section id="pane-shap" class="tab-pane">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">🔬 Phân Tích Đa Biến & Định Vị Căn Nguyên Gốc (Feature Importance & Decision Trees / SHAP)</div>
+            <div class="card-subtitle">Ứng dụng Trí tuệ Nhân tạo giải thích được (Explainable AI - TreeSHAP & Decision Trees) phân tích 19+ thông số mẻ luyện kín, đùn cán, thành hình và lưu hóa để chỉ điểm chính xác yếu tố gây ra tỷ lệ lỗi đột biến</div>
+          </div>
+          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <button class="btn btn-secondary btn-sm" onclick="loadGlobalShapImportance()">📊 Phân Tích Toàn Cục (Global SHAP)</button>
+            <button class="btn btn-primary btn-sm" onclick="retrainShapModels()">⚡ Tái Huấn Luyện XAI</button>
+          </div>
+        </div>
+
+        <!-- Top KPI Grid -->
+        <div class="kpi-grid" style="margin-bottom: 1.5rem;">
+          <div class="kpi-card red">
+            <div class="kpi-title">Tỷ Lệ Phế Phẩm Hiện Tại</div>
+            <div class="kpi-value"><span id="shap-kpi-defect-rate">7.8</span><span class="kpi-unit">%</span></div>
+            <div class="kpi-foot">
+              <span>Định mức: <strong>1.8%</strong></span>
+              <span class="status-pill pill-red" id="shap-kpi-spike-pill">ĐỘT BIẾN LỖI</span>
+            </div>
+          </div>
+
+          <div class="kpi-card cyan">
+            <div class="kpi-title">Căn Nguyên Hàng Đầu (Top Culprit)</div>
+            <div class="kpi-value"><span id="shap-kpi-top-cause" style="font-size: 1.25rem;">Áp Suất Bàng Bọng</span></div>
+            <div class="kpi-foot">
+              <span>Công đoạn: <strong id="shap-kpi-top-area">Lưu Hóa (CP-02)</strong></span>
+              <span class="status-pill pill-yellow">THỦ PHẠM CHÍNH</span>
+            </div>
+          </div>
+
+          <div class="kpi-card purple">
+            <div class="kpi-title">Mức Đóng Góp Ảnh Hưởng (SHAP)</div>
+            <div class="kpi-value"><span id="shap-kpi-top-share">36.4</span><span class="kpi-unit">%</span></div>
+            <div class="kpi-foot">
+              <span>Điểm SHAP: <strong id="shap-kpi-top-val">0.0825</strong></span>
+              <span>Độ lệch: <strong style="color: #f87171;">-2.5 bar</strong></span>
+            </div>
+          </div>
+
+          <div class="kpi-card blue">
+            <div class="kpi-title">Tham Số Đa Biến Giám Sát</div>
+            <div class="kpi-value"><span id="shap-kpi-features-count">19</span><span class="kpi-unit">thông số</span></div>
+            <div class="kpi-foot">
+              <span>Bao phủ: <strong>Luyện &bull; Đùn &bull; TBM &bull; Lò</strong></span>
+            </div>
+          </div>
+
+          <div class="kpi-card green">
+            <div class="kpi-title">Độ Tin Cậy Mô Hình XAI</div>
+            <div class="kpi-value"><span id="shap-kpi-accuracy">1.00</span><span class="kpi-unit">AUC</span></div>
+            <div class="kpi-foot">
+              <span>F1-Score: <strong id="shap-kpi-f1">0.96</strong></span>
+              <span class="status-pill pill-green">RẤT CHÍNH XÁC</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Global SHAP Feature Importance Canvas -->
+        <div class="card" style="margin-bottom: 1.5rem; background: #0c101d; border: 1px solid #1e293b;">
+          <div class="card-header" style="padding-bottom: 0.75rem;">
+            <div>
+              <div class="card-title" style="font-size: 0.95rem;">📊 Xếp Hạng Đa Biến Mức Độ Quan Trọng Toàn Cục: mean(|SHAP value|)</div>
+              <div class="card-subtitle">Đo lường mức độ ảnh hưởng của từng thông số vào việc làm tăng nguy cơ phế phẩm trên toàn nhà máy</div>
+            </div>
+            <div style="font-size: 0.8rem; color: #94a3b8;">
+              Thuật toán: <strong>TreeSHAP (Cooperative Game Theory)</strong>
+            </div>
+          </div>
+          <div style="padding: 1rem;">
+            <canvas id="shap-global-canvas" width="950" height="380" style="width: 100%; height: 380px; background: #070a13; border: 1px solid #1e293b; border-radius: 8px;"></canvas>
+          </div>
+        </div>
+
+        <!-- Local SHAP Waterfall Breakdown for Single Batch/Tire -->
+        <div class="card" style="margin-bottom: 1.5rem; background: #0f172a; border: 1px solid #334155;">
+          <div class="card-header">
+            <div>
+              <div class="card-title" style="font-size: 0.95rem; color: #f8fafc;">🔍 Giải Thích Nguyên Nhân Gốc Chi Tiết Từng Lốp / Từng Mẻ (Local Waterfall Breakdown)</div>
+              <div class="card-subtitle">Chỉ rõ tại sao một chiếc lốp cụ thể bị hỏng: Tác nhân kéo tăng rủi ro lỗi (+) vs Tác nhân triệt tiêu (-)</div>
+            </div>
+            <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+              <select class="form-control" id="shap-sample-picker" style="max-width: 260px; font-size: 0.82rem;" onchange="explainSelectedSample()">
+                <option value="">-- Chọn mẻ lốp kiểm tra --</option>
+              </select>
+              <button class="btn btn-primary btn-sm" onclick="explainCurrentSample()">Phân Tích Mẻ Này</button>
+            </div>
+          </div>
+
+          <div id="shap-waterfall-container" style="padding: 1.25rem;">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+
+        <!-- Decision Tree If-Then Rules Mining Panel -->
+        <div class="card" style="margin-bottom: 1.5rem; background: #0c101d; border: 1px solid #1e293b;">
+          <div class="card-header">
+            <div>
+              <div class="card-title" style="font-size: 0.95rem;">🌲 Quy Tắc Vận Hành Khai Phá Từ Cây Quyết Định (Decision Tree Operational Rules)</div>
+              <div class="card-subtitle">Trích xuất điều kiện logic If-Then rõ ràng giúp kỹ sư công nghệ và quản đốc phân xưởng ban hành hướng dẫn thao tác chuẩn (SOP)</div>
+            </div>
+          </div>
+          <div id="shap-rules-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 1rem; padding: 1.25rem;">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+
+        <!-- Defect Spike Simulation Sandbox -->
+        <div class="card" style="background: #0f172a; border: 1px solid #334155;">
+          <div class="card-header">
+            <div>
+              <div class="card-title" style="font-size: 0.95rem; color: #f8fafc;">🧪 Hộp Thử Nghiệm Kịch Bản Đột Biến Lỗi (Defect Spike Simulation Sandbox)</div>
+              <div class="card-subtitle">Cố tình kích hoạt các cụm sự cố công nghệ thực tế để kiểm tra năng lực "bắt bệnh" và chỉ điểm chính xác của SHAP</div>
+            </div>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              <button class="btn btn-secondary btn-sm" onclick="simulateShapSpike('BLADDER_PRESSURE_DROP')">🔥 Đột Biến: Bọt Khí Hông Lốp (Sụt Áp Bàng)</button>
+              <button class="btn btn-secondary btn-sm" onclick="simulateShapSpike('UNDER_CURE_TEMPERATURE')">⚠️ Đột Biến: Lưu Hóa Non (Tụt Nhiệt Khuôn)</button>
+              <button class="btn btn-secondary btn-sm" onclick="simulateShapSpike('BANBURY_OVERHEAT')">⚡ Đột Biến: Bóc Tách Gai (Nhiệt Luyện Quá Cao)</button>
+              <button class="btn btn-secondary btn-sm" onclick="simulateShapSpike('NORMAL')">↺ Khôi Phục Vận Hành Ổn Định</button>
+            </div>
+          </div>
+          <div id="shap-simulation-feedback" style="display: none; padding: 1rem; border-top: 1px solid #1e293b;"></div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- TAB 12: GRAPH MACHINE LEARNING & TRACEABILITY CONTAGION            -->
+    <!-- =================================================================== -->
+    <section id="pane-graph" class="tab-pane">
+      <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+
+        <!-- Header Banner -->
+        <div class="card" style="border-left: 4px solid #f59e0b; background: linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(15, 23, 42, 0.95) 100%);">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
+            <div>
+              <h2 style="color: #f59e0b; margin-bottom: 0.35rem; display: flex; align-items: center; gap: 0.5rem;">
+                <span>🕸️</span> Mạng Đồ Thị Phả Hệ & Dự Báo Rủi Ro Lây Lan (Graph ML Contagion)
+              </h2>
+              <p style="color: #94a3b8; font-size: 0.88rem; max-width: 900px; margin: 0;">
+                Chuyển hóa dữ liệu phả hệ ISA-95 Level 3 thành Đồ thị Tri thức Dị thể (Heterogeneous Traceability Knowledge Graph).
+                Ứng dụng <strong>PyTorch Message Passing Neural Network (MPNN)</strong> và <strong>Random Walk with Restart (RWR) Diffusion</strong>
+                để dự đoán chính xác bán kính lây lan (Blast Radius) của một lô linh kiện lỗi sang tất cả các đơn hàng đang chạy trên sàn theo chuẩn <strong>IATF 16949 Section 8.7</strong>.
+              </p>
+            </div>
+            <div style="display: flex; gap: 0.75rem; align-items: center;">
+              <span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); padding: 0.4rem 0.75rem; font-size: 0.82rem;">
+                ⚡ Heterogeneous MPNN
+              </span>
+              <button class="btn btn-secondary btn-sm" onclick="loadGraphTab()">
+                ↺ Làm Mới Đồ Thị
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- KPI Grid -->
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-label">Tổng Nodes Trong Mạng</div>
+            <div class="kpi-value" id="kpi-graph-nodes" style="color: #38bdf8;">--</div>
+            <div class="kpi-sub">Lô, Mẻ Luyện, Máy, Lốp, Lệnh SX</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Tổng Cạnh Quan Hệ (Edges)</div>
+            <div class="kpi-value" id="kpi-graph-edges" style="color: #a78bfa;">--</div>
+            <div class="kpi-sub">BOM, Gia công, Chung máy, Đồng lưu hóa</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Đơn Hàng Đang Chạy Trên Sàn</div>
+            <div class="kpi-value" id="kpi-graph-active-wos" style="color: #10b981;">--</div>
+            <div class="kpi-sub">TBM-01, TBM-02, CP-01..CP-04</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Đơn Hàng Nguy Cấp (Blast Radius)</div>
+            <div class="kpi-value" id="kpi-graph-critical-wos" style="color: #ef4444;">0</div>
+            <div class="kpi-sub" id="kpi-graph-critical-sub">Chưa phát hiện lây nhiễm</div>
+          </div>
+        </div>
+
+        <!-- Simulation Control Bar -->
+        <div class="card" style="background: #0f172a; border: 1px solid #334155;">
+          <h3 style="color: #e2e8f0; font-size: 1rem; margin-bottom: 0.85rem; display: flex; align-items: center; gap: 0.5rem;">
+            <span>🧪</span> Bơm Giả Lập Phát Hiện Khuyết Tật Lô Linh Kiện (Outbreak Injection Sandbox)
+          </h3>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)) 180px; gap: 1rem; align-items: flex-end;">
+            <div class="form-group" style="margin: 0;">
+              <label class="form-label" style="font-size: 0.8rem; color: #94a3b8;">Chọn Lô Linh Kiện / Mẻ Banbury Nghi Vấn</label>
+              <select class="form-control" id="graph-sim-lot-select" style="font-size: 0.85rem; background: #1e293b; color: #fff;">
+                <option value="">-- Đang tải danh sách lô vật tư... --</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin: 0;">
+              <label class="form-label" style="font-size: 0.8rem; color: #94a3b8;">Mô Tả Lỗi Kỹ Thuật (Phát Hiện Kiểm Định)</label>
+              <input type="text" class="form-control" id="graph-sim-defect-desc" value="Khuyết tật nứt vai lốp & phân tán muội than kém" style="font-size: 0.85rem; background: #1e293b; color: #fff;">
+            </div>
+            <div>
+              <button class="btn btn-primary" onclick="runGraphOutbreakSimulation()" style="width: 100%; height: 38px; display: flex; align-items: center; justify-content: center; gap: 0.5rem; background: #f59e0b; color: #0f172a; font-weight: 600; border: none;">
+                <span>⚡</span> Quét Lây Lan ML
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Executive Blast Radius Directive Alert Banner (Initially Hidden) -->
+        <div id="graph-blast-radius-alert" class="card" style="display: none; border-left: 4px solid #ef4444; background: rgba(239, 68, 68, 0.08);">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.35rem;">
+                <span class="badge" style="background: #ef4444; color: #fff; font-weight: 700;">IATF 16949 SECTION 8.7</span>
+                <strong style="color: #fca5a5; font-size: 1rem;" id="graph-alert-headline">CẢNH BÁO LÂY NHIỄM PHẢ HỆ</strong>
+              </div>
+              <p style="color: #e2e8f0; font-size: 0.86rem; margin: 0;" id="graph-alert-directive">
+                Đang chuẩn bị lệnh cách ly...
+              </p>
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+              <button class="btn btn-danger" id="btn-execute-graph-quarantine" onclick="executeGraphQuarantineAction()" style="font-weight: 600; display: flex; align-items: center; gap: 0.5rem;">
+                <span>🛡️</span> Khóa Cách Ly Khẩn Cấp (1-Click MES Quarantine)
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2D Knowledge Graph Topology Canvas -->
+        <div class="card" style="padding: 1.25rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+            <div>
+              <h3 style="color: #e2e8f0; font-size: 1rem; margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                <span>🗺️</span> Cấu Trúc Đồ Thị Phả Hệ Nhà Máy (5-Tier Manufacturing Traceability Map)
+              </h3>
+              <p style="color: #64748b; font-size: 0.8rem; margin: 0.2rem 0 0 0;">
+                Tọa độ trực quan hóa: Banbury ➔ Bán Thành Phẩm ➔ Thiết Bị ➔ Lốp Mộc/Chín ➔ Lệnh Sản Xuất
+              </p>
+            </div>
+            <!-- Legend -->
+            <div style="display: flex; gap: 0.8rem; font-size: 0.75rem; color: #cbd5e1; flex-wrap: wrap; align-items: center;">
+              <span style="display: flex; align-items: center; gap: 0.25rem;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #ec4899; display: inline-block;"></span> Mẻ Banbury</span>
+              <span style="display: flex; align-items: center; gap: 0.25rem;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #3b82f6; display: inline-block;"></span> Lô Vật Tư</span>
+              <span style="display: flex; align-items: center; gap: 0.25rem;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #8b5cf6; display: inline-block;"></span> Máy Móc</span>
+              <span style="display: flex; align-items: center; gap: 0.25rem;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #64748b; display: inline-block;"></span> Lốp SX</span>
+              <span style="display: flex; align-items: center; gap: 0.25rem;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #10b981; display: inline-block;"></span> Đơn Hàng An Toàn</span>
+              <span style="display: flex; align-items: center; gap: 0.25rem;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #ef4444; display: inline-block;"></span> Lô Lỗi / Nguy Cấp</span>
+            </div>
+          </div>
+          <div style="width: 100%; height: 460px; background: #070d19; border: 1px solid #1e293b; border-radius: 8px; position: relative; overflow: hidden;">
+            <canvas id="graph-traceability-canvas" width="960" height="460" style="width: 100%; height: 100%; display: block;"></canvas>
+            <div id="graph-canvas-tooltip" style="display: none; position: absolute; pointer-events: none; background: rgba(15, 23, 42, 0.95); border: 1px solid #38bdf8; padding: 0.5rem 0.75rem; border-radius: 6px; font-size: 0.78rem; color: #fff; z-index: 20; box-shadow: 0 4px 12px rgba(0,0,0,0.5);"></div>
+          </div>
+        </div>
+
+        <!-- Work Orders Risk Contagion Assessment Matrix -->
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h3 style="color: #e2e8f0; font-size: 1rem; margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+              <span>📊</span> Ma Trận Đánh Giá Rủi Ro Lây Lan Từng Đơn Hàng (Work Order Blast Radius)
+            </h3>
+            <span style="color: #94a3b8; font-size: 0.8rem;" id="graph-assessed-timestamp">Chưa chạy mô phỏng</span>
+          </div>
+
+          <div style="overflow-x: auto;">
+            <table class="data-table" style="width: 100%; font-size: 0.84rem;">
+              <thead>
+                <tr>
+                  <th>Mã Lệnh SX</th>
+                  <th>Sản Phẩm (SKU)</th>
+                  <th>Máy Gán</th>
+                  <th>Trạng Thái</th>
+                  <th>Xác Suất Lây Nhiễm</th>
+                  <th>Phân Hạng Rủi Ro</th>
+                  <th>Vectơ Truyền Bệnh</th>
+                  <th>Lốp Bị Đe Dọa</th>
+                  <th>Hành Động Khắc Phục (CAPA)</th>
+                </tr>
+              </thead>
+              <tbody id="graph-wo-table-body">
+                <tr>
+                  <td colspan="9" style="text-align: center; color: #64748b; padding: 2rem;">
+                    Chọn một lô linh kiện và bấm "Quét Lây Lan ML" để hiển thị ma trận đánh giá.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Shortest Contagion Trajectory Explainer (Path-to-Infection) -->
+        <div class="card" id="graph-path-explainer-card" style="display: none;">
+          <h3 style="color: #e2e8f0; font-size: 1rem; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+            <span>🔍</span> Giải Thích Chuỗi Truyền Nhiễm Ngắn Nhất (Shortest Contagion Trajectory)
+          </h3>
+          <p style="color: #94a3b8; font-size: 0.84rem; margin-bottom: 0.75rem;">
+            Đường lan truyền rủi ro cao nhất từ lô lỗi tới đơn hàng bị ảnh hưởng theo trọng số đồ thị dị thể:
+          </p>
+          <div id="graph-trajectory-flow" style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; background: #070d19; padding: 1rem; border-radius: 8px; border: 1px solid #1e293b;">
+          </div>
+        </div>
+
       </div>
     </section>
 

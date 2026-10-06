@@ -26,6 +26,10 @@ from app.routers import (
     gateway,
     stream,
     routing,
+    ai,
+    bottleneck,
+    shap_root_cause,
+    graph_genealogy,
 )
 
 
@@ -46,7 +50,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Tire MES - Manufacturing Execution System",
     description="Hệ thống Điều hành Sản xuất Nhà máy Lốp xe theo chuẩn ISA-95 Level 3",
-    version="2.4.0",
+    version="2.5.0",
     lifespan=lifespan
 )
 
@@ -70,6 +74,11 @@ app.include_router(master_data.router)
 app.include_router(gateway.router)
 app.include_router(stream.router)
 app.include_router(routing.router)
+app.include_router(ai.router)
+app.include_router(bottleneck.router)
+app.include_router(shap_root_cause.router)
+app.include_router(graph_genealogy.router)
+
 
 # Mount Static Assets
 static_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "app", "static")

@@ -204,8 +204,9 @@ def test_08_protocol_gateway():
 
 def test_09_anti_skip_routing_enforcement():
     # Scenario A: Green tire tries to skip Curing and jump directly to Finishing / QC
+    gt_skip = test_04_tbm_build_green_tire()
     skip_curing_res = client.post("/api/routing/verify-transition", json={
-        "identifier": "GT-20261006-0019",
+        "identifier": gt_skip,
         "target_stage": "FINISHING"
     })
     assert skip_curing_res.status_code == 200
@@ -602,6 +603,81 @@ def test_15_shap_multivariate_root_cause_analysis():
     print(f"[PASS] Defect Spike Root Cause Discovery: Simulated 'BLADDER_PRESSURE_DROP' -> Pinpointed Top Driver: {spike_data['top_root_cause']['feature_key']}")
 
 
+def test_16_graph_ml_genealogy_risk_propagation():
+    # 1. Test Graph Engine Status
+    status_res = client.get("/api/graph/status")
+    assert status_res.status_code == 200
+    s_data = status_res.json()
+    assert s_data["status"] == "ONLINE"
+    assert "Graph Machine Learning" in s_data["model_family"]
+    assert s_data["graph_metrics"]["total_nodes"] > 50
+    assert s_data["graph_metrics"]["total_edges"] > 150
+    print(f"[PASS] Graph ML Engine Status: Nodes={s_data['graph_metrics']['total_nodes']}, Edges={s_data['graph_metrics']['total_edges']} (PyTorch GNN + RWR Diffusion Online)")
+
+    # 2. Test Graph Topology API
+    topo_res = client.get("/api/graph/topology")
+    assert topo_res.status_code == 200
+    t_data = topo_res.json()
+    assert len(t_data["nodes"]) > 50
+    assert len(t_data["edges"]) > 150
+    print(f"[PASS] Graph Topology Layout: Generated 2D coordinates for {len(t_data['nodes'])} nodes across 5 plant hierarchy columns")
+
+    # 3. Test Inventory Lots List
+    lots_res = client.get("/api/graph/lots")
+    assert lots_res.status_code == 200
+    assert len(lots_res.json()["component_lots"]) >= 10
+    print(f"[PASS] Traceability Components Catalog: {len(lots_res.json()['component_lots'])} inventory lots available for outbreak scan")
+
+    # 4. Test Defect Outbreak Simulation & Contagion Prediction
+    sim_res = client.post("/api/graph/simulate-outbreak", json={
+        "suspect_lot_id": "LOT-TRD-202610-01",
+        "defect_description": "Khuyết tật bọt khí cao su hông và phân tán muội than kém",
+        "authorized_badge": "OP-4001"
+    })
+    assert sim_res.status_code == 200
+    sim_data = sim_res.json()
+    assert sim_data["success"] is True
+    run_id = sim_data["run_id"]
+    wos = sim_data["work_order_assessments"]
+    assert len(wos) >= 5
+
+    # Check direct consumer WO-2026-001 (CRITICAL)
+    wo_001 = next(w for w in wos if w["wo_id"] == "WO-2026-001")
+    assert wo_001["risk_tier"] == "CRITICAL"
+    assert wo_001["risk_score"] >= 0.70
+    assert wo_001["primary_transmission_vector"] == "DIRECT_BOM_MATERIAL_CONSUMPTION"
+    print(f"[PASS] Direct Infection Pinpointed: {wo_001['wo_id']} -> Risk={wo_001['risk_score_pct']}% (Tier={wo_001['risk_tier']}, Vector={wo_001['primary_transmission_vector']})")
+
+    # Check secondary shared-machine order WO-2026-002 (HIGH_RISK)
+    wo_002 = next(w for w in wos if w["wo_id"] == "WO-2026-002")
+    assert wo_002["risk_tier"] in ("HIGH_RISK", "MEDIUM_RISK")
+    assert wo_002["primary_transmission_vector"] == "SHARED_MACHINE_RESIDUE"
+    print(f"[PASS] Secondary Cross-Contamination Detected: {wo_002['wo_id']} -> Risk={wo_002['risk_score_pct']}% (Vector={wo_002['primary_transmission_vector']})")
+
+    # Check isolated line order WO-2026-004 (LOW_RISK)
+    wo_004 = next(w for w in wos if w["wo_id"] == "WO-2026-004")
+    assert wo_004["risk_tier"] == "LOW_RISK"
+    assert wo_004["primary_transmission_vector"] == "ISOLATED_INDEPENDENT_LINE"
+    print(f"[PASS] Line Isolation Verified: {wo_004['wo_id']} -> Risk={wo_004['risk_score_pct']}% (Tier={wo_004['risk_tier']})")
+
+    # 5. Test 1-Click Graph Quarantine Containment
+    quar_res = client.post("/api/graph/execute-quarantine", json={
+        "run_id": run_id,
+        "authorized_badge": "OP-4001"
+    })
+    assert quar_res.status_code == 200
+    q_data = quar_res.json()
+    assert q_data["success"] is True
+    assert "WO-2026-001" in q_data["paused_work_orders"]
+    print(f"[PASS] 1-Click MES Containment Executed: Suspended Work Orders: {q_data['paused_work_orders']}")
+
+    # 6. Test Historical Runs Log
+    runs_res = client.get("/api/graph/runs")
+    assert runs_res.status_code == 200
+    assert len(runs_res.json()) >= 1
+    print(f"[PASS] Graph Audit Trail: {len(runs_res.json())} propagation runs logged for IATF 16949 compliance")
+
+
 if __name__ == "__main__":
     seed_database()
     print("\n" + "="*60)
@@ -622,9 +698,11 @@ if __name__ == "__main__":
     test_13_ai_anomaly_detection()
     test_14_dynamic_bottleneck_prediction_and_rerouting()
     test_15_shap_multivariate_root_cause_analysis()
+    test_16_graph_ml_genealogy_risk_propagation()
     print("="*60)
     print("   ALL MES BUSINESS LOGIC & API TESTS PASSED 100%!")
     print("="*60 + "\n")
+
 
 
 

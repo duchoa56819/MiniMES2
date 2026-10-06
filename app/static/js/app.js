@@ -69,6 +69,7 @@ function switchTab(tabId) {
   if (tabId === 'ai') loadAiTab();
   if (tabId === 'bottleneck') loadBottleneckTab();
   if (tabId === 'shap') loadShapTab();
+  if (tabId === 'graph') loadGraphTab();
 }
 
 function openModal(id) {
@@ -2843,6 +2844,452 @@ async function retrainShapModels() {
     alert(`Lỗi tái huấn luyện XAI: ${err}`);
   }
 }
+
+// ============================================================================
+// TAB 12: GRAPH MACHINE LEARNING & TRACEABILITY CONTAGION
+// ============================================================================
+
+let currentGraphTopology = null;
+let currentGraphSimulation = null;
+let graphCanvasInitialized = false;
+
+async function loadGraphTab() {
+  try {
+    // 1. Fetch Status and KPIs
+    const statusRes = await fetch('/api/graph/status');
+    if (statusRes.ok) {
+      const statusData = await statusRes.json();
+      const metrics = statusData.graph_metrics;
+      const nodesEl = document.getElementById('kpi-graph-nodes');
+      const edgesEl = document.getElementById('kpi-graph-edges');
+      const wosEl = document.getElementById('kpi-graph-active-wos');
+      if (nodesEl) nodesEl.textContent = metrics.total_nodes;
+      if (edgesEl) edgesEl.textContent = metrics.total_edges;
+      if (wosEl) wosEl.textContent = metrics.active_work_orders;
+    }
+
+    // 2. Fetch Available Lots for Simulation Dropdown
+    await loadGraphAvailableLots();
+
+    // 3. Fetch Topology and Render Canvas
+    const topoRes = await fetch('/api/graph/topology');
+    if (topoRes.ok) {
+      currentGraphTopology = await topoRes.json();
+      renderGraphTopology(currentGraphTopology);
+    }
+  } catch (err) {
+    console.error('Error loading Graph Tab:', err);
+  }
+}
+
+async function loadGraphAvailableLots() {
+  try {
+    const res = await fetch('/api/graph/lots');
+    if (!res.ok) return;
+    const data = await res.json();
+    const selectEl = document.getElementById('graph-sim-lot-select');
+    if (!selectEl) return;
+
+    let html = '<optgroup label="Lô Linh Kiện Bán Thành Phẩm">';
+    data.component_lots.forEach(lot => {
+      html += `<option value="${lot.lot_id}">${lot.lot_id} (${lot.component_type} - ${lot.compound_code}) [Tồn: ${lot.remaining_qty}]</option>`;
+    });
+    html += '</optgroup>';
+
+    html += '<optgroup label="Mẻ Luyện Kín Banbury Gốc">';
+    data.parent_batches.forEach(b => {
+      html += `<option value="BATCH:${b.raw_batch_ref}">Mẻ Gốc ${b.raw_batch_ref} (${b.compound_code})</option>`;
+    });
+    html += '</optgroup>';
+
+    selectEl.innerHTML = html;
+  } catch (err) {
+    console.error('Error loading lots for graph:', err);
+  }
+}
+
+function renderGraphTopology(topoData) {
+  const canvas = document.getElementById('graph-traceability-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const width = canvas.width;
+  const height = canvas.height;
+
+  // Clear background
+  ctx.fillStyle = '#070d19';
+  ctx.fillRect(0, 0, width, height);
+
+  // Draw Column Background Gradients & Labels
+  const colNames = [
+    'MẺ LUYỆN BANBURY',
+    'LÔ VẬT TƯ BTP',
+    'TRẠM MÁY & TOOLING',
+    'LỐP MỘC & THÀNH PHẨM',
+    'LỆNH SẢN XUẤT (WO)'
+  ];
+
+  ctx.font = '10px "Inter", sans-serif';
+  ctx.textAlign = 'center';
+
+  for (let c = 0; c < 5; c++) {
+    const colX = 80 + c * (width - 160) / 4;
+
+    // Subtle vertical column guide line
+    ctx.strokeStyle = 'rgba(30, 41, 59, 0.4)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(colX, 25);
+    ctx.lineTo(colX, height - 15);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Column Header Tag
+    ctx.fillStyle = '#64748b';
+    ctx.fillText(colNames[c], colX, 18);
+  }
+
+  if (!topoData || !topoData.nodes || topoData.nodes.length === 0) return;
+
+  const nodeMap = {};
+  topoData.nodes.forEach(n => { nodeMap[n.id] = n; });
+
+  // 1. Draw Edges
+  topoData.edges.forEach(edge => {
+    const u = nodeMap[edge.source];
+    const v = nodeMap[edge.target];
+    if (!u || !v) return;
+
+    const isHighRisk = (u.risk_score >= 0.70 || v.risk_score >= 0.70 || u.is_suspect || v.is_suspect);
+    const isMediumRisk = (u.risk_score >= 0.45 || v.risk_score >= 0.45);
+
+    ctx.beginPath();
+    ctx.moveTo(u.x, u.y);
+    ctx.lineTo(v.x, v.y);
+
+    if (isHighRisk) {
+      ctx.strokeStyle = 'rgba(239, 68, 68, 0.65)';
+      ctx.lineWidth = 2.2;
+    } else if (isMediumRisk) {
+      ctx.strokeStyle = 'rgba(245, 158, 11, 0.45)';
+      ctx.lineWidth = 1.6;
+    } else {
+      ctx.strokeStyle = 'rgba(100, 116, 139, 0.18)';
+      ctx.lineWidth = 0.8;
+    }
+    ctx.stroke();
+  });
+
+  // 2. Draw Nodes
+  topoData.nodes.forEach(node => {
+    // Outer Pulsing Glow for Suspect or Critical nodes
+    if (node.is_suspect) {
+      ctx.beginPath();
+      ctx.arc(node.x, node.y, 16, 0, 2 * Math.PI);
+      ctx.fillStyle = 'rgba(239, 68, 68, 0.35)';
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(node.x, node.y, 22, 0, 2 * Math.PI);
+      ctx.strokeStyle = 'rgba(239, 68, 68, 0.8)';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([3, 3]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    } else if (node.is_critical) {
+      ctx.beginPath();
+      ctx.arc(node.x, node.y, 14, 0, 2 * Math.PI);
+      ctx.fillStyle = 'rgba(249, 115, 22, 0.3)';
+      ctx.fill();
+    }
+
+    // Node Circle
+    const radius = node.node_type === 'WORK_ORDER' || node.node_type === 'PARENT_BATCH' ? 9 : 6.5;
+    ctx.beginPath();
+    ctx.arc(node.x, node.y, radius, 0, 2 * Math.PI);
+    ctx.fillStyle = node.color || '#64748b';
+    ctx.fill();
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+
+    // Node Short Label
+    if (node.node_type === 'WORK_ORDER' || node.node_type === 'PARENT_BATCH' || node.is_suspect || node.is_critical) {
+      ctx.fillStyle = node.is_suspect ? '#fca5a5' : (node.is_critical ? '#fdba74' : '#e2e8f0');
+      ctx.font = '9px "JetBrains Mono", monospace';
+      ctx.textAlign = 'center';
+      const shortId = node.id.replace(/^(LOT:|BATCH:|MACHINE:|WO:|TIRE:)/, '');
+      ctx.fillText(shortId, node.x, node.y - radius - 3);
+    }
+  });
+
+  // Setup Canvas Interactive Tooltip (only once)
+  if (!graphCanvasInitialized) {
+    graphCanvasInitialized = true;
+    canvas.addEventListener('mousemove', (evt) => {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const mx = (evt.clientX - rect.left) * scaleX;
+      const my = (evt.clientY - rect.top) * scaleY;
+
+      const tooltip = document.getElementById('graph-canvas-tooltip');
+      if (!tooltip || !currentGraphTopology) return;
+
+      const hovered = currentGraphTopology.nodes.find(n => {
+        const dx = n.x - mx;
+        const dy = n.y - my;
+        return (dx * dx + dy * dy) <= 120;
+      });
+
+      if (hovered) {
+        tooltip.style.display = 'block';
+        tooltip.style.left = `${evt.clientX - rect.left + 15}px`;
+        tooltip.style.top = `${evt.clientY - rect.top + 10}px`;
+        tooltip.innerHTML = `
+          <div style="font-weight: 700; color: ${hovered.color}; margin-bottom: 2px;">${hovered.label}</div>
+          <div style="font-size: 0.72rem; color: #94a3b8;">Loại nút: <strong>${hovered.display_type}</strong></div>
+          <div style="font-size: 0.72rem; color: #cbd5e1;">Xác suất rủi ro lây nhiễm: <strong style="color: ${hovered.risk_score >= 0.7 ? '#ef4444' : (hovered.risk_score >= 0.45 ? '#f59e0b' : '#10b981')}">${(hovered.risk_score * 100).toFixed(1)}%</strong></div>
+        `;
+      } else {
+        tooltip.style.display = 'none';
+      }
+    });
+
+    canvas.addEventListener('mouseleave', () => {
+      const tooltip = document.getElementById('graph-canvas-tooltip');
+      if (tooltip) tooltip.style.display = 'none';
+    });
+  }
+}
+
+async function runGraphOutbreakSimulation() {
+  const lotSelect = document.getElementById('graph-sim-lot-select');
+  const defectInput = document.getElementById('graph-sim-defect-desc');
+  if (!lotSelect || !lotSelect.value) {
+    alert('Vui lòng chọn một lô linh kiện hoặc mẻ Banbury để quét!');
+    return;
+  }
+
+  const suspectLotId = lotSelect.value.replace('BATCH:', '');
+  const defectDesc = defectInput ? defectInput.value : 'Khuyết tật tách lớp mành tanh';
+
+  const tbody = document.getElementById('graph-wo-table-body');
+  if (tbody) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="9" style="text-align: center; color: #38bdf8; padding: 2rem;">
+          ⏳ Đang chạy mô hình PyTorch Heterogeneous GNN & Random Walk with Restart Diffusion...
+        </td>
+      </tr>
+    `;
+  }
+
+  try {
+    const res = await fetch('/api/graph/simulate-outbreak', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        suspect_lot_id: suspectLotId,
+        defect_description: defectDesc,
+        authorized_badge: 'OP-4001'
+      })
+    });
+
+    if (!res.ok) {
+      const errData = await res.json();
+      throw new Error(errData.detail || 'Lỗi mô phỏng');
+    }
+
+    const data = await res.json();
+    currentGraphSimulation = data;
+    renderGraphOutbreakResults(data);
+
+    // Refresh canvas with suspect highlight
+    const topoRes = await fetch(`/api/graph/topology?suspect_lot_id=${encodeURIComponent(suspectLotId)}`);
+    if (topoRes.ok) {
+      currentGraphTopology = await topoRes.json();
+      renderGraphTopology(currentGraphTopology);
+    }
+  } catch (err) {
+    alert(`Lỗi chạy mô phỏng lây nhiễm: ${err.message}`);
+    if (tbody) {
+      tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: #ef4444;">${err.message}</td></tr>`;
+    }
+  }
+}
+
+function renderGraphOutbreakResults(data) {
+  // 1. Update KPI Cards
+  const critKpi = document.getElementById('kpi-graph-critical-wos');
+  const critSub = document.getElementById('kpi-graph-critical-sub');
+  if (critKpi) {
+    critKpi.textContent = data.graph_summary.critical_orders_count;
+    critKpi.style.color = data.graph_summary.critical_orders_count > 0 ? '#ef4444' : '#10b981';
+  }
+  if (critSub) {
+    critSub.textContent = `${data.graph_summary.total_tires_at_risk} lốp bị đe dọa (Blast Radius)`;
+  }
+
+  // 2. Show Alert Banner
+  const alertBanner = document.getElementById('graph-blast-radius-alert');
+  const alertHeadline = document.getElementById('graph-alert-headline');
+  const alertDirective = document.getElementById('graph-alert-directive');
+  if (alertBanner) {
+    alertBanner.style.display = 'block';
+    if (alertHeadline) alertHeadline.textContent = data.executive_blast_radius_containment.headline;
+    if (alertDirective) alertDirective.textContent = data.executive_blast_radius_containment.immediate_action_required;
+  }
+
+  // 3. Render Table
+  const tbody = document.getElementById('graph-wo-table-body');
+  if (!tbody) return;
+
+  const timestampEl = document.getElementById('graph-assessed-timestamp');
+  if (timestampEl) timestampEl.textContent = `Phiên: ${data.run_id} (${data.timestamp})`;
+
+  let rowsHtml = '';
+  data.work_order_assessments.forEach(wo => {
+    let tierBadge = '';
+    let barColor = '#10b981';
+
+    if (wo.risk_tier === 'CRITICAL') {
+      tierBadge = '<span class="badge" style="background: #ef4444; color: #fff;">CRITICAL (DỪNG MÁY)</span>';
+      barColor = '#ef4444';
+    } else if (wo.risk_tier === 'HIGH_RISK') {
+      tierBadge = '<span class="badge" style="background: #f97316; color: #fff;">HIGH (SIẾT CHẶT NDT)</span>';
+      barColor = '#f97316';
+    } else if (wo.risk_tier === 'MEDIUM_RISK') {
+      tierBadge = '<span class="badge" style="background: #eab308; color: #1e293b;">MEDIUM (TĂNG MẪU)</span>';
+      barColor = '#eab308';
+    } else {
+      tierBadge = '<span class="badge" style="background: #64748b; color: #fff;">LOW (GIÁM SÁT)</span>';
+      barColor = '#64748b';
+    }
+
+    let vectorText = wo.primary_transmission_vector;
+    if (vectorText === 'DIRECT_BOM_MATERIAL_CONSUMPTION') vectorText = 'Trực Tiếp (Vật tư BOM)';
+    else if (vectorText === 'SHARED_MACHINE_RESIDUE') vectorText = 'Dư Lượng Máy Chạy Kế (TBM)';
+    else if (vectorText === 'SHARED_PARENT_BANBURY_BATCH') vectorText = 'Chung Mẻ Luyện Gốc (Banbury)';
+    else if (vectorText === 'ISOLATED_INDEPENDENT_LINE') vectorText = 'Chuyền Độc Lập An Toàn';
+
+    rowsHtml += `
+      <tr style="${wo.risk_tier === 'CRITICAL' ? 'background: rgba(239, 68, 68, 0.08);' : ''}">
+        <td><strong style="color: #fff; font-family: var(--font-mono);">${wo.wo_id}</strong></td>
+        <td>${wo.sku}</td>
+        <td><span class="badge" style="background: #1e293b; color: #cbd5e1;">${wo.assigned_machine || '--'}</span></td>
+        <td><span class="badge" style="background: #0284c7; color: #fff;">${wo.status}</span></td>
+        <td>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <div style="flex: 1; height: 6px; background: #1e293b; border-radius: 3px; overflow: hidden;">
+              <div style="width: ${wo.risk_score_pct}%; height: 100%; background: ${barColor};"></div>
+            </div>
+            <strong style="color: ${barColor}; font-family: var(--font-mono); font-size: 0.8rem; width: 44px; text-align: right;">${wo.risk_score_pct}%</strong>
+          </div>
+        </td>
+        <td>${tierBadge}</td>
+        <td><span style="font-size: 0.78rem; color: #cbd5e1;">${vectorText}</span></td>
+        <td><strong style="color: ${wo.tires_at_risk > 0 ? '#fca5a5' : '#94a3b8'}; font-family: var(--font-mono);">${wo.tires_at_risk} lốp</strong></td>
+        <td>
+          <button class="btn btn-secondary btn-sm" onclick="showTrajectoryForWO('${wo.wo_id}')" style="font-size: 0.75rem; padding: 0.2rem 0.5rem;">
+            🔍 Xem Chuỗi Lây Nhiễm
+          </button>
+        </td>
+      </tr>
+    `;
+  });
+
+  tbody.innerHTML = rowsHtml;
+
+  // 4. Default show trajectory of top critical work order
+  if (data.work_order_assessments.length > 0) {
+    showTrajectoryForWO(data.work_order_assessments[0].wo_id);
+  }
+}
+
+function showTrajectoryForWO(woId) {
+  if (!currentGraphSimulation) return;
+  const wo = currentGraphSimulation.work_order_assessments.find(w => w.wo_id === woId);
+  if (!wo) return;
+
+  const card = document.getElementById('graph-path-explainer-card');
+  const flowContainer = document.getElementById('graph-trajectory-flow');
+  if (!card || !flowContainer) return;
+
+  card.style.display = 'block';
+
+  if (!wo.shortest_infection_path_steps || wo.shortest_infection_path_steps.length === 0) {
+    flowContainer.innerHTML = '<div style="color: #64748b; font-size: 0.84rem;">Không phát hiện đường truyền bệnh trực tiếp (Dây chuyền độc lập cách ly).</div>';
+    return;
+  }
+
+  let html = '';
+  wo.shortest_infection_path_steps.forEach((step, idx) => {
+    let badgeColor = '#3b82f6';
+    if (step.node_type === 'LOT') badgeColor = '#f59e0b';
+    if (step.node_type === 'MACHINE') badgeColor = '#8b5cf6';
+    if (step.node_type === 'WORK_ORDER') badgeColor = wo.risk_tier === 'CRITICAL' ? '#ef4444' : '#10b981';
+    if (step.node_type === 'PARENT_BATCH') badgeColor = '#ec4899';
+
+    html += `
+      <div style="background: rgba(30, 41, 59, 0.8); border: 1px solid ${badgeColor}; padding: 0.5rem 0.75rem; border-radius: 6px; font-size: 0.8rem;">
+        <div style="color: ${badgeColor}; font-size: 0.7rem; font-weight: 700; text-transform: uppercase;">${step.node_type}</div>
+        <div style="color: #fff; font-weight: 600;">${step.label}</div>
+      </div>
+    `;
+
+    if (idx < wo.shortest_infection_path_steps.length - 1) {
+      let rel = step.outgoing_relation || 'FLOWS_TO';
+      let w = step.transmission_weight || 0.5;
+      html += `
+        <div style="color: #f59e0b; font-size: 0.75rem; display: flex; flex-direction: column; align-items: center; padding: 0 0.25rem;">
+          <span style="font-family: var(--font-mono); font-size: 0.7rem; color: #94a3b8;">${rel} (${w})</span>
+          <span>➔</span>
+        </div>
+      `;
+    }
+  });
+
+  flowContainer.innerHTML = html;
+}
+
+async function executeGraphQuarantineAction() {
+  if (!currentGraphSimulation || !currentGraphSimulation.run_id) {
+    alert('Vui lòng chạy mô phỏng lây nhiễm trước khi phát lệnh cách ly!');
+    return;
+  }
+
+  const runId = currentGraphSimulation.run_id;
+  const confirmMsg = `XÁC NHẬN LỆNH KHẨN CẤP IATF 16949:\nBạn có chắc chắn muốn phát lệnh khóa Poka-Yoke dừng máy và cách ly toàn bộ lốp thuộc diện CRITICAL trong đợt '${runId}' không?`;
+  if (!confirm(confirmMsg)) return;
+
+  try {
+    const res = await fetch('/api/graph/execute-quarantine', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        run_id: runId,
+        authorized_badge: 'OP-4001'
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.detail || 'Lỗi cách ly');
+    }
+
+    const data = await res.json();
+    alert(`🛡️ ${data.containment_directive}\nCấp bởi: ${data.authorized_by}`);
+
+    // Reload floor data
+    await loadWorkOrders();
+    await loadDashboard(true);
+    await loadGraphTab();
+  } catch (err) {
+    alert(`Lỗi thực thi lệnh cách ly: ${err.message}`);
+  }
+}
+
 
 
 

@@ -79,6 +79,9 @@ def init_db(force: bool = False):
         if force:
             cursor.execute("PRAGMA foreign_keys = OFF;")
             cursor.executescript("""
+                DROP TABLE IF EXISTS graph_order_risk_scores;
+                DROP TABLE IF EXISTS graph_risk_propagation_runs;
+                DROP TABLE IF EXISTS graph_genealogy_edges;
                 DROP TABLE IF EXISTS shap_root_cause_reports;
                 DROP TABLE IF EXISTS batch_process_telemetry;
                 DROP TABLE IF EXISTS bottleneck_forecasts;
@@ -499,6 +502,52 @@ def init_db(force: bool = False):
                 corrective_action_recommendation TEXT NOT NULL
             );
 
+            -- =========================================================
+            -- 10. GRAPH MACHINE LEARNING: GENEALOGY RISK CONTAGION
+            -- =========================================================
+            CREATE TABLE IF NOT EXISTS graph_genealogy_edges (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                source_id TEXT NOT NULL,
+                source_type TEXT NOT NULL,
+                target_id TEXT NOT NULL,
+                target_type TEXT NOT NULL,
+                relation_type TEXT NOT NULL,
+                weight REAL DEFAULT 1.0,
+                metadata_json TEXT,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE TABLE IF NOT EXISTS graph_risk_propagation_runs (
+                run_id TEXT PRIMARY KEY,
+                suspect_node_id TEXT NOT NULL,
+                suspect_node_type TEXT NOT NULL,
+                defect_description TEXT NOT NULL,
+                algorithm TEXT NOT NULL,
+                propagation_hops INTEGER DEFAULT 3,
+                critical_wos_count INTEGER DEFAULT 0,
+                high_risk_wos_count INTEGER DEFAULT 0,
+                total_tires_at_risk INTEGER DEFAULT 0,
+                blast_radius_summary_json TEXT,
+                quarantine_applied INTEGER DEFAULT 0,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                authorized_badge TEXT
+            );
+
+            CREATE TABLE IF NOT EXISTS graph_order_risk_scores (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                run_id TEXT NOT NULL,
+                wo_id TEXT NOT NULL,
+                risk_score REAL NOT NULL,
+                risk_tier TEXT NOT NULL,
+                tires_at_risk INTEGER DEFAULT 0,
+                primary_transmission_vector TEXT NOT NULL,
+                shortest_infection_path TEXT NOT NULL,
+                recommended_action TEXT NOT NULL,
+                action_status TEXT DEFAULT 'PENDING',
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (run_id) REFERENCES graph_risk_propagation_runs(run_id)
+            );
+
             -- Create Performance Indexes for real-time querying
             CREATE INDEX IF NOT EXISTS idx_green_tire_sku ON production_green_tires(sku);
             CREATE INDEX IF NOT EXISTS idx_green_tire_wo ON production_green_tires(wo_id);
@@ -513,6 +562,10 @@ def init_db(force: bool = False):
             CREATE INDEX IF NOT EXISTS idx_batch_telemetry_time ON batch_process_telemetry(timestamp);
             CREATE INDEX IF NOT EXISTS idx_batch_defective ON batch_process_telemetry(is_defective);
             CREATE INDEX IF NOT EXISTS idx_batch_serial ON batch_process_telemetry(tire_serial);
+            CREATE INDEX IF NOT EXISTS idx_graph_edge_src ON graph_genealogy_edges(source_id);
+            CREATE INDEX IF NOT EXISTS idx_graph_edge_tgt ON graph_genealogy_edges(target_id);
+            CREATE INDEX IF NOT EXISTS idx_graph_runs_suspect ON graph_risk_propagation_runs(suspect_node_id);
+            CREATE INDEX IF NOT EXISTS idx_graph_scores_run ON graph_order_risk_scores(run_id);
         """)
 
 

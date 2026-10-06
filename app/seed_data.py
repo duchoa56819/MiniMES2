@@ -325,6 +325,66 @@ def seed_database():
                     tire_serial, insp_time, "OP-3001" if i % 2 == 1 else "OP-3002", "PASS", None, None, "PASS", None, 0.15, rfv, lfv, bal, "GRADE_A", 1, "Chất lượng hoàn hảo, đạt chuẩn cấp hàng OEM xe cao cấp."
                 ))
 
+        # Seed additional tires for WO-2026-002 (PCR-225-60R17, runs consecutively on TBM-01 after WO-001)
+        for j in range(1, 7):
+            gt_id2 = f"GT-202610-{30+j:04d}"
+            serial2 = f"VN-T-202610-{200+j:05d}"
+            b_time = (now - timedelta(hours=3, minutes=40 - j*10)).strftime("%Y-%m-%d %H:%M:%S")
+            c_start = (now - timedelta(hours=2, minutes=30 - j*10)).strftime("%Y-%m-%d %H:%M:%S")
+            c_end = (now - timedelta(hours=2, minutes=16 - j*10)).strftime("%Y-%m-%d %H:%M:%S")
+            cursor.execute("""
+                INSERT INTO production_green_tires VALUES
+                (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                gt_id2, "WO-2026-002", "PCR-225-60R17-99H", "TBM-01", "OP-1002",
+                b_time, 11.20, "LOT-TRD-202610-02", "LOT-SW-202610-02",
+                "LOT-BLT1-202610-02", "LOT-BLT2-202610-02", "LOT-PLY-202610-02",
+                "LOT-BD-202610-02", "LOT-INL-202610-02", "VERIFIED_PASS", "CURED"
+            ))
+            cursor.execute("""
+                INSERT INTO production_cured_tires VALUES
+                (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                serial2, gt_id2, "PCR-225-60R17-99H", "CP-03", "L" if j % 2 == 1 else "R", "MLD-17-010", "RCP-PCR-225-60R17",
+                c_start, c_end, 840, 168.0, 20.5, "PASS", "INSPECTED"
+            ))
+            cursor.execute("""
+                INSERT INTO quality_inspections (tire_serial, inspection_timestamp, inspector_id, visual_result, xray_result, belt_alignment_mm, uniformity_rfv_n, uniformity_lfv_n, dynamic_balance_g, final_grade, passed, disposition_notes)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                serial2, (now - timedelta(hours=1, minutes=50 - j*10)).strftime("%Y-%m-%d %H:%M:%S"), "OP-3001", "PASS", "PASS", 0.12, 41.0, 18.0, 16.0, "GRADE_A", 1, "Đạt chuẩn xuất xưởng."
+            ))
+
+        # Seed additional tires for WO-2026-004 (TBR-315-80R22.5, runs on independent line TBM-02 / CP-04)
+        for k in range(1, 5):
+            gt_id4 = f"GT-202610-{40+k:04d}"
+            serial4 = f"VN-T-202610-{400+k:05d}"
+            b_time4 = (now - timedelta(hours=4, minutes=50 - k*25)).strftime("%Y-%m-%d %H:%M:%S")
+            c_start4 = (now - timedelta(hours=3, minutes=20 - k*25)).strftime("%Y-%m-%d %H:%M:%S")
+            c_end4 = (now - timedelta(hours=2, minutes=40 - k*25)).strftime("%Y-%m-%d %H:%M:%S")
+            cursor.execute("""
+                INSERT INTO production_green_tires VALUES
+                (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                gt_id4, "WO-2026-004", "TBR-315-80R22.5-156K", "TBM-02", "OP-1001",
+                b_time4, 58.50, "LOT-TRD-202610-02", "LOT-SW-202610-02",
+                "LOT-BLT1-202610-02", "LOT-BLT2-202610-02", "LOT-PLY-202610-02",
+                "LOT-BD-202610-02", "LOT-INL-202610-02", "VERIFIED_PASS", "CURED"
+            ))
+            cursor.execute("""
+                INSERT INTO production_cured_tires VALUES
+                (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                serial4, gt_id4, "TBR-315-80R22.5-156K", "CP-04", "L" if k % 2 == 1 else "R", "MLD-TBR-01", "RCP-TBR-315-80R22",
+                c_start4, c_end4, 2400, 150.2, 22.1, "PASS", "INSPECTED"
+            ))
+            cursor.execute("""
+                INSERT INTO quality_inspections (tire_serial, inspection_timestamp, inspector_id, visual_result, xray_result, belt_alignment_mm, uniformity_rfv_n, uniformity_lfv_n, dynamic_balance_g, final_grade, passed, disposition_notes)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                serial4, (now - timedelta(hours=1, minutes=30 - k*20)).strftime("%Y-%m-%d %H:%M:%S"), "OP-3002", "PASS", "PASS", 0.20, 68.0, 29.0, 24.0, "GRADE_A", 1, "Đạt chuẩn TBR OEM."
+            ))
+
         # =====================================================================
         # 12. EQUIPMENT DOWNTIME LOGS
         # =====================================================================

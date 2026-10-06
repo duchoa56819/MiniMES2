@@ -72,6 +72,9 @@
     <button class="tab-btn" onclick="switchTab('shap')">
       🔬 11. Phân Tích Đa Biến SHAP <span class="badge" style="background-color: #06b6d4; color: #fff;">XAI TreeSHAP</span>
     </button>
+    <button class="tab-btn" onclick="switchTab('graph')">
+      🕸️ 12. Mạng Phả Hệ Graph ML <span class="badge" style="background-color: #f59e0b; color: #1e293b;">PyTorch GNN</span>
+    </button>
   </nav>
 
   <!-- MAIN VIEWPORT -->
@@ -1286,6 +1289,181 @@
             </div>
           </div>
           <div id="shap-simulation-feedback" style="display: none; padding: 1rem; border-top: 1px solid #1e293b;"></div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- TAB 12: GRAPH MACHINE LEARNING & TRACEABILITY CONTAGION            -->
+    <!-- =================================================================== -->
+    <section id="pane-graph" class="tab-pane">
+      <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+
+        <!-- Header Banner -->
+        <div class="card" style="border-left: 4px solid #f59e0b; background: linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(15, 23, 42, 0.95) 100%);">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
+            <div>
+              <h2 style="color: #f59e0b; margin-bottom: 0.35rem; display: flex; align-items: center; gap: 0.5rem;">
+                <span>🕸️</span> Mạng Đồ Thị Phả Hệ & Dự Báo Rủi Ro Lây Lan (Graph ML Contagion)
+              </h2>
+              <p style="color: #94a3b8; font-size: 0.88rem; max-width: 900px; margin: 0;">
+                Chuyển hóa dữ liệu phả hệ ISA-95 Level 3 thành Đồ thị Tri thức Dị thể (Heterogeneous Traceability Knowledge Graph).
+                Ứng dụng <strong>PyTorch Message Passing Neural Network (MPNN)</strong> và <strong>Random Walk with Restart (RWR) Diffusion</strong>
+                để dự đoán chính xác bán kính lây lan (Blast Radius) của một lô linh kiện lỗi sang tất cả các đơn hàng đang chạy trên sàn theo chuẩn <strong>IATF 16949 Section 8.7</strong>.
+              </p>
+            </div>
+            <div style="display: flex; gap: 0.75rem; align-items: center;">
+              <span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); padding: 0.4rem 0.75rem; font-size: 0.82rem;">
+                ⚡ Heterogeneous MPNN
+              </span>
+              <button class="btn btn-secondary btn-sm" onclick="loadGraphTab()">
+                ↺ Làm Mới Đồ Thị
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- KPI Grid -->
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-label">Tổng Nodes Trong Mạng</div>
+            <div class="kpi-value" id="kpi-graph-nodes" style="color: #38bdf8;">--</div>
+            <div class="kpi-sub">Lô, Mẻ Luyện, Máy, Lốp, Lệnh SX</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Tổng Cạnh Quan Hệ (Edges)</div>
+            <div class="kpi-value" id="kpi-graph-edges" style="color: #a78bfa;">--</div>
+            <div class="kpi-sub">BOM, Gia công, Chung máy, Đồng lưu hóa</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Đơn Hàng Đang Chạy Trên Sàn</div>
+            <div class="kpi-value" id="kpi-graph-active-wos" style="color: #10b981;">--</div>
+            <div class="kpi-sub">TBM-01, TBM-02, CP-01..CP-04</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Đơn Hàng Nguy Cấp (Blast Radius)</div>
+            <div class="kpi-value" id="kpi-graph-critical-wos" style="color: #ef4444;">0</div>
+            <div class="kpi-sub" id="kpi-graph-critical-sub">Chưa phát hiện lây nhiễm</div>
+          </div>
+        </div>
+
+        <!-- Simulation Control Bar -->
+        <div class="card" style="background: #0f172a; border: 1px solid #334155;">
+          <h3 style="color: #e2e8f0; font-size: 1rem; margin-bottom: 0.85rem; display: flex; align-items: center; gap: 0.5rem;">
+            <span>🧪</span> Bơm Giả Lập Phát Hiện Khuyết Tật Lô Linh Kiện (Outbreak Injection Sandbox)
+          </h3>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)) 180px; gap: 1rem; align-items: flex-end;">
+            <div class="form-group" style="margin: 0;">
+              <label class="form-label" style="font-size: 0.8rem; color: #94a3b8;">Chọn Lô Linh Kiện / Mẻ Banbury Nghi Vấn</label>
+              <select class="form-control" id="graph-sim-lot-select" style="font-size: 0.85rem; background: #1e293b; color: #fff;">
+                <option value="">-- Đang tải danh sách lô vật tư... --</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin: 0;">
+              <label class="form-label" style="font-size: 0.8rem; color: #94a3b8;">Mô Tả Lỗi Kỹ Thuật (Phát Hiện Kiểm Định)</label>
+              <input type="text" class="form-control" id="graph-sim-defect-desc" value="Khuyết tật nứt vai lốp & phân tán muội than kém" style="font-size: 0.85rem; background: #1e293b; color: #fff;">
+            </div>
+            <div>
+              <button class="btn btn-primary" onclick="runGraphOutbreakSimulation()" style="width: 100%; height: 38px; display: flex; align-items: center; justify-content: center; gap: 0.5rem; background: #f59e0b; color: #0f172a; font-weight: 600; border: none;">
+                <span>⚡</span> Quét Lây Lan ML
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Executive Blast Radius Directive Alert Banner (Initially Hidden) -->
+        <div id="graph-blast-radius-alert" class="card" style="display: none; border-left: 4px solid #ef4444; background: rgba(239, 68, 68, 0.08);">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.35rem;">
+                <span class="badge" style="background: #ef4444; color: #fff; font-weight: 700;">IATF 16949 SECTION 8.7</span>
+                <strong style="color: #fca5a5; font-size: 1rem;" id="graph-alert-headline">CẢNH BÁO LÂY NHIỄM PHẢ HỆ</strong>
+              </div>
+              <p style="color: #e2e8f0; font-size: 0.86rem; margin: 0;" id="graph-alert-directive">
+                Đang chuẩn bị lệnh cách ly...
+              </p>
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+              <button class="btn btn-danger" id="btn-execute-graph-quarantine" onclick="executeGraphQuarantineAction()" style="font-weight: 600; display: flex; align-items: center; gap: 0.5rem;">
+                <span>🛡️</span> Khóa Cách Ly Khẩn Cấp (1-Click MES Quarantine)
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2D Knowledge Graph Topology Canvas -->
+        <div class="card" style="padding: 1.25rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+            <div>
+              <h3 style="color: #e2e8f0; font-size: 1rem; margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                <span>🗺️</span> Cấu Trúc Đồ Thị Phả Hệ Nhà Máy (5-Tier Manufacturing Traceability Map)
+              </h3>
+              <p style="color: #64748b; font-size: 0.8rem; margin: 0.2rem 0 0 0;">
+                Tọa độ trực quan hóa: Banbury ➔ Bán Thành Phẩm ➔ Thiết Bị ➔ Lốp Mộc/Chín ➔ Lệnh Sản Xuất
+              </p>
+            </div>
+            <!-- Legend -->
+            <div style="display: flex; gap: 0.8rem; font-size: 0.75rem; color: #cbd5e1; flex-wrap: wrap; align-items: center;">
+              <span style="display: flex; align-items: center; gap: 0.25rem;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #ec4899; display: inline-block;"></span> Mẻ Banbury</span>
+              <span style="display: flex; align-items: center; gap: 0.25rem;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #3b82f6; display: inline-block;"></span> Lô Vật Tư</span>
+              <span style="display: flex; align-items: center; gap: 0.25rem;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #8b5cf6; display: inline-block;"></span> Máy Móc</span>
+              <span style="display: flex; align-items: center; gap: 0.25rem;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #64748b; display: inline-block;"></span> Lốp SX</span>
+              <span style="display: flex; align-items: center; gap: 0.25rem;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #10b981; display: inline-block;"></span> Đơn Hàng An Toàn</span>
+              <span style="display: flex; align-items: center; gap: 0.25rem;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #ef4444; display: inline-block;"></span> Lô Lỗi / Nguy Cấp</span>
+            </div>
+          </div>
+          <div style="width: 100%; height: 460px; background: #070d19; border: 1px solid #1e293b; border-radius: 8px; position: relative; overflow: hidden;">
+            <canvas id="graph-traceability-canvas" width="960" height="460" style="width: 100%; height: 100%; display: block;"></canvas>
+            <div id="graph-canvas-tooltip" style="display: none; position: absolute; pointer-events: none; background: rgba(15, 23, 42, 0.95); border: 1px solid #38bdf8; padding: 0.5rem 0.75rem; border-radius: 6px; font-size: 0.78rem; color: #fff; z-index: 20; box-shadow: 0 4px 12px rgba(0,0,0,0.5);"></div>
+          </div>
+        </div>
+
+        <!-- Work Orders Risk Contagion Assessment Matrix -->
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h3 style="color: #e2e8f0; font-size: 1rem; margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+              <span>📊</span> Ma Trận Đánh Giá Rủi Ro Lây Lan Từng Đơn Hàng (Work Order Blast Radius)
+            </h3>
+            <span style="color: #94a3b8; font-size: 0.8rem;" id="graph-assessed-timestamp">Chưa chạy mô phỏng</span>
+          </div>
+
+          <div style="overflow-x: auto;">
+            <table class="data-table" style="width: 100%; font-size: 0.84rem;">
+              <thead>
+                <tr>
+                  <th>Mã Lệnh SX</th>
+                  <th>Sản Phẩm (SKU)</th>
+                  <th>Máy Gán</th>
+                  <th>Trạng Thái</th>
+                  <th>Xác Suất Lây Nhiễm</th>
+                  <th>Phân Hạng Rủi Ro</th>
+                  <th>Vectơ Truyền Bệnh</th>
+                  <th>Lốp Bị Đe Dọa</th>
+                  <th>Hành Động Khắc Phục (CAPA)</th>
+                </tr>
+              </thead>
+              <tbody id="graph-wo-table-body">
+                <tr>
+                  <td colspan="9" style="text-align: center; color: #64748b; padding: 2rem;">
+                    Chọn một lô linh kiện và bấm "Quét Lây Lan ML" để hiển thị ma trận đánh giá.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Shortest Contagion Trajectory Explainer (Path-to-Infection) -->
+        <div class="card" id="graph-path-explainer-card" style="display: none;">
+          <h3 style="color: #e2e8f0; font-size: 1rem; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+            <span>🔍</span> Giải Thích Chuỗi Truyền Nhiễm Ngắn Nhất (Shortest Contagion Trajectory)
+          </h3>
+          <p style="color: #94a3b8; font-size: 0.84rem; margin-bottom: 0.75rem;">
+            Đường lan truyền rủi ro cao nhất từ lô lỗi tới đơn hàng bị ảnh hưởng theo trọng số đồ thị dị thể:
+          </p>
+          <div id="graph-trajectory-flow" style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; background: #070d19; padding: 1rem; border-radius: 8px; border: 1px solid #1e293b;">
+          </div>
         </div>
 
       </div>

@@ -63,6 +63,9 @@
     <button class="tab-btn" onclick="switchTab('gateway')">
       🌐 8. Cổng Giao Thức PLC & IIoT <span class="badge" style="background-color: #059669; color: #fff;">5 Giao Thức</span>
     </button>
+    <button class="tab-btn" onclick="switchTab('ai')">
+      🧠 9. Trí Tuệ Nhân Tạo & Bất Thường AI <span class="badge" style="background-color: #8b5cf6; color: #fff;">PyTorch & iForest</span>
+    </button>
   </nav>
 
   <!-- MAIN VIEWPORT -->
@@ -775,6 +778,227 @@
           </div>
           <pre id="gateway-terminal-logs" style="background: #070a12; color: #38bdf8; font-family: var(--font-mono); font-size: 0.8rem; padding: 1rem; border-radius: 6px; max-height: 250px; overflow-y: auto; margin: 0; line-height: 1.4;">[SYSTEM] Sẵn sàng kiểm tra giao tiếp với 5 loại giao thức công nghiệp. Bấm '⚡ Test Handshake' trên từng cổng để kiểm tra ping thực tế...</pre>
         </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- TAB 9: AI ANOMALY DETECTION (ISOLATION FOREST & DEEP AUTOENCODER)   -->
+    <!-- =================================================================== -->
+    <section id="pane-ai" class="tab-pane">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">🧠 Hệ Thống Giám Sát Bất Thường AI Học Không Giám Sát (Unsupervised Anomaly Detection)</div>
+            <div class="card-subtitle">Khám phá suy giảm năng suất tiềm ẩn (Takt Creep, Micro-stoppages, Dội ngược đệm WIP) bằng mô hình Ensemble: Isolation Forest (100 Trees) & Deep Autoencoder (PyTorch 5-16-8-2-8-16-5)</div>
+          </div>
+          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <button class="btn btn-secondary btn-sm" onclick="loadAiStatus()">ℹ️ Trạng Thái AI</button>
+            <button class="btn btn-primary btn-sm" onclick="trainAiModels()">⚡ Tái Huấn Luyện AI</button>
+            <button class="btn btn-success btn-sm" onclick="scanAiCycles()">🔍 Quét Phân Tích Toàn Xưởng</button>
+          </div>
+        </div>
+
+        <!-- AI KPI Grid -->
+        <div class="kpi-grid" style="margin-bottom: 1.5rem;">
+          <div class="kpi-card purple">
+            <div class="kpi-title">Chỉ Số Dị Biệt Toàn Nhà Máy</div>
+            <div class="kpi-value"><span id="ai-kpi-anomaly-index">0.00</span><span class="kpi-unit">/1.0</span></div>
+            <div class="kpi-foot">
+              <span>Đánh giá: <strong id="ai-kpi-status-text">Bình Thường</strong></span>
+              <span class="status-pill pill-green" id="ai-kpi-status-pill">TỐI ƯU</span>
+            </div>
+          </div>
+
+          <div class="kpi-card blue">
+            <div class="kpi-title">Độ Lệch Takt Trung Bình (Creep)</div>
+            <div class="kpi-value"><span id="ai-kpi-takt-creep">0.0</span><span class="kpi-unit">giây</span></div>
+            <div class="kpi-foot">
+              <span>Mức tiêu chuẩn: &le; +2.0s</span>
+              <span>Hao hụt tiềm ẩn: <strong id="ai-kpi-loss-rate">0.0%</strong></span>
+            </div>
+          </div>
+
+          <div class="kpi-card red">
+            <div class="kpi-title">Chu Kỳ Bất Thường Phát Hiện</div>
+            <div class="kpi-value"><span id="ai-kpi-anomaly-count">0</span><span class="kpi-unit">chu kỳ</span></div>
+            <div class="kpi-foot">
+              <span>Nghiêm trọng (Critical): <strong id="ai-kpi-crit-count">0</strong></span>
+              <span>Cảnh báo (Warning): <strong id="ai-kpi-warn-count">0</strong></span>
+            </div>
+          </div>
+
+          <div class="kpi-card cyan">
+            <div class="kpi-title">Ngưỡng Tái Tạo Autoencoder (MSE)</div>
+            <div class="kpi-value"><span id="ai-kpi-ae-threshold">0.058</span><span class="kpi-unit">&theta;</span></div>
+            <div class="kpi-foot">
+              <span>Kiến trúc: <strong>5-16-8-2-8-16-5</strong></span>
+              <span>Latent Bottleneck: <strong>2D</strong></span>
+            </div>
+          </div>
+
+          <div class="kpi-card green">
+            <div class="kpi-title">Tập Dữ Liệu Chuẩn & Huấn Luyện</div>
+            <div class="kpi-value"><span id="ai-kpi-samples">1,200</span><span class="kpi-unit">mẫu</span></div>
+            <div class="kpi-foot">
+              <span>Thuật toán: <strong>iForest (100t) + PyTorch</strong></span>
+              <span>Contamination: <strong>8.0%</strong></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- AI Model Architecture & Diagnostics Theory Banner -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 1.25rem; margin-bottom: 1.5rem;">
+          <div style="background: #0f172a; border: 1px solid #1e293b; border-radius: 8px; padding: 1.25rem;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+              <strong style="color: #38bdf8; font-size: 0.95rem; display: flex; align-items: center; gap: 6px;">
+                🌲 1. Isolation Forest (Cây Phân Lập Ngẫu Nhiên)
+              </strong>
+              <span class="status-pill pill-cyan">Scikit-Learn 100 Trees</span>
+            </div>
+            <p style="font-size: 0.83rem; color: #94a3b8; line-height: 1.5; margin-bottom: 0.75rem;">
+              Phân lập các điểm dị biệt trong không gian đa chiều (Multi-dimensional Outliers). Do các điểm bất thường có giá trị cực đoan nên chúng bị chia cắt sớm ở các tầng nông của cây quyết định:
+            </p>
+            <div style="background: #090d16; padding: 0.5rem 0.75rem; border-radius: 6px; font-family: var(--font-mono); font-size: 0.78rem; color: #cbd5e1; margin-bottom: 0.75rem;">
+              s(x, n) = 2^(- E(h(x)) / c(n)) &rarr; Score &gt; 0.55: Điểm Dị Biệt
+            </div>
+            <ul style="font-size: 0.8rem; color: #cbd5e1; margin: 0; padding-left: 1.2rem; line-height: 1.5;">
+              <li>Bắt các cú trôi chu kỳ Takt time đột ngột (&gt; 15s).</li>
+              <li>Phát hiện tắc nghẽn hàng đợi WIP vượt ngưỡng đệm vật lý (&gt; 180 phút).</li>
+              <li>Hoạt động độc lập không cần dữ liệu gắn nhãn (Unsupervised).</li>
+            </ul>
+          </div>
+
+          <div style="background: #0f172a; border: 1px solid #1e293b; border-radius: 8px; padding: 1.25rem;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+              <strong style="color: #c084fc; font-size: 0.95rem; display: flex; align-items: center; gap: 6px;">
+                🧠 2. PyTorch Deep Autoencoder (Không Gian Ẩn 2 Chiều)
+              </strong>
+              <span class="status-pill pill-purple">Deep PyTorch 2.x</span>
+            </div>
+            <p style="font-size: 0.83rem; color: #94a3b8; line-height: 1.5; margin-bottom: 0.75rem;">
+              Mạng nơ-ron sâu phi tuyến nén vector 5 chiều qua nút thắt 2 chiều (Latent Space 2D) để học cấu trúc vận hành hoàn hảo của dây chuyền.
+            </p>
+            <div style="background: #090d16; padding: 0.5rem 0.75rem; border-radius: 6px; font-family: var(--font-mono); font-size: 0.78rem; color: #cbd5e1; margin-bottom: 0.75rem;">
+              Loss_MSE = (1/d) &Sigma; (x_i - x̂_i)^2 &gt; &theta; (Reconstruction Loss)
+            </div>
+            <ul style="font-size: 0.8rem; color: #cbd5e1; margin: 0; padding-left: 1.2rem; line-height: 1.5;">
+              <li>Phát hiện <strong>suy giảm ngầm (Micro-stoppages)</strong>: từng thông số riêng lẻ có vẻ hợp lệ nhưng quan hệ phi tuyến tương hỗ bị lệch chuẩn.</li>
+              <li>Bắt sớm lỗi tụt áp thủy lực, trễ van đảo chiều và trôi nhiệt độ buồng ép.</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- 2D Scatter Canvas & Live Distribution -->
+        <div class="card" style="margin-bottom: 1.5rem; background: #0c101d; border: 1px solid #1e293b;">
+          <div class="card-header" style="padding-bottom: 0.75rem;">
+            <div>
+              <div class="card-title" style="font-size: 0.95rem;">📈 Bản Đồ Dị Biệt Không Gian 2D (Takt Deviation vs WIP Queue Dwell)</div>
+              <div class="card-subtitle">Trục hoành: Độ lệch Takt máy (giây) &bull; Trục tung: Thời gian đệm WIP (phút) &bull; Kích thước chấm: Anomaly Score</div>
+            </div>
+            <div style="display: flex; gap: 0.75rem; align-items: center; font-size: 0.8rem;">
+              <span style="display: flex; align-items: center; gap: 5px;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #10b981; display: inline-block;"></span> Bình thường</span>
+              <span style="display: flex; align-items: center; gap: 5px;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #f59e0b; display: inline-block;"></span> Cảnh báo</span>
+              <span style="display: flex; align-items: center; gap: 5px;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #ef4444; display: inline-block;"></span> Bất thường nghiêm trọng</span>
+            </div>
+          </div>
+          <div style="padding: 1rem;">
+            <canvas id="ai-scatter-canvas" width="900" height="320" style="width: 100%; height: 320px; background: #070a13; border: 1px solid #1e293b; border-radius: 8px;"></canvas>
+          </div>
+        </div>
+
+        <!-- Live Simulation / Edge PLC Diagnostic Box -->
+        <div class="card" style="margin-bottom: 1.5rem; background: #0f172a; border: 1px solid #334155;">
+          <div class="card-header">
+            <div>
+              <div class="card-title" style="font-size: 0.95rem; color: #f8fafc;">⚡ Kiểm Thử Trực Tuyến Gói Dữ Liệu Chu Kỳ Máy (Edge PLC Live Simulator)</div>
+              <div class="card-subtitle">Mô phỏng đẩy dữ liệu chu kỳ thời gian thực từ PLC máy thành hình/lưu hóa vào bộ suy luận AI</div>
+            </div>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              <button class="btn btn-secondary btn-sm" onclick="setAiPreset('NORMAL')">Mẫu Bình Thường</button>
+              <button class="btn btn-secondary btn-sm" onclick="setAiPreset('TAKT_CREEP')">Mẫu Takt Trôi (Micro-stoppage)</button>
+              <button class="btn btn-secondary btn-sm" onclick="setAiPreset('QUEUE_CONGESTION')">Mẫu Nghẽn Đệm WIP</button>
+              <button class="btn btn-secondary btn-sm" onclick="setAiPreset('CURING_DRIFT')">Mẫu Sụt Áp & Nhiệt</button>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 1rem; margin-bottom: 1.25rem;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label">Thiết Bị (Machine ID)</label>
+              <input type="text" class="form-control" id="ai-sim-machine" value="TBM-01">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label">Loại Chu Kỳ</label>
+              <select class="form-control" id="ai-sim-cycletype">
+                <option value="BUILDING_STAGE1">Thành Hình Giai Đoạn 1</option>
+                <option value="BUILDING_STAGE2">Thành Hình Giai Đoạn 2</option>
+                <option value="CURING_CYCLE">Chu Kỳ Lưu Hóa Lốp</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label">Takt Thực Tế (s)</label>
+              <input type="number" step="0.1" class="form-control" id="ai-sim-actual-takt" value="45.2">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label">Takt Định Mức (s)</label>
+              <input type="number" step="0.1" class="form-control" id="ai-sim-target-takt" value="45.0">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label">WIP Chờ Đệm (phút)</label>
+              <input type="number" step="1" class="form-control" id="ai-sim-wip-dwell" value="65.0">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label">Lệch Nhiệt (°C)</label>
+              <input type="number" step="0.1" class="form-control" id="ai-sim-temp-dev" value="0.2">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label">Lệch Áp Suất (bar)</label>
+              <input type="number" step="0.1" class="form-control" id="ai-sim-press-dev" value="0.05">
+            </div>
+          </div>
+
+          <div style="display: flex; justify-content: flex-end; margin-bottom: 1rem;">
+            <button class="btn btn-primary" onclick="evaluateLiveCycleSim()">
+              🧠 Suy Luận AI Trực Tuyến (Evaluate Live Cycle)
+            </button>
+          </div>
+
+          <div id="ai-sim-result-box" style="display: none; margin-top: 1rem;"></div>
+        </div>
+
+        <!-- Anomaly Alert Logs Table -->
+        <div class="card" style="background: #0c101d; border: 1px solid #1e293b;">
+          <div class="card-header">
+            <div>
+              <div class="card-title" style="font-size: 0.95rem;">🚨 Nhật Ký Cảnh Báo Bất Thường AI (AI Anomalies Telemetry Log)</div>
+              <div class="card-subtitle">Tự động ghi nhận và phân loại độ nghiêm trọng, xác định nguyên nhân gốc rễ và đề xuất biện pháp khắc phục kỹ thuật</div>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="loadAiAnomalyLogs()">Làm Mới Nhật Ký</button>
+          </div>
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Mã Sự Kiện</th>
+                  <th>Thiết Bị</th>
+                  <th>Thời Điểm</th>
+                  <th>Điểm Dị Biệt (Ensemble)</th>
+                  <th>Mức Độ</th>
+                  <th>Chẩn Đoán Nguyên Nhân Gốc (Root Cause)</th>
+                  <th>Khuyến Nghị Khắc Phục (Action)</th>
+                  <th>Thao Tác</th>
+                </tr>
+              </thead>
+              <tbody id="ai-anomalies-table-body">
+                <tr>
+                  <td colspan="8" style="text-align: center; color: #64748b; padding: 2rem;">
+                    Đang tải nhật ký cảnh báo AI...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
       </div>
     </section>
 

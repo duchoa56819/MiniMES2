@@ -435,6 +435,61 @@ def test_12_read_replica_and_frankenstein_trap():
     print(f"[PASS] Frankenstein Trap Blocked: Out-of-order delayed packet prevented from regressing tire location!")
 
 
+def test_13_ai_anomaly_detection():
+    # 1. Test AI Model Status & Initialization
+    status_res = client.get("/api/ai/status")
+    assert status_res.status_code == 200
+    status_data = status_res.json()
+    assert status_data["status"] == "OPERATIONAL"
+    assert status_data["is_trained"] is True
+    assert "isolation_forest" in status_data["models"]
+    assert "deep_autoencoder" in status_data["models"]
+    print(f"[PASS] AI Service Health: Isolation Forest (100 Trees) & PyTorch Autoencoder (Loss Thresh: {status_data['models']['deep_autoencoder']['reconstruction_threshold']})")
+
+    # 2. Test Live Inference: Normal Cycle
+    norm_res = client.post("/api/ai/evaluate-live", json={
+        "machine_id": "TBM-01",
+        "cycle_type": "TBM_BUILD",
+        "sku": "PCR-205-55R16-91V",
+        "actual_takt_sec": 45.2,
+        "target_takt_sec": 45.0,
+        "wip_queue_dwell_min": 45.0,
+        "temp_deviation_c": 0.0,
+        "pressure_deviation_bar": 0.0
+    })
+    assert norm_res.status_code == 200
+    norm_data = norm_res.json()
+    assert norm_data["is_anomaly"] is False
+    assert norm_data["severity"] == "INFO"
+    print(f"[PASS] AI Normal Inference: Score={norm_data['ensemble_anomaly_score']} -> {norm_data['severity']}")
+
+    # 3. Test Live Inference: Severe Anomaly (Creeping Takt Time & WIP Jam)
+    anom_res = client.post("/api/ai/evaluate-live", json={
+        "machine_id": "CP-02",
+        "cycle_type": "CURING_CYCLE",
+        "sku": "PCR-205-55R16-91V",
+        "actual_takt_sec": 865.0,  # +85s Takt Creep!
+        "target_takt_sec": 780.0,
+        "wip_queue_dwell_min": 320.0,  # >5h queue delay!
+        "temp_deviation_c": -4.2,  # Mold thermal drop!
+        "pressure_deviation_bar": -2.1
+    })
+    assert anom_res.status_code == 200
+    anom_data = anom_res.json()
+    assert anom_data["is_anomaly"] is True
+    assert anom_data["severity"] in ("WARNING", "CRITICAL")
+    assert "Suy giảm" in anom_data["root_cause_diagnosis"] or "Tắc nghẽn" in anom_data["root_cause_diagnosis"] or "kéo dài" in anom_data["root_cause_diagnosis"]
+    print(f"[PASS] AI Anomaly Detection: Score={anom_data['ensemble_anomaly_score']} -> Severity={anom_data['severity']} (iForest={anom_data['isolation_forest_score']}, Autoencoder MSE={anom_data['autoencoder_mse_loss']})")
+
+    # 4. Test Factory-Wide Batch Cycle Scan
+    scan_res = client.get("/api/ai/scan-cycles")
+    assert scan_res.status_code == 200
+    scan_data = scan_res.json()
+    assert scan_data["total_scanned_cycles"] > 0
+    assert scan_data["total_anomalies_detected"] > 0
+    print(f"[PASS] Factory AI Batch Scan: {scan_data['total_scanned_cycles']} cycles analyzed, {scan_data['total_anomalies_detected']} productivity bottlenecks flagged (Plant Anomaly Index: {scan_data['plant_anomaly_index']})")
+
+
 if __name__ == "__main__":
     seed_database()
     print("\n" + "="*60)
@@ -452,9 +507,11 @@ if __name__ == "__main__":
     test_10_consecutive_defect_lockout_and_backpressure()
     test_11_rework_loop_and_emergency_lot_quarantine()
     test_12_read_replica_and_frankenstein_trap()
+    test_13_ai_anomaly_detection()
     print("="*60)
     print("   ALL MES BUSINESS LOGIC & API TESTS PASSED 100%!")
     print("="*60 + "\n")
+
 
 
 

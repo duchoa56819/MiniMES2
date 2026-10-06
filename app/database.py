@@ -79,6 +79,8 @@ def init_db(force: bool = False):
         if force:
             cursor.execute("PRAGMA foreign_keys = OFF;")
             cursor.executescript("""
+                DROP TABLE IF EXISTS ai_anomaly_logs;
+                DROP TABLE IF EXISTS production_cycle_telemetry;
                 DROP TABLE IF EXISTS tire_rework_history;
                 DROP TABLE IF EXISTS quality_inspections;
                 DROP TABLE IF EXISTS production_cured_tires;
@@ -382,6 +384,38 @@ def init_db(force: bool = False):
                 content_html TEXT NOT NULL
             );
 
+            -- =========================================================
+            -- 9. AI UNSUPERVISED ANOMALY DETECTION & PRODUCTIVITY LOGS
+            -- =========================================================
+            CREATE TABLE IF NOT EXISTS ai_anomaly_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp TEXT NOT NULL,
+                entity_id TEXT NOT NULL,
+                entity_type TEXT CHECK(entity_type IN ('MACHINE', 'TIRE', 'WIP_BUFFER')) NOT NULL,
+                model_type TEXT CHECK(model_type IN ('ISOLATION_FOREST', 'AUTOENCODER', 'ENSEMBLE')) NOT NULL,
+                takt_time_sec REAL NOT NULL,
+                wip_queue_time_min REAL NOT NULL,
+                anomaly_score REAL NOT NULL,
+                severity TEXT CHECK(severity IN ('INFO', 'WARNING', 'CRITICAL')) NOT NULL,
+                root_cause_diagnosis TEXT NOT NULL,
+                mitigation_action TEXT NOT NULL,
+                status TEXT CHECK(status IN ('DETECTED', 'ACKNOWLEDGED', 'RESOLVED')) DEFAULT 'DETECTED'
+            );
+
+            CREATE TABLE IF NOT EXISTS production_cycle_telemetry (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp TEXT NOT NULL,
+                machine_id TEXT NOT NULL,
+                cycle_type TEXT CHECK(cycle_type IN ('TBM_BUILD', 'CURING_CYCLE', 'QC_SCAN')) NOT NULL,
+                sku TEXT NOT NULL,
+                actual_takt_sec REAL NOT NULL,
+                target_takt_sec REAL NOT NULL,
+                takt_deviation_sec REAL NOT NULL,
+                wip_queue_dwell_min REAL NOT NULL,
+                temp_deviation_c REAL DEFAULT 0.0,
+                pressure_deviation_bar REAL DEFAULT 0.0
+            );
+
             -- Create Performance Indexes for real-time querying
             CREATE INDEX IF NOT EXISTS idx_green_tire_sku ON production_green_tires(sku);
             CREATE INDEX IF NOT EXISTS idx_green_tire_wo ON production_green_tires(wo_id);
@@ -389,6 +423,8 @@ def init_db(force: bool = False):
             CREATE INDEX IF NOT EXISTS idx_quality_serial ON quality_inspections(tire_serial);
             CREATE INDEX IF NOT EXISTS idx_wo_status ON work_orders(status);
             CREATE INDEX IF NOT EXISTS idx_components_lot ON inventory_components(lot_id);
+            CREATE INDEX IF NOT EXISTS idx_anomaly_time ON ai_anomaly_logs(timestamp);
+            CREATE INDEX IF NOT EXISTS idx_cycle_machine ON production_cycle_telemetry(machine_id, timestamp);
         """)
 
 

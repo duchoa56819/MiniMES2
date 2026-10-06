@@ -26,7 +26,9 @@ from app.routers import (
     gateway,
     stream,
     routing,
+    ai,
 )
+
 
 
 @asynccontextmanager
@@ -70,6 +72,8 @@ app.include_router(master_data.router)
 app.include_router(gateway.router)
 app.include_router(stream.router)
 app.include_router(routing.router)
+app.include_router(ai.router)
+
 
 # Mount Static Assets
 static_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "app", "static")

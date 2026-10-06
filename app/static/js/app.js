@@ -66,6 +66,7 @@ function switchTab(tabId) {
   if (tabId === 'quality') loadInspectionQueue();
   if (tabId === 'master-data') showMasterSubTab('products');
   if (tabId === 'gateway') loadGatewayConnectors();
+  if (tabId === 'ai') loadAiTab();
 }
 
 function openModal(id) {
@@ -1667,6 +1668,434 @@ async function verifyStageManual() {
     }
   } catch (err) {
     resultBox.innerHTML = `<div style="color: #ef4444; font-size: 0.85rem;">Lỗi kết nối API: ${err}</div>`;
+  }
+}
+
+// ============================================================================
+// TAB 9: AI ANOMALY DETECTION (ISOLATION FOREST & DEEP AUTOENCODER)
+// ============================================================================
+
+let aiCurrentScannedCycles = [];
+
+async function loadAiTab() {
+  await loadAiStatus();
+  await scanAiCycles();
+  await loadAiAnomalyLogs();
+}
+
+async function loadAiStatus() {
+  try {
+    const res = await fetch('/api/ai/status');
+    const data = await res.json();
+    if (data.models && data.models.deep_autoencoder) {
+      const aeThresholdEl = document.getElementById('ai-kpi-ae-threshold');
+      if (aeThresholdEl) aeThresholdEl.textContent = Number(data.models.deep_autoencoder.reconstruction_threshold).toFixed(3);
+    }
+    const samplesEl = document.getElementById('ai-kpi-samples');
+    if (samplesEl) samplesEl.textContent = (data.total_baseline_samples || 1200).toLocaleString('vi-VN');
+  } catch (err) {
+    console.error('Error fetching AI status:', err);
+  }
+}
+
+async function trainAiModels() {
+  const btn = event?.target;
+  const originalText = btn ? btn.innerHTML : '';
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '⏳ Đang huấn luyện...';
+  }
+
+  try {
+    const res = await fetch('/api/ai/train', { method: 'POST' });
+    const data = await res.json();
+    alert(`✅ ${data.message}\nNgưỡng MSE: ${data.ae_threshold}\nSố mẫu Baseline: ${data.baseline_samples}`);
+    await loadAiTab();
+  } catch (err) {
+    alert(`Lỗi tái huấn luyện mô hình: ${err}`);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = originalText;
+    }
+  }
+}
+
+async function scanAiCycles() {
+  try {
+    const res = await fetch('/api/ai/scan-cycles');
+    const data = await res.json();
+
+    aiCurrentScannedCycles = data.all_cycles || [];
+
+    // KPI updates
+    const indexEl = document.getElementById('ai-kpi-anomaly-index');
+    if (indexEl) indexEl.textContent = data.plant_anomaly_index.toFixed(2);
+
+    const statusTextEl = document.getElementById('ai-kpi-status-text');
+    const statusPillEl = document.getElementById('ai-kpi-status-pill');
+    if (statusTextEl && statusPillEl) {
+      if (data.plant_anomaly_index > 0.6) {
+        statusTextEl.textContent = 'Báo Động Cao';
+        statusPillEl.className = 'status-pill pill-red';
+        statusPillEl.textContent = 'NGUY HIỂM';
+      } else if (data.plant_anomaly_index > 0.35) {
+        statusTextEl.textContent = 'Có Suy Thoái';
+        statusPillEl.className = 'status-pill pill-yellow';
+        statusPillEl.textContent = 'CẢNH BÁO';
+      } else {
+        statusTextEl.textContent = 'Vận Hành Chuẩn';
+        statusPillEl.className = 'status-pill pill-green';
+        statusPillEl.textContent = 'TỐI ƯU';
+      }
+    }
+
+    const creepEl = document.getElementById('ai-kpi-takt-creep');
+    if (creepEl) creepEl.textContent = `+${data.avg_takt_creep_sec}s`;
+
+    const lossRateEl = document.getElementById('ai-kpi-loss-rate');
+    if (lossRateEl) {
+      const lossRate = ((data.avg_takt_creep_sec / 45.0) * 100).toFixed(1);
+      lossRateEl.textContent = `${lossRate}%`;
+    }
+
+    const countEl = document.getElementById('ai-kpi-anomaly-count');
+    if (countEl) countEl.textContent = data.total_anomalies_detected;
+
+    const critCount = (data.anomalies || []).filter(a => a.severity === 'CRITICAL').length;
+    const warnCount = (data.anomalies || []).filter(a => a.severity === 'WARNING').length;
+
+    const critEl = document.getElementById('ai-kpi-crit-count');
+    if (critEl) critEl.textContent = critCount;
+
+    const warnEl = document.getElementById('ai-kpi-warn-count');
+    if (warnEl) warnEl.textContent = warnCount;
+
+    // Render Canvas
+    renderAiScatterCanvas(aiCurrentScannedCycles);
+    await loadAiAnomalyLogs();
+  } catch (err) {
+    console.error('Error scanning cycles:', err);
+  }
+}
+
+function renderAiScatterCanvas(cycles) {
+  const canvas = document.getElementById('ai-scatter-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width;
+  const h = canvas.height;
+
+  // Clear
+  ctx.clearRect(0, 0, w, h);
+
+  // Background
+  ctx.fillStyle = '#070a13';
+  ctx.fillRect(0, 0, w, h);
+
+  const padding = { top: 30, right: 40, bottom: 40, left: 60 };
+  const plotW = w - padding.left - padding.right;
+  const plotH = h - padding.top - padding.bottom;
+
+  // Ranges
+  const minX = -10, maxX = 70; // Takt deviation (sec)
+  const minY = 0, maxY = 320;   // WIP dwell (min)
+
+  const toScreenX = (x) => padding.left + ((x - minX) / (maxX - minX)) * plotW;
+  const toScreenY = (y) => padding.top + plotH - ((y - minY) / (maxY - minY)) * plotH;
+
+  // Draw Grid Lines
+  ctx.strokeStyle = '#1e293b';
+  ctx.lineWidth = 1;
+
+  for (let x = 0; x <= maxX; x += 15) {
+    const sx = toScreenX(x);
+    ctx.beginPath();
+    ctx.moveTo(sx, padding.top);
+    ctx.lineTo(sx, padding.top + plotH);
+    ctx.stroke();
+
+    ctx.fillStyle = '#64748b';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(`${x}s`, sx, padding.top + plotH + 15);
+  }
+
+  for (let y = 0; y <= maxY; y += 60) {
+    const sy = toScreenY(y);
+    ctx.beginPath();
+    ctx.moveTo(padding.left, sy);
+    ctx.lineTo(padding.left + plotW, sy);
+    ctx.stroke();
+
+    ctx.fillStyle = '#64748b';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText(`${y}m`, padding.left - 8, sy + 3);
+  }
+
+  // Draw Warning Threshold Boundaries
+  // 1. Takt Creep threshold: X = +15s
+  const threshX = toScreenX(15);
+  ctx.strokeStyle = 'rgba(245, 158, 11, 0.4)';
+  ctx.setLineDash([4, 4]);
+  ctx.beginPath();
+  ctx.moveTo(threshX, padding.top);
+  ctx.lineTo(threshX, padding.top + plotH);
+  ctx.stroke();
+
+  // 2. WIP Shelf Dwell threshold: Y = 180 min
+  const threshY = toScreenY(180);
+  ctx.strokeStyle = 'rgba(239, 68, 68, 0.4)';
+  ctx.beginPath();
+  ctx.moveTo(padding.left, threshY);
+  ctx.lineTo(padding.left + plotW, threshY);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Axis Labels
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = '11px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Độ Lệch Chu Kỳ Máy Thực Tế So Với Định Mức: Takt Deviation (giây)', padding.left + plotW / 2, h - 8);
+
+  ctx.save();
+  ctx.translate(16, padding.top + plotH / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.textAlign = 'center';
+  ctx.fillText('Thời Gian Chờ Đệm: WIP Dwell Time (phút)', 0, 0);
+  ctx.restore();
+
+  // Draw Threshold Labels
+  ctx.fillStyle = '#f59e0b';
+  ctx.font = '9px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText('Ngưỡng Trôi Takt (+15s)', threshX + 4, padding.top + 12);
+
+  ctx.fillStyle = '#ef4444';
+  ctx.textAlign = 'right';
+  ctx.fillText('Ngưỡng Lão Hóa WIP (>180m)', padding.left + plotW - 6, threshY - 6);
+
+  // Plot Cycles Points
+  if (!cycles || cycles.length === 0) return;
+
+  cycles.forEach(c => {
+    const devX = c.metrics ? c.metrics.takt_deviation_sec : 0;
+    const dwellY = c.metrics ? c.metrics.wip_queue_dwell_min : 0;
+    const score = c.ensemble_anomaly_score || 0;
+
+    const sx = toScreenX(Math.min(maxX, Math.max(minX, devX)));
+    const sy = toScreenY(Math.min(maxY, Math.max(minY, dwellY)));
+
+    ctx.beginPath();
+    const radius = 4 + score * 8;
+    ctx.arc(sx, sy, radius, 0, 2 * Math.PI);
+
+    if (c.severity === 'CRITICAL' || score >= 0.75) {
+      ctx.fillStyle = 'rgba(239, 68, 68, 0.85)';
+      ctx.strokeStyle = '#f87171';
+      ctx.lineWidth = 2;
+    } else if (c.severity === 'WARNING' || score >= 0.5) {
+      ctx.fillStyle = 'rgba(245, 158, 11, 0.75)';
+      ctx.strokeStyle = '#fbbf24';
+      ctx.lineWidth = 1.5;
+    } else {
+      ctx.fillStyle = 'rgba(16, 185, 129, 0.65)';
+      ctx.strokeStyle = '#34d399';
+      ctx.lineWidth = 1;
+    }
+
+    ctx.fill();
+    ctx.stroke();
+
+    // Machine label for anomalies
+    if (c.is_anomaly || score >= 0.5) {
+      ctx.fillStyle = '#f8fafc';
+      ctx.font = 'bold 9px monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText(`${c.machine_id} (${score})`, sx + radius + 4, sy + 3);
+    }
+  });
+}
+
+function setAiPreset(preset) {
+  const machineEl = document.getElementById('ai-sim-machine');
+  const typeEl = document.getElementById('ai-sim-cycletype');
+  const actualEl = document.getElementById('ai-sim-actual-takt');
+  const targetEl = document.getElementById('ai-sim-target-takt');
+  const wipEl = document.getElementById('ai-sim-wip-dwell');
+  const tempEl = document.getElementById('ai-sim-temp-dev');
+  const pressEl = document.getElementById('ai-sim-press-dev');
+
+  if (preset === 'NORMAL') {
+    machineEl.value = 'TBM-01';
+    typeEl.value = 'BUILDING_STAGE1';
+    actualEl.value = '45.2';
+    targetEl.value = '45.0';
+    wipEl.value = '65.0';
+    tempEl.value = '0.2';
+    pressEl.value = '0.05';
+  } else if (preset === 'TAKT_CREEP') {
+    machineEl.value = 'TBM-01';
+    typeEl.value = 'BUILDING_STAGE1';
+    actualEl.value = '68.5';
+    targetEl.value = '45.0';
+    wipEl.value = '82.0';
+    tempEl.value = '0.3';
+    pressEl.value = '-0.25';
+  } else if (preset === 'QUEUE_CONGESTION') {
+    machineEl.value = 'TBM-02';
+    typeEl.value = 'BUILDING_STAGE2';
+    actualEl.value = '52.0';
+    targetEl.value = '50.0';
+    wipEl.value = '295.0';
+    tempEl.value = '0.1';
+    pressEl.value = '0.02';
+  } else if (preset === 'CURING_DRIFT') {
+    machineEl.value = 'CURING-P01';
+    typeEl.value = 'CURING_CYCLE';
+    actualEl.value = '865.0';
+    targetEl.value = '780.0';
+    wipEl.value = '45.0';
+    tempEl.value = '-5.4';
+    pressEl.value = '-1.85';
+  }
+}
+
+async function evaluateLiveCycleSim() {
+  const resultBox = document.getElementById('ai-sim-result-box');
+  resultBox.style.display = 'block';
+  resultBox.innerHTML = '<div style="color: #94a3b8; font-size: 0.85rem;">⏳ Đang đưa vector đặc trưng vào mạng Autoencoder & Isolation Forest...</div>';
+
+  const payload = {
+    machine_id: document.getElementById('ai-sim-machine').value.trim() || 'TBM-01',
+    cycle_type: document.getElementById('ai-sim-cycletype').value,
+    sku: 'PCR-205-55R16-91V',
+    actual_takt_sec: parseFloat(document.getElementById('ai-sim-actual-takt').value) || 45.0,
+    target_takt_sec: parseFloat(document.getElementById('ai-sim-target-takt').value) || 45.0,
+    wip_queue_dwell_min: parseFloat(document.getElementById('ai-sim-wip-dwell').value) || 60.0,
+    temp_deviation_c: parseFloat(document.getElementById('ai-sim-temp-dev').value) || 0.0,
+    pressure_deviation_bar: parseFloat(document.getElementById('ai-sim-press-dev').value) || 0.0
+  };
+
+  try {
+    const res = await fetch('/api/ai/evaluate-live', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+
+    let borderCol = '#10b981';
+    let bgCol = 'rgba(16, 185, 129, 0.12)';
+    let pillCol = 'pill-green';
+    let icon = '✅';
+
+    if (data.severity === 'CRITICAL') {
+      borderCol = '#ef4444';
+      bgCol = 'rgba(239, 68, 68, 0.15)';
+      pillCol = 'pill-red';
+      icon = '🚨';
+    } else if (data.severity === 'WARNING') {
+      borderCol = '#f59e0b';
+      bgCol = 'rgba(245, 158, 11, 0.15)';
+      pillCol = 'pill-yellow';
+      icon = '⚠️';
+    }
+
+    resultBox.innerHTML = `
+      <div style="background: ${bgCol}; border: 1.5px solid ${borderCol}; border-radius: 8px; padding: 1.25rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+          <div style="font-size: 1rem; font-weight: 600; color: #fff; display: flex; align-items: center; gap: 8px;">
+            <span>${icon}</span>
+            <span>Kết Quả Giám Định AI Chu Kỳ: ${data.machine_id}</span>
+          </div>
+          <span class="status-pill ${pillCol}">MỨC ĐỘ: ${data.severity}</span>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem; background: rgba(0,0,0,0.3); padding: 0.75rem; border-radius: 6px; margin-bottom: 0.75rem; font-size: 0.82rem;">
+          <div>Điểm Ensemble Score: <strong style="color: #fff; font-size: 0.95rem;">${data.ensemble_anomaly_score}</strong></div>
+          <div>iForest Score: <strong style="color: #38bdf8;">${data.isolation_forest_score}</strong></div>
+          <div>Autoencoder Loss: <strong style="color: #c084fc;">${data.autoencoder_loss}</strong> (Ngưỡng: ${data.threshold})</div>
+          <div>Phán Quyết: <strong style="color: ${borderCol};">${data.is_anomaly ? 'BẤT THƯỜNG / DỊ BIỆT' : 'BÌNH THƯỜNG'}</strong></div>
+        </div>
+
+        <div style="font-size: 0.88rem; color: #e2e8f0; margin-bottom: 0.5rem; line-height: 1.5;">
+          <strong>Chẩn đoán nguyên nhân gốc rễ (Root Cause):</strong><br>
+          <span style="color: #f8fafc;">${data.root_cause_diagnosis}</span>
+        </div>
+
+        <div style="font-size: 0.85rem; color: #94a3b8; background: rgba(255,255,255,0.05); padding: 0.6rem 0.8rem; border-radius: 4px; line-height: 1.5;">
+          <strong style="color: #fbbf24;">Khuyến nghị khắc phục kỹ thuật (Mitigation):</strong> ${data.mitigation_action}
+        </div>
+      </div>
+    `;
+
+    // Refresh logs in background
+    loadAiAnomalyLogs();
+  } catch (err) {
+    resultBox.innerHTML = `<div style="color: #ef4444; font-size: 0.85rem;">Lỗi kết nối AI Engine: ${err}</div>`;
+  }
+}
+
+async function loadAiAnomalyLogs() {
+  const tbody = document.getElementById('ai-anomalies-table-body');
+  if (!tbody) return;
+
+  try {
+    const res = await fetch('/api/ai/anomalies-log?limit=30');
+    const logs = await res.json();
+
+    if (!logs || logs.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="8" style="text-align: center; color: #64748b; padding: 1.5rem;">
+            Chưa có ghi nhận bất thường nào. Hệ thống vận hành hoàn hảo!
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    tbody.innerHTML = logs.map(l => {
+      let pillClass = 'pill-green';
+      if (l.severity === 'CRITICAL') pillClass = 'pill-red';
+      else if (l.severity === 'WARNING') pillClass = 'pill-yellow';
+
+      const isAcked = l.status === 'ACKNOWLEDGED';
+
+      return `
+        <tr>
+          <td style="font-family: var(--font-mono); font-size: 0.82rem; color: #38bdf8;">${l.entity_id || 'CYC-' + l.id}</td>
+          <td><strong style="color: #fff;">${l.entity_type}</strong></td>
+          <td style="font-size: 0.8rem; color: #94a3b8;">${l.timestamp ? l.timestamp.replace('T', ' ').substring(0, 19) : '--'}</td>
+          <td style="font-family: var(--font-mono);"><strong style="color: #f8fafc;">${Number(l.anomaly_score).toFixed(3)}</strong></td>
+          <td><span class="status-pill ${pillClass}">${l.severity}</span></td>
+          <td style="max-width: 280px; font-size: 0.82rem; color: #e2e8f0; line-height: 1.4;">${l.root_cause_diagnosis || '--'}</td>
+          <td style="max-width: 250px; font-size: 0.8rem; color: #94a3b8; line-height: 1.4;">${l.mitigation_action || '--'}</td>
+          <td>
+            ${isAcked
+              ? '<span style="color: #10b981; font-size: 0.8rem; font-weight: 500;">✓ Đã xác nhận</span>'
+              : `<button class="btn btn-secondary btn-sm" onclick="acknowledgeAiAnomaly(${l.id})">Xác nhận</button>`
+            }
+          </td>
+        </tr>
+      `;
+    }).join('');
+  } catch (err) {
+    console.error('Error loading AI anomaly logs:', err);
+  }
+}
+
+async function acknowledgeAiAnomaly(id) {
+  try {
+    const res = await fetch(`/api/ai/acknowledge/${id}`, { method: 'POST' });
+    const data = await res.json();
+    if (data.success) {
+      loadAiAnomalyLogs();
+    }
+  } catch (err) {
+    alert(`Lỗi xác nhận cảnh báo: ${err}`);
   }
 }
 

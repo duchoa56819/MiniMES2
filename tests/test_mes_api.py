@@ -678,6 +678,54 @@ def test_16_graph_ml_genealogy_risk_propagation():
     print(f"[PASS] Graph Audit Trail: {len(runs_res.json())} propagation runs logged for IATF 16949 compliance")
 
 
+def test_17_multi_plc_pipeline_simulation():
+    """
+    Test Suite 17: Automated Multi-PLC Industrial Pipeline Simulator.
+    Verifies state machines, scenario injection, and real-time protocol packet framing (OPC-UA, Modbus, MQTT).
+    """
+    # 1. Pipeline Status
+    st_res = client.get("/api/pipeline/status")
+    assert st_res.status_code == 200
+    st_data = st_res.json()["status"]
+    assert "active_stations" in st_data
+    assert "PLC-MIX" in st_data["active_stations"]
+    assert "PLC-CUR" in st_data["active_stations"]
+    print(f"[PASS] Multi-PLC Pipeline Status: Stations={len(st_data['active_stations'])}, Current Scenario={st_data['scenario']}")
+
+    # 2. Scenario Switch
+    sc_res = client.post("/api/pipeline/scenario", json={"scenario": "DEFECT_SPIKE"})
+    assert sc_res.status_code == 200
+    assert sc_res.json()["status"]["scenario"] == "DEFECT_SPIKE"
+    print(f"[PASS] Scenario Injected: Successfully switched to 'DEFECT_SPIKE'")
+
+    # 3. Synchronous Pipeline Tick
+    tick_res = client.post("/api/pipeline/tick")
+    assert tick_res.status_code == 200
+    t_data = tick_res.json()["result"]
+    assert t_data["generated_packets_count"] >= 4
+    print(f"[PASS] Synchronous PLC Scan Tick: {t_data['generated_packets_count']} fieldbus packets generated across 5 stations")
+
+    # 4. Protocol Frames Retrieval
+    frame_res = client.get("/api/pipeline/frames?limit=10")
+    assert frame_res.status_code == 200
+    frames = frame_res.json()["frames"]
+    assert len(frames) >= 4
+    protocols = {f.get("protocol") for f in frames}
+    assert "OPC_UA" in protocols
+    assert "MODBUS_TCP" in protocols
+    print(f"[PASS] Protocol Framing Verified: {len(frames)} packets decoded across protocols: {list(protocols)}")
+
+    # 5. Start and Stop Lifecycle
+    start_res = client.post("/api/pipeline/start", json={"interval_sec": 1.0, "scenario": "NORMAL"})
+    assert start_res.status_code == 200
+    assert start_res.json()["status"]["running"] is True
+
+    stop_res = client.post("/api/pipeline/stop")
+    assert stop_res.status_code == 200
+    assert stop_res.json()["status"]["running"] is False
+    print(f"[PASS] Pipeline Lifecycle Control: Start & Stop signals acknowledged successfully")
+
+
 if __name__ == "__main__":
     seed_database()
     print("\n" + "="*60)
@@ -699,9 +747,11 @@ if __name__ == "__main__":
     test_14_dynamic_bottleneck_prediction_and_rerouting()
     test_15_shap_multivariate_root_cause_analysis()
     test_16_graph_ml_genealogy_risk_propagation()
+    test_17_multi_plc_pipeline_simulation()
     print("="*60)
     print("   ALL MES BUSINESS LOGIC & API TESTS PASSED 100%!")
     print("="*60 + "\n")
+
 
 
 

@@ -772,8 +772,82 @@
           <span class="status-pill pill-green">5/5 CỔNG ĐANG ONLINE</span>
         </div>
 
+        <!-- MULTI-PLC PIPELINE SIMULATOR CONTROL CARD -->
+        <div class="card" style="background: linear-gradient(135deg, #111c30, #0c1424); border: 1px solid #38bdf8; margin-bottom: 1.5rem; box-shadow: 0 4px 20px rgba(56, 189, 248, 0.12);">
+          <div class="card-header" style="border-bottom: 1px solid rgba(56, 189, 248, 0.2);">
+            <div>
+              <div class="card-title" style="display: flex; align-items: center; gap: 0.5rem; color: #38bdf8;">
+                <span class="pulse-dot"></span> ⚡ PIPELINE MÔ PHỎNG INPUT TỰ ĐỘNG TỪ 5 CỤM PLC (MULTI-PLC INDUSTRIAL PIPELINE)
+              </div>
+              <div class="card-subtitle">
+                Tự động sinh chuỗi telemetry thời gian thực từ PLC-MIX, PLC-EXT, PLC-TBM, PLC-CUR, PLC-FIN & Đóng gói khung tin chuẩn (OPC-UA, Modbus-TCP, MQTT Sparkplug B)
+              </div>
+            </div>
+            <div style="display: flex; gap: 0.5rem; align-items: center;">
+              <span id="pipeline-status-badge" class="status-pill pill-green">ĐANG CHẠY (2.0s / TICK)</span>
+              <button class="btn btn-primary btn-sm" onclick="togglePipelinePower()">⏸️ Tạm Dừng / Tiếp Tục</button>
+              <button class="btn btn-secondary btn-sm" onclick="triggerPipelineTick()">⚡ Quét Ngay 1 Tick</button>
+            </div>
+          </div>
+
+          <!-- Scenario Switcher & Metrics -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+            <!-- Left: Scenarios -->
+            <div style="background: #090e1a; padding: 1rem; border-radius: 8px; border: 1px solid #1e293b;">
+              <div style="font-weight: 700; color: #cbd5e1; font-size: 0.85rem; margin-bottom: 0.5rem;">
+                🎯 CHỌN KỊCH BẢN MÔ PHỎNG SỰ CỐ NHÀ MÁY:
+              </div>
+              <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                <button class="btn btn-sm btn-success" id="btn-scen-normal" onclick="setPipelineScenario('NORMAL')">
+                  🟢 1. Chuẩn SOP
+                </button>
+                <button class="btn btn-sm btn-secondary" id="btn-scen-takt" onclick="setPipelineScenario('TAKT_CREEP')">
+                  🟡 2. Trôi Chu Kỳ Takt (Tab 9)
+                </button>
+                <button class="btn btn-sm btn-secondary" id="btn-scen-bottle" onclick="setPipelineScenario('BOTTLENECK_SURGE')">
+                  🟠 3. Dồn Ứ Cổ Chai (Tab 10)
+                </button>
+                <button class="btn btn-sm btn-secondary" id="btn-scen-defect" onclick="setPipelineScenario('DEFECT_SPIKE')">
+                  🔴 4. Tụt Áp Bàng Bọng (Tab 11, 12)
+                </button>
+              </div>
+              <div id="pipeline-scenario-desc" style="font-size: 0.78rem; color: #94a3b8; margin-top: 0.75rem; font-style: italic;">
+                Vận hành chuẩn SOP: Takt time 45s, nhiệt áp 170°C/21 bar, FPY > 90%
+              </div>
+            </div>
+
+            <!-- Right: Real-time Stats -->
+            <div style="background: #090e1a; padding: 1rem; border-radius: 8px; border: 1px solid #1e293b; display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; text-align: center;">
+              <div>
+                <div style="font-size: 0.7rem; color: #94a3b8;">TỔNG TICKS QUÉT</div>
+                <div id="pipe-stat-ticks" style="font-size: 1.4rem; font-weight: 800; color: #38bdf8; font-family: var(--font-mono);">0</div>
+              </div>
+              <div>
+                <div style="font-size: 0.7rem; color: #94a3b8;">GÓI TIN ĐÃ PHÁT</div>
+                <div id="pipe-stat-frames" style="font-size: 1.4rem; font-weight: 800; color: #10b981; font-family: var(--font-mono);">0</div>
+              </div>
+              <div>
+                <div style="font-size: 0.7rem; color: #94a3b8;">CHU KỲ QUÉT</div>
+                <div id="pipe-stat-interval" style="font-size: 1.4rem; font-weight: 800; color: #f59e0b; font-family: var(--font-mono);">2.0s</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Live Protocol Stream Ticker -->
+          <div style="margin-top: 1rem; background: #070a12; border: 1px solid #1e293b; border-radius: 6px; padding: 0.75rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; font-size: 0.75rem; color: #94a3b8;">
+              <span style="font-weight: 700; color: #cbd5e1;">📡 KHUNG TIN TRUYỀN THÔNG ĐA GIAO THỨC THỜI GIAN THỰC (LIVE FIELDBUS FRAMES):</span>
+              <span style="font-family: var(--font-mono); color: #38bdf8;" id="pipe-stat-last-time">--:--:--</span>
+            </div>
+            <div id="pipeline-live-frames-container" style="max-height: 180px; overflow-y: auto; font-family: var(--font-mono); font-size: 0.76rem; display: flex; flex-direction: column; gap: 0.35rem;">
+              <div style="color: #64748b;">Đang kết nối luồng fieldbus từ các trạm PLC...</div>
+            </div>
+          </div>
+        </div>
+
         <!-- Connectors Cards Grid -->
         <div id="gateway-connectors-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(480px, 1fr)); gap: 1.25rem;">
+
           <!-- Populated by JS -->
         </div>
 

@@ -69,28 +69,29 @@ def simulator_tick():
                 """, (press_id, side, now_str, new_temp, new_bladder, new_steam))
 
 
-def _background_loop():
-    global SIMULATOR_RUNNING
-    while SIMULATOR_RUNNING:
-        try:
-            simulator_tick()
-        except Exception as e:
-            print(f"[Simulator Warning] {e}")
-        time.sleep(3.0)
+from app.services.plc_pipeline_simulator import plc_pipeline
+
+SIMULATOR_RUNNING = False
+
+
+def simulator_tick():
+    """Performs a single simulation step via the multi-PLC pipeline."""
+    return plc_pipeline.execute_tick()
 
 
 def start_simulator():
-    """Starts the background telemetry simulator thread."""
-    global SIMULATOR_RUNNING, _simulator_thread
+    """Starts the background telemetry simulator via plc_pipeline."""
+    global SIMULATOR_RUNNING
     if not SIMULATOR_RUNNING:
         SIMULATOR_RUNNING = True
-        _simulator_thread = threading.Thread(target=_background_loop, daemon=True)
-        _simulator_thread.start()
-        print("Tire MES IoT Telemetry Simulator started.")
+        plc_pipeline.start(interval_sec=2.0)
+        print("Tire MES Industrial Multi-PLC Pipeline Simulator started.")
 
 
 def stop_simulator():
     """Stops the simulator."""
     global SIMULATOR_RUNNING
     SIMULATOR_RUNNING = False
-    print("Tire MES IoT Telemetry Simulator stopped.")
+    plc_pipeline.stop()
+    print("Tire MES Industrial Multi-PLC Pipeline Simulator stopped.")
+

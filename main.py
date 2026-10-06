@@ -30,7 +30,9 @@ from app.routers import (
     bottleneck,
     shap_root_cause,
     graph_genealogy,
+    plc_pipeline,
 )
+
 
 
 @asynccontextmanager
@@ -78,6 +80,8 @@ app.include_router(ai.router)
 app.include_router(bottleneck.router)
 app.include_router(shap_root_cause.router)
 app.include_router(graph_genealogy.router)
+app.include_router(plc_pipeline.router)
+
 
 
 # Mount Static Assets

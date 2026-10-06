@@ -32,6 +32,9 @@ document.addEventListener('DOMContentLoaded', () => {
       loadDashboard(true);
     } else if (state.currentTab === 'curing') {
       loadCuringPresses(true);
+    } else if (state.currentTab === 'gateway') {
+      loadPipelineStatus(true);
+      loadPipelineFrames();
     }
   }, 3000);
 });
@@ -65,7 +68,11 @@ function switchTab(tabId) {
   if (tabId === 'curing') loadCuringPresses();
   if (tabId === 'quality') loadInspectionQueue();
   if (tabId === 'master-data') showMasterSubTab('products');
-  if (tabId === 'gateway') loadGatewayConnectors();
+  if (tabId === 'gateway') {
+    loadGatewayConnectors();
+    loadPipelineStatus();
+    loadPipelineFrames();
+  }
   if (tabId === 'ai') loadAiTab();
   if (tabId === 'bottleneck') loadBottleneckTab();
   if (tabId === 'shap') loadShapTab();
@@ -3289,6 +3296,184 @@ async function executeGraphQuarantineAction() {
     alert(`Lỗi thực thi lệnh cách ly: ${err.message}`);
   }
 }
+
+// =============================================================================
+// TAB 8: MULTI-PLC INDUSTRIAL PIPELINE SIMULATOR CONTROLLER
+// =============================================================================
+
+let pipelineRunningState = true;
+
+async function loadPipelineStatus(silent = false) {
+  try {
+    const res = await fetch('/api/pipeline/status');
+    const data = await res.json();
+    if (!data.success) return;
+
+    const st = data.status;
+    pipelineRunningState = st.running;
+
+    // Update Badge
+    const badge = document.getElementById('pipeline-status-badge');
+    if (badge) {
+      if (st.running) {
+        badge.className = 'status-pill pill-green';
+        badge.textContent = `ĐANG CHẠY (${st.tick_interval_sec}s / TICK)`;
+      } else {
+        badge.className = 'status-pill pill-red';
+        badge.textContent = 'ĐÃ TẠM DỪNG';
+      }
+    }
+
+    // Update Numerical Counters
+    const ticksEl = document.getElementById('pipe-stat-ticks');
+    if (ticksEl) ticksEl.textContent = (st.total_ticks || 0).toLocaleString();
+
+    const framesEl = document.getElementById('pipe-stat-frames');
+    if (framesEl) framesEl.textContent = (st.total_frames_generated || 0).toLocaleString();
+
+    const intervalEl = document.getElementById('pipe-stat-interval');
+    if (intervalEl) intervalEl.textContent = `${st.tick_interval_sec}s`;
+
+    const lastTimeEl = document.getElementById('pipe-stat-last-time');
+    if (lastTimeEl) lastTimeEl.textContent = st.last_tick_time || '--:--:--';
+
+    // Update Scenario Buttons & Description
+    const descEl = document.getElementById('pipeline-scenario-desc');
+    if (descEl && st.scenario_descriptions) {
+      descEl.textContent = st.scenario_descriptions[st.scenario] || st.scenario;
+    }
+
+    // Update active button highlights
+    const btnMap = {
+      'NORMAL': 'btn-scen-normal',
+      'TAKT_CREEP': 'btn-scen-takt',
+      'BOTTLENECK_SURGE': 'btn-scen-bottle',
+      'DEFECT_SPIKE': 'btn-scen-defect'
+    };
+    Object.keys(btnMap).forEach(sc => {
+      const b = document.getElementById(btnMap[sc]);
+      if (b) {
+        if (sc === st.scenario) {
+          b.className = sc === 'NORMAL' ? 'btn btn-sm btn-success' : 'btn btn-sm btn-danger';
+        } else {
+          b.className = 'btn btn-sm btn-secondary';
+        }
+      }
+    });
+  } catch (err) {
+    if (!silent) console.error('Error loading pipeline status:', err);
+  }
+}
+
+async function loadPipelineFrames() {
+  try {
+    const res = await fetch('/api/pipeline/frames?limit=12');
+    const data = await res.json();
+    if (!data.success) return;
+
+    const container = document.getElementById('pipeline-live-frames-container');
+    if (!container) return;
+
+    if (!data.frames || data.frames.length === 0) {
+      container.innerHTML = '<div style="color: #64748b;">Chưa có khung tin. Bấm "⚡ Quét Ngay 1 Tick" để kích hoạt.</div>';
+      return;
+    }
+
+    container.innerHTML = data.frames.map(f => {
+      const proto = f.protocol;
+      if (proto === 'OPC_UA') {
+        return `
+          <div style="background: rgba(16, 185, 129, 0.08); border-left: 3px solid #10b981; padding: 0.35rem 0.6rem; border-radius: 4px; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <span style="color: #10b981; font-weight: 700;">[OPC-UA]</span>
+              <span style="color: #cbd5e1;">${f.node_id}</span>
+              <strong style="color: #38bdf8; margin-left: 0.5rem;">= ${f.value}</strong>
+            </div>
+            <div style="font-size: 0.7rem; color: #94a3b8;">
+              <span style="color: #34d399;">${f.status_code}</span> &bull; ⏱️ ${f.latency_ms}ms
+            </div>
+          </div>
+        `;
+      } else if (proto === 'MODBUS_TCP') {
+        return `
+          <div style="background: rgba(6, 182, 212, 0.08); border-left: 3px solid #06b6d4; padding: 0.35rem 0.6rem; border-radius: 4px; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <span style="color: #06b6d4; font-weight: 700;">[MODBUS-TCP]</span>
+              <span style="color: #cbd5e1;">Unit ${f.unit_id} &bull; Reg ${f.register_address} (${f.raw_hex})</span>
+              <strong style="color: #f59e0b; margin-left: 0.5rem;">= ${f.scaled_engineering_value}</strong>
+              <span style="color: #94a3b8; font-size: 0.72rem; margin-left: 0.4rem;">(${f.description})</span>
+            </div>
+            <div style="font-size: 0.7rem; color: #94a3b8;">
+              Port 502 &bull; ${f.timestamp ? f.timestamp.split(' ')[1] : ''}
+            </div>
+          </div>
+        `;
+      } else if (proto === 'MQTT_SPARKPLUG_B') {
+        const m = f.metrics && f.metrics[0] ? f.metrics[0] : {};
+        return `
+          <div style="background: rgba(168, 85, 247, 0.08); border-left: 3px solid #a855f7; padding: 0.35rem 0.6rem; border-radius: 4px; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <span style="color: #a855f7; font-weight: 700;">[SPARKPLUG-B]</span>
+              <span style="color: #cbd5e1;">${f.topic}</span>
+              <strong style="color: #c084fc; margin-left: 0.5rem;">${m.name}: ${m.value} ${m.unit || ''}</strong>
+            </div>
+            <div style="font-size: 0.7rem; color: #94a3b8;">
+              Seq #${f.seq}
+            </div>
+          </div>
+        `;
+      }
+      return '';
+    }).join('');
+
+  } catch (err) {
+    console.error('Error loading pipeline frames:', err);
+  }
+}
+
+async function togglePipelinePower() {
+  try {
+    const endpoint = pipelineRunningState ? '/api/pipeline/stop' : '/api/pipeline/start';
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ interval_sec: 2.0 })
+    });
+    const data = await res.json();
+    await loadPipelineStatus();
+    await loadPipelineFrames();
+  } catch (err) {
+    alert(`Lỗi điều khiển pipeline: ${err.message}`);
+  }
+}
+
+async function triggerPipelineTick() {
+  try {
+    const res = await fetch('/api/pipeline/tick', { method: 'POST' });
+    const data = await res.json();
+    await loadPipelineStatus();
+    await loadPipelineFrames();
+  } catch (err) {
+    alert(`Lỗi quét chu kỳ tick: ${err.message}`);
+  }
+}
+
+async function setPipelineScenario(scenario) {
+  try {
+    const res = await fetch('/api/pipeline/scenario', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ scenario: scenario })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Lỗi đổi kịch bản');
+    await loadPipelineStatus();
+    await loadPipelineFrames();
+  } catch (err) {
+    alert(`Lỗi chuyển kịch bản: ${err.message}`);
+  }
+}
+
 
 
 

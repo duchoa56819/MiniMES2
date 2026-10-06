@@ -1,7 +1,4 @@
 # TIRE-MES 4.0: HỆ THỐNG ĐIỀU HÀNH SẢN XUẤT NHÀ MÁY LỐP XE
-### *Kiến trúc & Triển khai bởi Kỹ sư MES với 10 năm kinh nghiệm trong ngành sản xuất lốp xe*
-### *Tuân thủ tiêu chuẩn quốc tế ANSI/ISA-95 Level 3 (MOM / MES Core Functions)*
-
 ---
 
 ## 1. TỔNG QUAN NGÀNH & BỐI CẢNH SẢN XUẤT LỐP XE
@@ -250,6 +247,3 @@ c:\Users\Tuan\Downloads\MES\
 ├── requirements.txt             # Danh sách gói phụ thuộc Python
 └── README.md                    # Tài liệu đặc tả kỹ thuật & vận hành
 ```
-
----
-*Bản quyền dự án & Kiến trúc kỹ thuật: Senior Tire MES Engineer (10+ Years Manufacturing Excellence).*

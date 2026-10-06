@@ -422,6 +422,35 @@ def seed_database():
         ]
         cursor.executemany("INSERT INTO master_documents VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", documents)
 
+        # =====================================================================
+        # 16. DYNAMIC MATERIAL ROUTING & BOTTLENECK BALANCING RULES
+        # =====================================================================
+        rules = [
+            (
+                "RULE-TBM-CURING-PRIMARY", "BUFFER_GREEN_TIRE", "CP-01", "CP-03", "GREEN_TIRE",
+                0, 0.0, "Luồng chuẩn: Cấp 50% lốp sống sang buồng ép CP-01", None, 14.5
+            ),
+            (
+                "RULE-TBM-CURING-SECONDARY", "BUFFER_GREEN_TIRE", "CP-02", "CP-04", "GREEN_TIRE",
+                0, 0.0, "Luồng chuẩn: Cấp 50% lốp sống sang buồng ép CP-02", None, 16.0
+            ),
+            (
+                "RULE-TBM-PARALLEL-SPLIT", "TBM-01", "TBM-01", "TBM-02", "WORK_ORDER",
+                0, 0.0, "Luồng chuẩn: Lệnh PCR xử lý tại TBM-01", None, 12.0
+            ),
+            (
+                "RULE-QC-BALANCING", "XR-01", "XR-01", "UF-01", "CURED_TIRE",
+                0, 0.0, "Luồng chuẩn: 100% lốp qua trạm X-Ray XR-01", None, 18.0
+            )
+        ]
+        cursor.executemany("""
+            INSERT INTO dynamic_routing_rules (
+                rule_id, source_station, target_station, alternate_station,
+                material_type, is_diverted, divert_ratio_pct, divert_reason,
+                activated_at, throughput_gain_forecast_pct
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, rules)
+
 
 
 

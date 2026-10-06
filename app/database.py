@@ -79,6 +79,8 @@ def init_db(force: bool = False):
         if force:
             cursor.execute("PRAGMA foreign_keys = OFF;")
             cursor.executescript("""
+                DROP TABLE IF EXISTS bottleneck_forecasts;
+                DROP TABLE IF EXISTS dynamic_routing_rules;
                 DROP TABLE IF EXISTS ai_anomaly_logs;
                 DROP TABLE IF EXISTS production_cycle_telemetry;
                 DROP TABLE IF EXISTS tire_rework_history;
@@ -416,6 +418,38 @@ def init_db(force: bool = False):
                 pressure_deviation_bar REAL DEFAULT 0.0
             );
 
+            -- =========================================================
+            -- 10. DYNAMIC BOTTLENECK PREDICTION & MATERIAL REROUTING
+            -- =========================================================
+            CREATE TABLE IF NOT EXISTS bottleneck_forecasts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp TEXT NOT NULL,
+                horizon_hours INTEGER NOT NULL,
+                current_bottleneck_station TEXT NOT NULL,
+                predicted_bottleneck_station TEXT NOT NULL,
+                shift_detected BOOLEAN NOT NULL DEFAULT 0,
+                shift_probability REAL NOT NULL,
+                station_bli_scores TEXT NOT NULL,
+                predicted_wip_levels TEXT NOT NULL,
+                root_cause_factors TEXT NOT NULL,
+                reroute_action_needed BOOLEAN NOT NULL DEFAULT 0,
+                recommended_plan TEXT,
+                status TEXT CHECK(status IN ('PREDICTED', 'REROUTED', 'NORMALIZED')) DEFAULT 'PREDICTED'
+            );
+
+            CREATE TABLE IF NOT EXISTS dynamic_routing_rules (
+                rule_id TEXT PRIMARY KEY,
+                source_station TEXT NOT NULL,
+                target_station TEXT NOT NULL,
+                alternate_station TEXT NOT NULL,
+                material_type TEXT NOT NULL,
+                is_diverted BOOLEAN DEFAULT 0,
+                divert_ratio_pct REAL DEFAULT 0.0,
+                divert_reason TEXT,
+                activated_at TEXT,
+                throughput_gain_forecast_pct REAL DEFAULT 15.0
+            );
+
             -- Create Performance Indexes for real-time querying
             CREATE INDEX IF NOT EXISTS idx_green_tire_sku ON production_green_tires(sku);
             CREATE INDEX IF NOT EXISTS idx_green_tire_wo ON production_green_tires(wo_id);
@@ -425,6 +459,8 @@ def init_db(force: bool = False):
             CREATE INDEX IF NOT EXISTS idx_components_lot ON inventory_components(lot_id);
             CREATE INDEX IF NOT EXISTS idx_anomaly_time ON ai_anomaly_logs(timestamp);
             CREATE INDEX IF NOT EXISTS idx_cycle_machine ON production_cycle_telemetry(machine_id, timestamp);
+            CREATE INDEX IF NOT EXISTS idx_bottleneck_time ON bottleneck_forecasts(timestamp);
+            CREATE INDEX IF NOT EXISTS idx_routing_source ON dynamic_routing_rules(source_station);
         """)
 
 

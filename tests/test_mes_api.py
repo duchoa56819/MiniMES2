@@ -490,6 +490,66 @@ def test_13_ai_anomaly_detection():
     print(f"[PASS] Factory AI Batch Scan: {scan_data['total_scanned_cycles']} cycles analyzed, {scan_data['total_anomalies_detected']} productivity bottlenecks flagged (Plant Anomaly Index: {scan_data['plant_anomaly_index']})")
 
 
+def test_14_dynamic_bottleneck_prediction_and_rerouting():
+    """
+    Test Suite 14: Dynamic Bottleneck Prediction (2–4h horizon) & Automated Material Rerouting.
+    Verifies multi-horizon state forecasting, bottleneck shift detection, and automated diverting.
+    """
+    # 1. Test Status Endpoint
+    st_res = client.get("/api/bottleneck/status")
+    assert st_res.status_code == 200
+    st_data = st_res.json()
+    assert st_data["status"] == "OPERATIONAL"
+    assert "current_bottleneck_station" in st_data
+    assert "predicted_2h_station" in st_data
+    print(f"[PASS] Bottleneck AI Status: Current={st_data['current_bottleneck_station']} (BLI={st_data['current_bli']}), Predicted 2h={st_data['predicted_2h_station']}")
+
+    # 2. Test Multi-Horizon Forecast (1h, 2h, 3h, 4h)
+    fc_res = client.get("/api/bottleneck/forecast")
+    assert fc_res.status_code == 200
+    fc_data = fc_res.json()
+    assert len(fc_data["all_horizons"]) == 4
+    h2 = fc_data["forecast_2h"]
+    assert h2["horizon_hours"] == 2
+    assert "station_bli_scores" in h2
+    assert "recommended_plan" in h2
+    print(f"[PASS] Multi-Horizon AI Forecast: Horizon 2h Shift={h2['shift_detected']} (Prob={h2['shift_probability']}), Action Needed={h2['reroute_action_needed']}")
+
+    # 3. Test Simulation Surge (Steam Valve Latency on CP-02)
+    surge_res = client.post("/api/bottleneck/simulate-surge", json={"scenario": "CURING_VALVE_DEGRADE"})
+    assert surge_res.status_code == 200
+    surge_data = surge_res.json()
+    assert surge_data["scenario"] == "CURING_VALVE_DEGRADE"
+    fc_surge = surge_data["forecast"]["forecast_2h"]
+    assert "CP-02" in fc_surge["station_bli_scores"]
+    print(f"[PASS] Simulation Surge Injected: CP-02 Curing Valve Drift -> Forecasted Shift in 2h (BLI CP-02={fc_surge['station_bli_scores']['CP-02']})")
+
+    # 4. Test Automated Material Rerouting Execution
+    reroute_res = client.post("/api/bottleneck/apply-reroute")
+    assert reroute_res.status_code == 200
+    reroute_data = reroute_res.json()
+    assert reroute_data["success"] is True
+    assert reroute_data["expected_oee_protection_pct"] > 0
+    diverted_rules = [r for r in reroute_data["rules"] if r["is_diverted"] == 1]
+    assert len(diverted_rules) > 0
+    print(f"[PASS] MES Automated Material Rerouting: {len(diverted_rules)} rules diverted flow to alternate lines (CP-03/CP-04)")
+
+    # 5. Test Active Rules Retrieval
+    rules_res = client.get("/api/bottleneck/routing-rules")
+    assert rules_res.status_code == 200
+    rules = rules_res.json()
+    assert any(r["rule_id"] == "RULE-TBM-CURING-PRIMARY" and r["is_diverted"] == 1 for r in rules)
+    print(f"[PASS] Verified Dynamic Routing Table: RULE-TBM-CURING-PRIMARY active divert ratio={rules[0]['divert_ratio_pct']}%")
+
+    # 6. Test Reset Routing to SOP
+    reset_res = client.post("/api/bottleneck/reset-routing")
+    assert reset_res.status_code == 200
+    reset_data = reset_res.json()
+    assert reset_data["success"] is True
+    assert all(r["is_diverted"] == 0 for r in reset_data["rules"])
+    print(f"[PASS] Restored Standard Routing: 100% flow returned to SOP baseline lines")
+
+
 if __name__ == "__main__":
     seed_database()
     print("\n" + "="*60)
@@ -508,6 +568,7 @@ if __name__ == "__main__":
     test_11_rework_loop_and_emergency_lot_quarantine()
     test_12_read_replica_and_frankenstein_trap()
     test_13_ai_anomaly_detection()
+    test_14_dynamic_bottleneck_prediction_and_rerouting()
     print("="*60)
     print("   ALL MES BUSINESS LOGIC & API TESTS PASSED 100%!")
     print("="*60 + "\n")

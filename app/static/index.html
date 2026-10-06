@@ -66,6 +66,9 @@
     <button class="tab-btn" onclick="switchTab('ai')">
       🧠 9. Trí Tuệ Nhân Tạo & Bất Thường AI <span class="badge" style="background-color: #8b5cf6; color: #fff;">PyTorch & iForest</span>
     </button>
+    <button class="tab-btn" onclick="switchTab('bottleneck')">
+      🔀 10. Dự Báo Cổ Chai & Điều Hướng <span class="badge" style="background-color: #ec4899; color: #fff;">AI 2-4h Forecast</span>
+    </button>
   </nav>
 
   <!-- MAIN VIEWPORT -->
@@ -992,6 +995,157 @@
                 <tr>
                   <td colspan="8" style="text-align: center; color: #64748b; padding: 2rem;">
                     Đang tải nhật ký cảnh báo AI...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- TAB 10: DYNAMIC BOTTLENECK PREDICTION & AUTOMATED MATERIAL REROUTING -->
+    <!-- =================================================================== -->
+    <section id="pane-bottleneck" class="tab-pane">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">🔀 Dự Báo Cổ Chai Động (2–4h) & Tự Động Điều Hướng Luồng Vật Liệu (AI Dynamic Routing)</div>
+            <div class="card-subtitle">Ứng dụng mô hình cân bằng dòng chảy đa tầng (Multi-Horizon Flow Model) phát hiện sự dịch chuyển điểm tắc nghẽn và tự động bẻ ghi luồng sản xuất sang các dây chuyền thay thế</div>
+          </div>
+          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <button class="btn btn-secondary btn-sm" onclick="loadBottleneckForecast()">🔮 Chạy Dự Báo AI 2–4h</button>
+            <button class="btn btn-primary btn-sm" onclick="applyAiRerouting()">⚡ Kích Hoạt Tự Động Điều Hướng</button>
+            <button class="btn btn-secondary btn-sm" onclick="resetAiRouting()">↺ Khôi Phục Luồng Chuẩn</button>
+          </div>
+        </div>
+
+        <!-- Top KPI Grid -->
+        <div class="kpi-grid" style="margin-bottom: 1.5rem;">
+          <div class="kpi-card blue">
+            <div class="kpi-title">Cổ Chai Hiện Tại (T = Hiện Tại)</div>
+            <div class="kpi-value"><span id="bn-kpi-current-st">BUFFER_GREEN_TIRE</span></div>
+            <div class="kpi-foot">
+              <span>Chỉ số BLI: <strong id="bn-kpi-current-bli">0.78</strong></span>
+              <span class="status-pill pill-yellow">ĐANG NGHẼN</span>
+            </div>
+          </div>
+
+          <div class="kpi-card red">
+            <div class="kpi-title">Cổ Chai Dự Báo (T + 2h ~ 4h)</div>
+            <div class="kpi-value"><span id="bn-kpi-pred-st">CP-02</span></div>
+            <div class="kpi-foot">
+              <span>Xác suất dịch chuyển: <strong id="bn-kpi-shift-prob">88.5%</strong></span>
+              <span class="status-pill pill-red" id="bn-kpi-shift-pill">CÓ DỊCH CHUYỂN</span>
+            </div>
+          </div>
+
+          <div class="kpi-card purple">
+            <div class="kpi-title">Mức Đầy Giàn Đệm WIP Buffer</div>
+            <div class="kpi-value"><span id="bn-kpi-buffer-fill">68.5</span><span class="kpi-unit">%</span></div>
+            <div class="kpi-foot">
+              <span>Dung tích: <strong>120 Lốp Sống</strong></span>
+              <span id="bn-kpi-buffer-status" class="status-pill pill-yellow">CẢNH BÁO DỘI NGƯỢC</span>
+            </div>
+          </div>
+
+          <div class="kpi-card green">
+            <div class="kpi-title">Trạng Thái Bẻ Ghi Tự Động</div>
+            <div class="kpi-value"><span id="bn-kpi-reroute-status" style="font-size: 1.3rem;">CHUẨN BỊ BẺ GHI</span></div>
+            <div class="kpi-foot">
+              <span>Quy tắc: <strong>Bẻ 45% &rarr; CP-03/04</strong></span>
+              <span class="status-pill pill-green" id="bn-kpi-reroute-pill">SẴN SÀNG</span>
+            </div>
+          </div>
+
+          <div class="kpi-card cyan">
+            <div class="kpi-title">Sản Lượng OEE Được Bảo Vệ</div>
+            <div class="kpi-value"><span id="bn-kpi-protected-oee">+14.5</span><span class="kpi-unit">%</span></div>
+            <div class="kpi-foot">
+              <span>Tiết kiệm: <strong>~32 Lốp / Ca</strong></span>
+              <span>Thời gian chờ: <strong>-35.0s / lốp</strong></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Multi-Horizon Timeline Forecast Bar -->
+        <div class="card" style="margin-bottom: 1.5rem; background: #0c101d; border: 1px solid #1e293b;">
+          <div class="card-header" style="padding-bottom: 0.5rem;">
+            <div>
+              <div class="card-title" style="font-size: 0.95rem;">⏱️ Tiến Trình Dịch Chuyển Điểm Nghẽn Theo Thời Gian (Multi-Horizon Timeline)</div>
+              <div class="card-subtitle">Quan sát sự di chuyển của nút thắt cổ chai qua các mốc thời gian: Hiện tại &rarr; T+1h &rarr; T+2h &rarr; T+3h &rarr; T+4h</div>
+            </div>
+          </div>
+          <div id="bn-timeline-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; padding: 1rem;">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+
+        <!-- Plant Topology Dynamic Flow Canvas -->
+        <div class="card" style="margin-bottom: 1.5rem; background: #0c101d; border: 1px solid #1e293b;">
+          <div class="card-header" style="padding-bottom: 0.75rem;">
+            <div>
+              <div class="card-title" style="font-size: 0.95rem;">🌐 Sơ Đồ Mạng Lưới Sản Xuất & Luồng Điều Hướng Tự Động (Topology Flow Diagram)</div>
+              <div class="card-subtitle">Xanh Cyan: Tuyến luồng tiêu chuẩn (Standard SOP) &bull; Vàng / Hồng: Luồng bẻ ghi tự động (Automated Diverting) sang dây chuyền dự phòng</div>
+            </div>
+            <div style="display: flex; gap: 0.75rem; align-items: center; font-size: 0.8rem;">
+              <span style="display: flex; align-items: center; gap: 5px;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #10b981; display: inline-block;"></span> BLI &le; 50% (Thông suốt)</span>
+              <span style="display: flex; align-items: center; gap: 5px;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #f59e0b; display: inline-block;"></span> BLI 50-70% (Tải cao)</span>
+              <span style="display: flex; align-items: center; gap: 5px;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #ef4444; display: inline-block;"></span> BLI &ge; 70% (Cổ chai)</span>
+            </div>
+          </div>
+          <div style="padding: 1rem;">
+            <canvas id="bn-topology-canvas" width="950" height="340" style="width: 100%; height: 340px; background: #070a13; border: 1px solid #1e293b; border-radius: 8px;"></canvas>
+          </div>
+        </div>
+
+        <!-- Simulation Testing Sandbox -->
+        <div class="card" style="margin-bottom: 1.5rem; background: #0f172a; border: 1px solid #334155;">
+          <div class="card-header">
+            <div>
+              <div class="card-title" style="font-size: 0.95rem; color: #f8fafc;">🧪 Hộp Thử Nghiệm Kịch Bản Sốc Tải Xưởng (Production Surge Simulation Sandbox)</div>
+              <div class="card-subtitle">Kích hoạt các biến cố thực tế tại xưởng để kiểm thử thuật toán dự báo dịch chuyển cổ chai và phản xạ điều hướng của MES</div>
+            </div>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              <button class="btn btn-secondary btn-sm" onclick="simulateBottleneckSurge('CURING_VALVE_DEGRADE')">🔥 Sụt Áp Hơi Buồng Ép CP-02</button>
+              <button class="btn btn-secondary btn-sm" onclick="simulateBottleneckSurge('TBM_INFLOW_SURGE')">⚡ Sốc Tải Lốp Sống Từ TBM-01</button>
+              <button class="btn btn-secondary btn-sm" onclick="simulateBottleneckSurge('XR_HIGH_SCRAP')">🔍 Kẹt Trạm Soi Tia X (XR-01)</button>
+              <button class="btn btn-secondary btn-sm" onclick="simulateBottleneckSurge('NORMAL')">↺ Khôi Phục Bình Thường</button>
+            </div>
+          </div>
+          <div id="bn-simulation-feedback" style="display: none; padding: 1rem; border-top: 1px solid #1e293b;"></div>
+        </div>
+
+        <!-- Dynamic Routing Rules Matrix Table -->
+        <div class="card" style="background: #0c101d; border: 1px solid #1e293b;">
+          <div class="card-header">
+            <div>
+              <div class="card-title" style="font-size: 0.95rem;">📋 Ma Trận Quy Tắc Điều Hướng Động (Dynamic Routing & Diverting Matrix)</div>
+              <div class="card-subtitle">Các tuyến chuyển hướng tự động được MES thiết lập để bảo vệ nhịp chuyền khi phát hiện nguy cơ tắc nghẽn</div>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="loadDynamicRoutingRules()">Làm Mới Ma Trận</button>
+          </div>
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Mã Quy Tắc</th>
+                  <th>Nút Nguồn</th>
+                  <th>Tuyến Chuẩn (Đích)</th>
+                  <th>Tuyến Dự Phòng (Thay Thế)</th>
+                  <th>Loại Vật Liệu</th>
+                  <th>Tỷ Lệ Bẻ Ghi</th>
+                  <th>Trạng Thái Điều Hướng</th>
+                  <th>Hiệu Quả Dự Báo</th>
+                  <th>Thao Tác</th>
+                </tr>
+              </thead>
+              <tbody id="bn-rules-table-body">
+                <tr>
+                  <td colspan="9" style="text-align: center; color: #64748b; padding: 1.5rem;">
+                    Đang tải ma trận quy tắc điều hướng...
                   </td>
                 </tr>
               </tbody>

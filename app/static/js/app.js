@@ -67,6 +67,7 @@ function switchTab(tabId) {
   if (tabId === 'master-data') showMasterSubTab('products');
   if (tabId === 'gateway') loadGatewayConnectors();
   if (tabId === 'ai') loadAiTab();
+  if (tabId === 'bottleneck') loadBottleneckTab();
 }
 
 function openModal(id) {
@@ -2098,5 +2099,383 @@ async function acknowledgeAiAnomaly(id) {
     alert(`Lỗi xác nhận cảnh báo: ${err}`);
   }
 }
+
+// ============================================================================
+// TAB 10: DYNAMIC BOTTLENECK PREDICTION & AUTOMATED MATERIAL REROUTING
+// ============================================================================
+
+let currentBottleneckForecast = null;
+
+async function loadBottleneckTab() {
+  await loadBottleneckForecast();
+  await loadDynamicRoutingRules();
+}
+
+async function loadBottleneckForecast() {
+  try {
+    const res = await fetch('/api/bottleneck/forecast?horizons=1,2,3,4');
+    const data = await res.json();
+    currentBottleneckForecast = data;
+
+    const curr = data.current_bottleneck || {};
+    const fc2 = data.forecast_2h || {};
+    const fc4 = data.forecast_4h || {};
+
+    // Update KPI 1: Current Bottleneck
+    const currStEl = document.getElementById('bn-kpi-current-st');
+    if (currStEl) currStEl.textContent = curr.station_id || 'TBM-01';
+
+    const currBliEl = document.getElementById('bn-kpi-current-bli');
+    if (currBliEl) currBliEl.textContent = curr.current_bli ? curr.current_bli.toFixed(2) : '0.78';
+
+    // Update KPI 2: Predicted Bottleneck (2h-4h)
+    const predStEl = document.getElementById('bn-kpi-pred-st');
+    if (predStEl) predStEl.textContent = fc2.predicted_bottleneck_station || 'CP-02';
+
+    const shiftProbEl = document.getElementById('bn-kpi-shift-prob');
+    if (shiftProbEl) shiftProbEl.textContent = fc2.shift_probability ? `${(fc2.shift_probability * 100).toFixed(1)}%` : '88.5%';
+
+    const shiftPillEl = document.getElementById('bn-kpi-shift-pill');
+    if (shiftPillEl) {
+      if (fc2.shift_detected) {
+        shiftPillEl.className = 'status-pill pill-red';
+        shiftPillEl.textContent = 'DỊCH CHUYỂN';
+      } else {
+        shiftPillEl.className = 'status-pill pill-green';
+        shiftPillEl.textContent = 'ỔN ĐỊNH';
+      }
+    }
+
+    // Update KPI 3: Buffer Fill
+    const bufFillEl = document.getElementById('bn-kpi-buffer-fill');
+    if (bufFillEl) bufFillEl.textContent = fc2.buffer_fill_pct ? fc2.buffer_fill_pct.toFixed(1) : '68.5';
+
+    const bufStatusEl = document.getElementById('bn-kpi-buffer-status');
+    if (bufStatusEl) {
+      if (fc2.buffer_fill_pct > 80) {
+        bufStatusEl.className = 'status-pill pill-red';
+        bufStatusEl.textContent = 'NGUY CƠ KẸT DỘI NGƯỢC';
+      } else if (fc2.buffer_fill_pct > 65) {
+        bufStatusEl.className = 'status-pill pill-yellow';
+        bufStatusEl.textContent = 'CẢNH BÁO TÍCH TỤ';
+      } else {
+        bufStatusEl.className = 'status-pill pill-green';
+        bufStatusEl.textContent = 'THÔNG SUỐT';
+      }
+    }
+
+    // Update KPI 4: Reroute Status
+    const rerouteStatusEl = document.getElementById('bn-kpi-reroute-status');
+    const reroutePillEl = document.getElementById('bn-kpi-reroute-pill');
+    if (rerouteStatusEl && reroutePillEl) {
+      if (data.is_rerouting_active) {
+        rerouteStatusEl.textContent = 'ĐANG BẺ GHI 45%';
+        reroutePillEl.className = 'status-pill pill-green';
+        reroutePillEl.textContent = 'ĐANG KÍCH HOẠT';
+      } else if (fc2.reroute_action_needed) {
+        rerouteStatusEl.textContent = 'CẦN BẺ GHI GẤP';
+        reroutePillEl.className = 'status-pill pill-red';
+        reroutePillEl.textContent = 'CẢNH BÁO';
+      } else {
+        rerouteStatusEl.textContent = 'LUỒNG CHUẨN SOP';
+        reroutePillEl.className = 'status-pill pill-cyan';
+        reroutePillEl.textContent = 'TIÊU CHUẨN';
+      }
+    }
+
+    // Update KPI 5: Protected OEE
+    const oeeEl = document.getElementById('bn-kpi-protected-oee');
+    if (oeeEl) oeeEl.textContent = `+${data.plant_throughput_protected_pct || 14.5}%`;
+
+    // Render Timeline Bar
+    renderBottleneckTimeline(data.all_horizons || []);
+
+    // Render Canvas Topology Flow Map
+    renderBottleneckTopologyCanvas(data);
+  } catch (err) {
+    console.error('Error loading bottleneck forecast:', err);
+  }
+}
+
+function renderBottleneckTimeline(horizons) {
+  const container = document.getElementById('bn-timeline-container');
+  if (!container) return;
+
+  container.innerHTML = horizons.map(h => {
+    const isShift = h.shift_detected;
+    const bli = h.station_bli_scores ? (h.station_bli_scores[h.predicted_bottleneck_station] || 0) : 0;
+    let pillClass = 'pill-green';
+    if (bli >= 0.70) pillClass = 'pill-red';
+    else if (bli >= 0.50) pillClass = 'pill-yellow';
+
+    return `
+      <div style="background: #090e1a; border: 1px solid ${isShift ? '#ef4444' : '#1e293b'}; border-radius: 8px; padding: 1rem; position: relative;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+          <strong style="color: #38bdf8; font-size: 0.9rem;">Mốc T+${h.horizon_hours}h (${h.horizon_time})</strong>
+          <span class="status-pill ${pillClass}">BLI: ${Number(bli).toFixed(2)}</span>
+        </div>
+        <div style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 0.35rem;">Điểm nghẽn dự báo:</div>
+        <div style="font-size: 0.95rem; font-weight: 600; color: #fff; margin-bottom: 0.5rem;">
+          ${h.predicted_bottleneck_station}
+        </div>
+        <div style="font-size: 0.78rem; color: #cbd5e1; margin-bottom: 0.5rem; line-height: 1.4;">
+          ${h.predicted_bottleneck_name}
+        </div>
+        <div style="font-size: 0.75rem; color: #94a3b8; border-top: 1px dashed #1e293b; padding-top: 0.4rem; display: flex; justify-content: space-between;">
+          <span>WIP Đệm: <strong>${h.buffer_fill_pct}%</strong></span>
+          <span>${isShift ? '<strong style="color: #f87171;">⚠️ Dịch chuyển</strong>' : '<span style="color: #34d399;">✓ Ổn định</span>'}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderBottleneckTopologyCanvas(forecastData) {
+  const canvas = document.getElementById('bn-topology-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width;
+  const h = canvas.height;
+
+  ctx.clearRect(0, 0, w, h);
+
+  // Background
+  ctx.fillStyle = '#070a13';
+  ctx.fillRect(0, 0, w, h);
+
+  // Grid dots
+  ctx.fillStyle = '#1e293b';
+  for (let x = 20; x < w; x += 30) {
+    for (let y = 20; y < h; y += 30) {
+      ctx.fillRect(x, y, 1.5, 1.5);
+    }
+  }
+
+  const fc2 = (forecastData && forecastData.forecast_2h) ? forecastData.forecast_2h : {};
+  const bliMap = fc2.station_bli_scores || {};
+  const isDiverted = forecastData ? forecastData.is_rerouting_active : false;
+
+  // Layout Nodes definition
+  const nodes = {
+    PREP: { x: 70, y: 170, label: 'BÁN THÀNH PHẨM', sub: 'EXT-01 / CAL-01', bli: 0.35 },
+    TBM1: { x: 230, y: 110, label: 'TBM-01 (PCR)', sub: 'VMI MAXX (80u/h)', bli: bliMap['TBM-01'] || 0.45 },
+    TBM2: { x: 230, y: 230, label: 'TBM-02 (TBR)', sub: 'HF Tech (60u/h)', bli: bliMap['TBM-02'] || 0.30 },
+    BUFFER: { x: 420, y: 170, label: 'GIÀN ĐỆM LỐP SỐNG', sub: `WIP: ${fc2.buffer_fill_pct || 68}% / 120 lốp`, bli: bliMap['BUFFER_GREEN_TIRE'] || 0.78, isBuffer: true },
+    CP1: { x: 620, y: 70, label: 'LƯU HÓA CP-01', sub: 'Chính (9.2u/h)', bli: bliMap['CP-01'] || 0.50 },
+    CP2: { x: 620, y: 135, label: 'LƯU HÓA CP-02', sub: 'Chính (Van Trễ)', bli: bliMap['CP-02'] || 0.92 },
+    CP3: { x: 620, y: 205, label: 'LƯU HÓA CP-03', sub: 'Dự Phòng (Standby)', bli: bliMap['CP-03'] || 0.22, isAlt: true },
+    CP4: { x: 620, y: 270, label: 'LƯU HÓA CP-04', sub: 'Dự Phòng (Standby)', bli: bliMap['CP-04'] || 0.20, isAlt: true },
+    QC: { x: 800, y: 170, label: 'KCS & HOÀN THIỆN', sub: 'XR-01 & UF-01', bli: bliMap['XR-01'] || 0.38 },
+    WH: { x: 910, y: 170, label: 'KHO THÀNH PHẨM', sub: 'WH-01 Đạt Chuẩn', bli: 0.15 }
+  };
+
+  // Helper function to draw connections
+  function drawConnection(p1, p2, isDivertedPath = false, label = '') {
+    ctx.beginPath();
+    ctx.moveTo(p1.x, p1.y);
+    ctx.lineTo(p2.x, p2.y);
+
+    if (isDivertedPath) {
+      ctx.strokeStyle = '#ec4899';
+      ctx.lineWidth = 3;
+      ctx.setLineDash([6, 4]);
+    } else {
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.45)';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([]);
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Draw Arrowhead
+    const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+    const midX = (p1.x + p2.x) / 2;
+    const midY = (p1.y + p2.y) / 2;
+
+    ctx.save();
+    ctx.translate(midX, midY);
+    ctx.rotate(angle);
+    ctx.fillStyle = isDivertedPath ? '#ec4899' : '#38bdf8';
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-7, -4);
+    ctx.lineTo(-7, 4);
+    ctx.closePath();
+    ctx.fill();
+
+    if (label) {
+      ctx.font = 'bold 9px monospace';
+      ctx.fillStyle = isDivertedPath ? '#f472b6' : '#94a3b8';
+      ctx.fillText(label, -15, -8);
+    }
+    ctx.restore();
+  }
+
+  // Draw Standard Path Connections
+  drawConnection(nodes.PREP, nodes.TBM1);
+  drawConnection(nodes.PREP, nodes.TBM2);
+  drawConnection(nodes.TBM1, nodes.BUFFER);
+  drawConnection(nodes.TBM2, nodes.BUFFER);
+  drawConnection(nodes.BUFFER, nodes.CP1);
+  drawConnection(nodes.BUFFER, nodes.CP2);
+  drawConnection(nodes.CP1, nodes.QC);
+  drawConnection(nodes.CP2, nodes.QC);
+  drawConnection(nodes.CP3, nodes.QC);
+  drawConnection(nodes.CP4, nodes.QC);
+  drawConnection(nodes.QC, nodes.WH);
+
+  // If Automated Diverting is Active, highlight Alternate Paths!
+  if (isDiverted) {
+    drawConnection(nodes.BUFFER, nodes.CP3, true, 'BẺ GHI 45%');
+    drawConnection(nodes.BUFFER, nodes.CP4, true, 'BẺ GHI 45%');
+    drawConnection(nodes.TBM1, nodes.TBM2, true, 'RE-DISPATCH');
+  }
+
+  // Draw Nodes
+  Object.keys(nodes).forEach(k => {
+    const n = nodes[k];
+    const nodeW = n.isBuffer ? 130 : 110;
+    const nodeH = 46;
+    const rx = n.x - nodeW / 2;
+    const ry = n.y - nodeH / 2;
+
+    // Determine colors
+    let bgCol = '#0f172a';
+    let borderCol = '#334155';
+    let textCol = '#38bdf8';
+
+    if (n.bli >= 0.70) {
+      bgCol = 'rgba(239, 68, 68, 0.25)';
+      borderCol = '#ef4444';
+      textCol = '#f87171';
+    } else if (n.bli >= 0.50) {
+      bgCol = 'rgba(245, 158, 11, 0.2)';
+      borderCol = '#f59e0b';
+      textCol = '#fbbf24';
+    } else if (n.isAlt && isDiverted) {
+      bgCol = 'rgba(16, 185, 129, 0.25)';
+      borderCol = '#10b981';
+      textCol = '#34d399';
+    }
+
+    // Node Box
+    ctx.fillStyle = bgCol;
+    ctx.strokeStyle = borderCol;
+    ctx.lineWidth = n.bli >= 0.70 ? 2 : 1;
+    ctx.beginPath();
+    ctx.roundRect(rx, ry, nodeW, nodeH, 6);
+    ctx.fill();
+    ctx.stroke();
+
+    // Node Text
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 10px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(n.label, n.x, n.y - 6);
+
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '9px monospace';
+    ctx.fillText(n.sub, n.x, n.y + 7);
+
+    // BLI Tag
+    ctx.fillStyle = textCol;
+    ctx.font = 'bold 8.5px monospace';
+    ctx.fillText(`BLI: ${(n.bli * 100).toFixed(0)}%`, n.x, n.y + 18);
+  });
+}
+
+async function simulateBottleneckSurge(scenario) {
+  const feedbackEl = document.getElementById('bn-simulation-feedback');
+  if (feedbackEl) {
+    feedbackEl.style.display = 'block';
+    feedbackEl.innerHTML = '<div style="color: #94a3b8; font-size: 0.85rem;">⏳ Đang đưa kịch bản vào mô hình dự báo chuỗi thời gian...</div>';
+  }
+
+  try {
+    const res = await fetch('/api/bottleneck/simulate-surge', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ scenario })
+    });
+    const data = await res.json();
+
+    if (feedbackEl) {
+      feedbackEl.innerHTML = `
+        <div style="background: rgba(56, 189, 248, 0.1); border: 1.5px solid #38bdf8; border-radius: 6px; padding: 0.85rem; font-size: 0.85rem; color: #e2e8f0;">
+          <strong>⚡ Kết quả mô phỏng:</strong> ${data.message}
+        </div>
+      `;
+    }
+
+    await loadBottleneckForecast();
+  } catch (err) {
+    alert(`Lỗi kích hoạt mô phỏng: ${err}`);
+  }
+}
+
+async function applyAiRerouting() {
+  try {
+    const res = await fetch('/api/bottleneck/apply-reroute', { method: 'POST' });
+    const data = await res.json();
+    alert(`✅ ${data.message}\nBảo vệ sản lượng: +${data.expected_oee_protection_pct}% OEE!`);
+    await loadBottleneckTab();
+  } catch (err) {
+    alert(`Lỗi kích hoạt điều hướng: ${err}`);
+  }
+}
+
+async function resetAiRouting() {
+  try {
+    const res = await fetch('/api/bottleneck/reset-routing', { method: 'POST' });
+    const data = await res.json();
+    alert(`↺ ${data.message}`);
+    await loadBottleneckTab();
+  } catch (err) {
+    alert(`Lỗi khôi phục luồng chuẩn: ${err}`);
+  }
+}
+
+async function loadDynamicRoutingRules() {
+  const tbody = document.getElementById('bn-rules-table-body');
+  if (!tbody) return;
+
+  try {
+    const res = await fetch('/api/bottleneck/routing-rules');
+    const rules = await res.json();
+
+    if (!rules || rules.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: #64748b; padding: 1.5rem;">Không có quy tắc điều hướng nào.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = rules.map(r => {
+      const isDiv = r.is_diverted === 1;
+      const pillClass = isDiv ? 'pill-green' : 'pill-cyan';
+      const statusText = isDiv ? 'ĐANG BẺ GHI TỰ ĐỘNG' : 'LUỒNG TIÊU CHUẨN';
+
+      return `
+        <tr>
+          <td style="font-family: var(--font-mono); font-size: 0.82rem; color: #38bdf8;">${r.rule_id}</td>
+          <td><strong style="color: #fff;">${r.source_station}</strong></td>
+          <td><span style="color: #cbd5e1;">${r.target_station}</span></td>
+          <td><strong style="color: #34d399;">${r.alternate_station}</strong></td>
+          <td><span class="status-pill pill-purple">${r.material_type}</span></td>
+          <td style="font-family: var(--font-mono); font-weight: 600;">${r.divert_ratio_pct}%</td>
+          <td><span class="status-pill ${pillClass}">${statusText}</span></td>
+          <td style="color: #38bdf8; font-family: var(--font-mono);">+${r.throughput_gain_forecast_pct}% OEE</td>
+          <td>
+            ${isDiv
+              ? `<button class="btn btn-secondary btn-sm" onclick="resetAiRouting()">Tắt Bẻ Ghi</button>`
+              : `<button class="btn btn-primary btn-sm" onclick="applyAiRerouting()">⚡ Bẻ Ghi Ngay</button>`
+            }
+          </td>
+        </tr>
+      `;
+    }).join('');
+  } catch (err) {
+    console.error('Error loading routing rules:', err);
+  }
+}
+
 
 

@@ -40,3 +40,9 @@ Thumbs.db
 .pytest_cache/
 .coverage
 htmlcov/
+
+# SQLite WAL & temporary files
+*.db-wal
+*.db-shm
+*.db-journal
+

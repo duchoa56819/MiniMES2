@@ -96,10 +96,17 @@ def serve_index():
 
 
 if __name__ == "__main__":
+    import sys
+    if hasattr(sys.stdout, "reconfigure"):
+        try:
+            sys.stdout.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
     import uvicorn
     print("\n" + "="*70)
     print("   TIRE MANUFACTURING EXECUTION SYSTEM (TIRE-MES) - ISA-95 LEVEL 3")
-    print("   Truy cập Web Dashboard tại: http://localhost:8000")
-    print("   Tài liệu Swagger API tại:   http://localhost:8000/docs")
+    print("   Web Dashboard: http://localhost:8000")
+    print("   Swagger Docs:  http://localhost:8000/docs")
     print("="*70 + "\n")
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+

@@ -207,6 +207,24 @@ def seed_database():
 
             # Expired lot for Poka-Yoke refusal demo
             ("LOT-EXP-TRD-999", "TREAD", "TRD-SP-205", "CP-TRD-101", old_prod, expired_time, 15, "EXPIRED", "QUARANTINE-01", "BB-MB-8500"),
+
+            # Additional available lots for EV and TBR and backup
+            ("LOT-TRD-202610-01B", "TREAD", "TRD-SP-205", "CP-TRD-101", past_prod, valid_exp, 50, "AVAILABLE", "RACK-TRD-01B", "BB-MB-8921"),
+            ("LOT-TRD-202610-03", "TREAD", "TRD-EV-245", "CP-TRD-102", past_prod, valid_exp, 40, "AVAILABLE", "RACK-TRD-03", "BB-MB-8925"),
+            ("LOT-SW-202610-03", "SIDEWALL", "SW-EV-19", "CP-SW-202", past_prod, valid_exp, 45, "AVAILABLE", "RACK-SW-03", "BB-MB-8926"),
+            ("LOT-BLT1-202610-03", "BELT_1", "ST-BLT-1-245", "CP-SK-404", past_prod, valid_exp, 50, "AVAILABLE", "CART-BLT-05", "CAL-BATCH-110"),
+            ("LOT-BLT2-202610-03", "BELT_2", "ST-BLT-2-245", "CP-SK-404", past_prod, valid_exp, 50, "AVAILABLE", "CART-BLT-06", "CAL-BATCH-111"),
+            ("LOT-PLY-202610-03", "PLY", "PLY-ARAMID-19", "CP-SK-404", past_prod, valid_exp, 60, "AVAILABLE", "SPOOL-PLY-03", "CAL-BATCH-112"),
+            ("LOT-BD-202610-03", "BEAD", "BD-RING-19-HEX", "CP-BD-505", past_prod, valid_exp, 70, "AVAILABLE", "BIN-BD-03", "BD-WIND-090"),
+            ("LOT-INL-202610-03", "INNERLINER", "INL-FOAM-245", "CP-INL-303", past_prod, valid_exp, 40, "AVAILABLE", "ROLL-INL-03", "CAL-INL-304"),
+
+            ("LOT-TRD-202610-04", "TREAD", "TRD-TBR-315", "CP-TRD-103", past_prod, valid_exp, 30, "AVAILABLE", "RACK-TRD-04", "BB-MB-8927"),
+            ("LOT-SW-202610-04", "SIDEWALL", "SW-TBR-225", "CP-SW-203", past_prod, valid_exp, 35, "AVAILABLE", "RACK-SW-04", "BB-MB-8928"),
+            ("LOT-BLT1-202610-04", "BELT_1", "ST-TBR-BLT1", "CP-SK-404", past_prod, valid_exp, 40, "AVAILABLE", "CART-BLT-07", "CAL-BATCH-113"),
+            ("LOT-BLT2-202610-04", "BELT_2", "ST-TBR-BLT2", "CP-SK-404", past_prod, valid_exp, 40, "AVAILABLE", "CART-BLT-08", "CAL-BATCH-114"),
+            ("LOT-PLY-202610-04", "PLY", "PLY-STEEL-TBR", "CP-SK-404", past_prod, valid_exp, 50, "AVAILABLE", "SPOOL-PLY-04", "CAL-BATCH-115"),
+            ("LOT-BD-202610-04", "BEAD", "BD-TBR-HEAVY", "CP-BD-506", past_prod, valid_exp, 60, "AVAILABLE", "BIN-BD-04", "BD-WIND-091"),
+            ("LOT-INL-202610-04", "INNERLINER", "INL-TBR-315", "CP-INL-303", past_prod, valid_exp, 35, "AVAILABLE", "ROLL-INL-04", "CAL-INL-305"),
         ]
         cursor.executemany("INSERT INTO inventory_components VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", components)
 
@@ -236,6 +254,16 @@ def seed_database():
             ("CP-04", "R", "MLD-TBR-02", None, None, "EMPTY", None, 2400, 0, 150.0, 0.0, 14.5, 89),
         ]
         cursor.executemany("INSERT INTO curing_press_cavities VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", cavities)
+
+        # Seed green tires currently in active curing press cavities
+        curing_gts = [
+            ("GT-202610-0019", "WO-2026-001", "PCR-205-55R16-91V", "TBM-01", "OP-1001", (now - timedelta(minutes=45)).strftime("%Y-%m-%d %H:%M:%S"), 9.25, "LOT-TRD-202610-01", "LOT-SW-202610-01", "LOT-BLT1-202610-01", "LOT-BLT2-202610-01", "LOT-PLY-202610-01", "LOT-BD-202610-01", "LOT-INL-202610-01", "VERIFIED_PASS", "IN_CURING"),
+            ("GT-202610-0020", "WO-2026-001", "PCR-205-55R16-91V", "TBM-01", "OP-1002", (now - timedelta(minutes=40)).strftime("%Y-%m-%d %H:%M:%S"), 9.28, "LOT-TRD-202610-01", "LOT-SW-202610-01", "LOT-BLT1-202610-01", "LOT-BLT2-202610-01", "LOT-PLY-202610-01", "LOT-BD-202610-01", "LOT-INL-202610-01", "VERIFIED_PASS", "IN_CURING"),
+            ("GT-202610-0021", "WO-2026-001", "PCR-205-55R16-91V", "TBM-01", "OP-1001", (now - timedelta(minutes=35)).strftime("%Y-%m-%d %H:%M:%S"), 9.24, "LOT-TRD-202610-01", "LOT-SW-202610-01", "LOT-BLT1-202610-01", "LOT-BLT2-202610-01", "LOT-PLY-202610-01", "LOT-BD-202610-01", "LOT-INL-202610-01", "VERIFIED_PASS", "IN_CURING"),
+            ("GT-202610-0022", "WO-2026-002", "PCR-225-60R17-99H", "TBM-01", "OP-1002", (now - timedelta(minutes=30)).strftime("%Y-%m-%d %H:%M:%S"), 10.45, "LOT-TRD-202610-02", "LOT-SW-202610-02", "LOT-BLT1-202610-02", "LOT-BLT2-202610-02", "LOT-PLY-202610-02", "LOT-BD-202610-02", "LOT-INL-202610-02", "VERIFIED_PASS", "IN_CURING"),
+            ("GT-202610-0023", "WO-2026-004", "TBR-315-80R22.5-156K", "TBM-02", "OP-1003", (now - timedelta(minutes=60)).strftime("%Y-%m-%d %H:%M:%S"), 58.20, "LOT-TRD-202610-04", "LOT-SW-202610-04", "LOT-BLT1-202610-04", "LOT-BLT2-202610-04", "LOT-PLY-202610-04", "LOT-BD-202610-04", "LOT-INL-202610-04", "VERIFIED_PASS", "IN_CURING"),
+        ]
+        cursor.executemany("INSERT OR IGNORE INTO production_green_tires VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", curing_gts)
 
         # =====================================================================
         # 11. HISTORICAL PRODUCTION TIRES (GENEALOGY & TRACEABILITY)

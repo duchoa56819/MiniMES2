@@ -547,8 +547,41 @@ function checkAllLotsScanned() {
   }
 }
 
-function quickFillValidLots() {
-  const validLots = {
+async function quickFillValidLots() {
+  if (!state.activeTbmWO) {
+    alert('Vui lòng chọn Lệnh sản xuất trước khi nạp lô linh kiện!');
+    return;
+  }
+
+  const sku = state.activeTbmWO.sku;
+  try {
+    const res = await fetch(`/api/tbm/suggested-lots?sku=${encodeURIComponent(sku)}`);
+    if (res.ok) {
+      const validLots = await res.json();
+      Object.entries(validLots).forEach(([type, lot]) => {
+        const input = document.getElementById(`lot-input-${type}`);
+        if (input) {
+          input.value = lot;
+          validateLotSingle(type);
+        }
+      });
+      return;
+    }
+  } catch (err) {
+    console.warn('Lỗi tải danh mục lô đề xuất, chuyển sang danh mục dự phòng:', err);
+  }
+
+  // Smart fallback matching SKU size
+  const is17 = sku.includes('225') || sku.includes('17');
+  const fallbackLots = is17 ? {
+    'TREAD': 'LOT-TRD-202610-02',
+    'SIDEWALL': 'LOT-SW-202610-02',
+    'BELT_1': 'LOT-BLT1-202610-02',
+    'BELT_2': 'LOT-BLT2-202610-02',
+    'PLY': 'LOT-PLY-202610-02',
+    'BEAD': 'LOT-BD-202610-02',
+    'INNERLINER': 'LOT-INL-202610-02'
+  } : {
     'TREAD': 'LOT-TRD-202610-01',
     'SIDEWALL': 'LOT-SW-202610-01',
     'BELT_1': 'LOT-BLT1-202610-01',
@@ -558,7 +591,7 @@ function quickFillValidLots() {
     'INNERLINER': 'LOT-INL-202610-01'
   };
 
-  Object.entries(validLots).forEach(([type, lot]) => {
+  Object.entries(fallbackLots).forEach(([type, lot]) => {
     const input = document.getElementById(`lot-input-${type}`);
     if (input) {
       input.value = lot;
@@ -567,9 +600,8 @@ function quickFillValidLots() {
   });
 }
 
-function quickFillExpiredLot() {
-  // Fill valid for 6 components and expired for Tread
-  quickFillValidLots();
+async function quickFillExpiredLot() {
+  await quickFillValidLots();
   setTimeout(() => {
     const treadInp = document.getElementById('lot-input-TREAD');
     if (treadInp) {

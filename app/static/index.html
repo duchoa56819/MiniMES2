@@ -3,81 +3,99 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TIRE-MES 4.0 | Hệ Thống Điều Hành Sản Xuất Nhà Máy Lốp Xe</title>
+  <title>MiniMES | Hệ Thống Điều Hành Sản Xuất</title>
   <link rel="stylesheet" href="/static/css/style.css">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%23111827' stroke='%2338bdf8' stroke-width='8'/><circle cx='50' cy='50' r='20' fill='%23374151'/></svg>">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230078d4'/><text x='50' y='65' font-size='45' font-weight='bold' text-anchor='middle' fill='white'>M</text></svg>">
 </head>
 <body>
 
-  <!-- TOP NAVBAR -->
+  <!-- ===================================================================== -->
+  <!-- 1. MICROSOFT 365 SUITE HEADER                                         -->
+  <!-- ===================================================================== -->
   <header class="navbar">
     <div class="nav-brand">
-      <div class="brand-logo">TM</div>
+      <div class="brand-logo" title="Microsoft 365 App Launcher">
+        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor">
+          <circle cx="2.5" cy="2.5" r="1.5"/>
+          <circle cx="8" cy="2.5" r="1.5"/>
+          <circle cx="13.5" cy="2.5" r="1.5"/>
+          <circle cx="2.5" cy="8" r="1.5"/>
+          <circle cx="8" cy="8" r="1.5"/>
+          <circle cx="13.5" cy="8" r="1.5"/>
+          <circle cx="2.5" cy="13.5" r="1.5"/>
+          <circle cx="8" cy="13.5" r="1.5"/>
+          <circle cx="13.5" cy="13.5" r="1.5"/>
+        </svg>
+      </div>
       <div class="brand-text">
-        <h1>TIRE-MES 4.0 &bull; VIETNAM TIRE PLANT</h1>
-        <p>HỆ THỐNG ĐIỀU HÀNH SẢN XUẤT LỐP XE CHUẨN ISA-95 LEVEL 3</p>
+        <h1>MiniMES <span>|</span> Nhà Máy Lốp Xe Việt Nam</h1>
+        <p>Hệ thống điều hành sản xuất theo chuẩn ISA-95 Level 3</p>
       </div>
     </div>
 
     <div class="nav-status">
       <div class="status-badge">
         <span class="pulse-dot"></span>
-        <span id="scada-status-text">IoT SCADA LIVE (500ms)</span>
+        <span id="scada-status-text">SCADA Trực Tiếp</span>
       </div>
 
       <div class="shift-info">
-        <div>CA: <span id="current-shift">CA A (06:00 - 14:00)</span></div>
-        <div>QUẢN ĐỐC: <span id="current-supervisor">Vũ Đình Phong</span></div>
-        <div id="live-clock" style="color: #94a3b8;">--:--:--</div>
+        <div>Ca: <span id="current-shift">Ca A (06:00 - 14:00)</span></div>
+        <div>Quản đốc: <span id="current-supervisor">Vũ Đình Phong</span></div>
+        <div id="live-clock">--:--:--</div>
       </div>
 
-      <button class="btn btn-secondary btn-sm" onclick="resetDemoData()" title="Khôi phục lại dữ liệu mẫu sạch">
-        ↺ Reset Demo
+      <button class="btn-header-reset" onclick="resetDemoData()" title="Khôi phục lại dữ liệu mẫu sạch">
+        ↺ Khôi Phục Dữ Liệu
       </button>
     </div>
   </header>
 
-  <!-- NAVIGATION TABS -->
+  <!-- ===================================================================== -->
+  <!-- 2. FLUENT PIVOT NAVIGATION TABS                                       -->
+  <!-- ===================================================================== -->
   <nav class="nav-tabs-bar">
     <button class="tab-btn active" onclick="switchTab('dashboard')">
-      📊 1. Tổng Quan Nhà Máy
+      Tổng Quan
     </button>
     <button class="tab-btn" onclick="switchTab('work-orders')">
-      📋 2. Lệnh Sản Xuất <span class="badge" id="badge-wo-count">5</span>
+      Lệnh Sản Xuất <span class="badge" id="badge-wo-count">5</span>
     </button>
     <button class="tab-btn" onclick="switchTab('tbm')">
-      ⚙️ 3. Trạm Thành Hình TBM
+      Thành Hình TBM
     </button>
     <button class="tab-btn" onclick="switchTab('curing')">
-      🔥 4. Trạm Lưu Hóa Lốp <span class="badge" id="badge-curing-active">3</span>
+      Lưu Hóa <span class="badge" id="badge-curing-active">3</span>
     </button>
     <button class="tab-btn" onclick="switchTab('quality')">
-      🔍 5. Trạm KCS & Hoàn Thiện <span class="badge" id="badge-qc-queue">2</span>
+      KCS & Kiểm Tra <span class="badge" id="badge-qc-queue">2</span>
     </button>
     <button class="tab-btn" onclick="switchTab('genealogy')">
-      🛡️ 6. Truy Xuất Nguồn Gốc 100%
+      Truy Xuất Phả Hệ
     </button>
     <button class="tab-btn" onclick="switchTab('master-data')">
-      📁 7. Master Data
+      Dữ Liệu Nền Tảng
     </button>
     <button class="tab-btn" onclick="switchTab('gateway')">
-      🌐 8. Cổng Giao Thức PLC & IIoT <span class="badge" style="background-color: #059669; color: #fff;">5 Giao Thức</span>
+      Cổng PLC & IIoT
     </button>
     <button class="tab-btn" onclick="switchTab('ai')">
-      🧠 9. Trí Tuệ Nhân Tạo & Bất Thường AI <span class="badge" style="background-color: #8b5cf6; color: #fff;">PyTorch & iForest</span>
+      AI Bất Thường
     </button>
     <button class="tab-btn" onclick="switchTab('bottleneck')">
-      🔀 10. Dự Báo Cổ Chai & Điều Hướng <span class="badge" style="background-color: #ec4899; color: #fff;">AI 2-4h Forecast</span>
+      Dự Báo Cổ Chai
     </button>
     <button class="tab-btn" onclick="switchTab('shap')">
-      🔬 11. Phân Tích Đa Biến SHAP <span class="badge" style="background-color: #06b6d4; color: #fff;">XAI TreeSHAP</span>
+      Phân Tích SHAP
     </button>
     <button class="tab-btn" onclick="switchTab('graph')">
-      🕸️ 12. Mạng Phả Hệ Graph ML <span class="badge" style="background-color: #f59e0b; color: #1e293b;">PyTorch GNN</span>
+      Mạng Đồ Thị Graph
     </button>
   </nav>
 
-  <!-- MAIN VIEWPORT -->
+  <!-- ===================================================================== -->
+  <!-- 3. MAIN CONTENT CONTAINER                                             -->
+  <!-- ===================================================================== -->
   <main class="main-container">
 
     <!-- =================================================================== -->
@@ -87,12 +105,12 @@
       <!-- KPI Top Row -->
       <div class="kpi-grid">
         <div class="kpi-card blue">
-          <div class="kpi-title">OEE Tổng Thể Nhà Máy</div>
+          <div class="kpi-title">Hiệu Suất Thiết Bị OEE</div>
           <div class="kpi-value"><span id="kpi-oee">--</span><span class="kpi-unit">%</span></div>
           <div class="kpi-foot">
-            <span>A: <strong id="kpi-avail">--%</strong></span>
-            <span>P: <strong id="kpi-perf">--%</strong></span>
-            <span>Q: <strong id="kpi-qual">--%</strong></span>
+            <span>Sẵn sàng: <strong id="kpi-avail">--%</strong></span>
+            <span>Hiệu suất: <strong id="kpi-perf">--%</strong></span>
+            <span>Chất lượng: <strong id="kpi-qual">--%</strong></span>
           </div>
         </div>
 
@@ -101,7 +119,7 @@
           <div class="kpi-value"><span id="kpi-fpy">--</span><span class="kpi-unit">%</span></div>
           <div class="kpi-foot">
             <span>Mục tiêu: &ge; 98.0%</span>
-            <span class="status-pill pill-green">ĐẠT CHUẨN</span>
+            <span class="status-pill pill-green">Đạt Chuẩn</span>
           </div>
         </div>
 
@@ -109,22 +127,22 @@
           <div class="kpi-title">Tỷ Lệ Phế Phẩm (Scrap)</div>
           <div class="kpi-value"><span id="kpi-scrap">--</span><span class="kpi-unit">%</span></div>
           <div class="kpi-foot">
-            <span>Phế phẩm: <strong id="kpi-scrap-count">--</strong> lốp</span>
-            <span>Ngưỡng max: &le; 2.0%</span>
+            <span>Số lượng: <strong id="kpi-scrap-count">--</strong> lốp</span>
+            <span>Ngưỡng tối đa: &le; 2.0%</span>
           </div>
         </div>
 
         <div class="kpi-card cyan">
-          <div class="kpi-title">Sản Lượng Lốp Đã Đóng (TBM)</div>
-          <div class="kpi-value"><span id="kpi-green-tires">--</span><span class="kpi-unit">Lốp</span></div>
+          <div class="kpi-title">Sản Lượng Lốp Đã Đóng</div>
+          <div class="kpi-value"><span id="kpi-green-tires">--</span><span class="kpi-unit">lốp</span></div>
           <div class="kpi-foot">
-            <span>Lốp chín đã ra lò: <strong id="kpi-cured-tires">--</strong></span>
+            <span>Lốp chín ra lò: <strong id="kpi-cured-tires">--</strong></span>
           </div>
         </div>
 
         <div class="kpi-card purple">
-          <div class="kpi-title">Thiết Bị Đang Vận Hành</div>
-          <div class="kpi-value"><span id="kpi-running-machines">--</span><span class="kpi-unit">/11 Máy</span></div>
+          <div class="kpi-title">Thiết Bị Hoạt Động</div>
+          <div class="kpi-value"><span id="kpi-running-machines">--</span><span class="kpi-unit">/11 máy</span></div>
           <div class="kpi-foot">
             <span>Lệnh đang chạy: <strong id="kpi-active-wos">--</strong></span>
           </div>
@@ -135,10 +153,10 @@
       <div class="card">
         <div class="card-header">
           <div>
-            <div class="card-title">🏭 Dây Chuyền Sản Xuất Khép Kín (ISA-95 Plant Hierarchy)</div>
-            <div class="card-subtitle">Giám sát theo thời gian thực từ Luyện cao su thô đến Kho thành phẩm xuất xưởng</div>
+            <div class="card-title">Dây Chuyền Sản Xuất Khép Kín (ISA-95)</div>
+            <div class="card-subtitle">Theo dõi trạng thái từ luyện kín, thành hình, lưu hóa đến hoàn thiện</div>
           </div>
-          <button class="btn btn-secondary btn-sm" onclick="loadDashboard()">Cập Nhật</button>
+          <button class="btn btn-secondary btn-sm" onclick="loadDashboard()">Làm Mới</button>
         </div>
 
         <div class="pipeline-container" id="pipeline-areas">
@@ -146,29 +164,29 @@
         </div>
       </div>
 
-      <!-- Charts & Quality Distribution -->
+      <!-- Quality Distribution & Recent Events -->
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem;">
         <!-- Grade Distribution -->
         <div class="card">
           <div class="card-header">
-            <div class="card-title">🎯 Phân Cấp Hạng Chất Lượng Lốp (Quality Grading)</div>
+            <div class="card-title">Phân Cấp Hạng Chất Lượng Lốp</div>
           </div>
           <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; text-align: center; margin-bottom: 1rem;">
-            <div style="background: #152238; padding: 0.85rem; border-radius: 8px; border-left: 3px solid #10b981;">
-              <div style="font-size: 0.75rem; color: #94a3b8;">HẠNG A (OE Export)</div>
-              <div style="font-size: 1.6rem; font-weight: 800; color: #34d399;" id="count-grade-a">--</div>
+            <div style="background: var(--bg-subtle); padding: 0.85rem; border-radius: 4px; border-left: 3px solid #107c41;">
+              <div style="font-size: 0.75rem; color: var(--text-secondary);">HẠNG A</div>
+              <div style="font-size: 1.5rem; font-weight: 700; color: #107c41;" id="count-grade-a">--</div>
             </div>
-            <div style="background: #152238; padding: 0.85rem; border-radius: 8px; border-left: 3px solid #3b82f6;">
-              <div style="font-size: 0.75rem; color: #94a3b8;">HẠNG B (Aftermarket)</div>
-              <div style="font-size: 1.6rem; font-weight: 800; color: #60a5fa;" id="count-grade-b">--</div>
+            <div style="background: var(--bg-subtle); padding: 0.85rem; border-radius: 4px; border-left: 3px solid #0078d4;">
+              <div style="font-size: 0.75rem; color: var(--text-secondary);">HẠNG B</div>
+              <div style="font-size: 1.5rem; font-weight: 700; color: #0078d4;" id="count-grade-b">--</div>
             </div>
-            <div style="background: #152238; padding: 0.85rem; border-radius: 8px; border-left: 3px solid #f59e0b;">
-              <div style="font-size: 0.75rem; color: #94a3b8;">TÁI CHẾ (Rework)</div>
-              <div style="font-size: 1.6rem; font-weight: 800; color: #fbbf24;" id="count-grade-rework">--</div>
+            <div style="background: var(--bg-subtle); padding: 0.85rem; border-radius: 4px; border-left: 3px solid #7a4100;">
+              <div style="font-size: 0.75rem; color: var(--text-secondary);">TÁI CHẾ</div>
+              <div style="font-size: 1.5rem; font-weight: 700; color: #7a4100;" id="count-grade-rework">--</div>
             </div>
-            <div style="background: #152238; padding: 0.85rem; border-radius: 8px; border-left: 3px solid #ef4444;">
-              <div style="font-size: 0.75rem; color: #94a3b8;">PHẾ PHẨM (Scrap)</div>
-              <div style="font-size: 1.6rem; font-weight: 800; color: #f87171;" id="count-grade-scrap">--</div>
+            <div style="background: var(--bg-subtle); padding: 0.85rem; border-radius: 4px; border-left: 3px solid #a80000;">
+              <div style="font-size: 0.75rem; color: var(--text-secondary);">PHẾ PHẨM</div>
+              <div style="font-size: 1.5rem; font-weight: 700; color: #a80000;" id="count-grade-scrap">--</div>
             </div>
           </div>
           <div id="quality-pareto-list">
@@ -179,8 +197,8 @@
         <!-- Recent Events Live Stream -->
         <div class="card">
           <div class="card-header">
-            <div class="card-title">📡 Nhật Ký Hoạt Động Xưởng (Live Factory Stream)</div>
-            <span class="status-pill pill-cyan">REAL-TIME</span>
+            <div class="card-title">Nhật Ký Hoạt Động Nhà Máy</div>
+            <span class="status-pill pill-cyan">Thời Gian Thực</span>
           </div>
           <div id="recent-events-stream" style="max-height: 280px; overflow-y: auto;">
             <!-- Populated by JS -->
@@ -196,19 +214,19 @@
       <div class="card">
         <div class="card-header">
           <div>
-            <div class="card-title">📋 Quản Lý Lệnh Sản Xuất (Work Orders Management)</div>
-            <div class="card-subtitle">Lập kế hoạch, điều độ chuyền và theo dõi tiến độ thời gian thực</div>
+            <div class="card-title">Quản Lý Lệnh Sản Xuất</div>
+            <div class="card-subtitle">Theo dõi kế hoạch, tiến độ và máy thực hiện</div>
           </div>
           <button class="btn btn-primary" onclick="openCreateWOModal()">+ Tạo Lệnh Sản Xuất Mới</button>
         </div>
 
-        <div class="table-responsive">
+        <div class="table-container">
           <table class="table">
             <thead>
               <tr>
-                <th>Mã Lệnh (WO ID)</th>
-                <th>Mã Lốp (SKU)</th>
-                <th>Kích Cỡ / Gai Lốp</th>
+                <th>Mã Lệnh</th>
+                <th>Mã SKU</th>
+                <th>Kích Cỡ / Gai</th>
                 <th>Phân Khúc</th>
                 <th>Mục Tiêu</th>
                 <th>Đã Hoàn Thành</th>
@@ -234,8 +252,8 @@
       <div class="card">
         <div class="card-header">
           <div>
-            <div class="card-title">⚙️ Trạm Thành Hình Lốp Sống (TBM Building Machine Terminal)</div>
-            <div class="card-subtitle">Kiểm soát Poka-Yoke mã vạch bán thành phẩm 100% trước khi kích hoạt đóng lốp</div>
+            <div class="card-title">Trạm Thành Hình Lốp Sống (TBM)</div>
+            <div class="card-subtitle">Kiểm soát Poka-Yoke mã vạch 7 bán thành phẩm trước khi kích hoạt đóng lốp</div>
           </div>
           <div style="display: flex; gap: 0.5rem;">
             <select class="form-control" id="tbm-machine-select" style="width: auto;" onchange="onTbmMachineChange()">
@@ -249,8 +267,8 @@
         <div style="display: grid; grid-template-columns: 1fr 1.6fr; gap: 1.5rem;">
           <!-- Left: Work Order & Machine Info -->
           <div>
-            <div style="background: #162032; padding: 1.25rem; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 1rem;">
-              <h4 style="color: #38bdf8; margin-bottom: 0.75rem; font-size: 0.95rem;">THÔNG TIN LỆNH ĐANG CHẠY</h4>
+            <div style="background: var(--bg-subtle); padding: 1.25rem; border-radius: 4px; border: 1px solid var(--border-color); margin-bottom: 1rem;">
+              <h4 style="color: var(--m365-blue); margin-bottom: 0.75rem; font-size: 0.95rem; font-weight: 600;">THÔNG TIN LỆNH ĐANG CHẠY</h4>
               <div class="form-group">
                 <label class="form-label">Lệnh Sản Xuất (Work Order)</label>
                 <select class="form-control" id="tbm-active-wo" onchange="onTbmWOChange()">
@@ -259,26 +277,26 @@
               </div>
 
               <div class="form-group">
-                <label class="form-label">Kích Cỡ Lốp (Tire Size)</label>
-                <div id="tbm-tire-size-display" style="font-size: 1.3rem; font-weight: 800; color: #fff;">--</div>
-                <div id="tbm-tire-pattern-display" style="font-size: 0.85rem; color: #94a3b8;">--</div>
+                <label class="form-label">Kích Cỡ Lốp</label>
+                <div id="tbm-tire-size-display" style="font-size: 1.25rem; font-weight: 700; color: var(--text-primary);">--</div>
+                <div id="tbm-tire-pattern-display" style="font-size: 0.85rem; color: var(--text-secondary);">--</div>
               </div>
 
               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
                 <div>
                   <div class="gauge-label">Trọng lượng chuẩn</div>
-                  <div id="tbm-std-weight" style="font-size: 1.1rem; font-weight: 700; color: #f1f5f9;">-- kg</div>
+                  <div id="tbm-std-weight" style="font-size: 1.05rem; font-weight: 700; color: var(--text-primary);">-- kg</div>
                 </div>
                 <div>
                   <div class="gauge-label">Thời gian chu kỳ</div>
-                  <div id="tbm-std-cycle" style="font-size: 1.1rem; font-weight: 700; color: #f1f5f9;">-- giây</div>
+                  <div id="tbm-std-cycle" style="font-size: 1.05rem; font-weight: 700; color: var(--text-primary);">-- giây</div>
                 </div>
               </div>
 
-              <hr style="border-color: var(--border-color); margin: 1rem 0;">
+              <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 1rem 0;">
 
               <div class="form-group">
-                <label class="form-label">Công Nhân Vận Hành (Operator Badge)</label>
+                <label class="form-label">Công Nhân Vận Hành</label>
                 <select class="form-control" id="tbm-operator-select">
                   <option value="OP-1001">OP-1001: Nguyễn Văn Hùng (Bậc 5/5)</option>
                   <option value="OP-1002">OP-1002: Trần Quốc Toản (Bậc 4/5)</option>
@@ -295,10 +313,10 @@
             <!-- Quick Test Buttons -->
             <div style="display: flex; gap: 0.5rem; flex-direction: column;">
               <button class="btn btn-secondary btn-sm" onclick="quickFillValidLots()">
-                ⚡ Nạp Nhanh Lô Hợp Lệ (Quick Test Valid)
+                Nạp Nhanh Lô Hợp Lệ (Quick Test)
               </button>
               <button class="btn btn-danger btn-sm" onclick="quickFillExpiredLot()">
-                ⚠️ Thử Nạp Lô HẾT HẠN (Poka-Yoke Alarm Demo!)
+                Thử Nạp Lô Hết Hạn (Poka-Yoke Test)
               </button>
             </div>
           </div>
@@ -306,8 +324,8 @@
           <!-- Right: Component Scanning & Poka-Yoke Gate -->
           <div>
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
-              <h4 style="color: #fff; font-size: 0.95rem;">CỔNG XÁC THỰC BÁN THÀNH PHẨM (POKA-YOKE SCAN GATE)</h4>
-              <span id="poka-yoke-global-status" class="status-pill pill-amber">CHỜ QUÉT ĐỦ 7 HỢP PHẦN</span>
+              <h4 style="color: var(--text-primary); font-size: 0.95rem; font-weight: 600;">CỔNG XÁC THỰC BÁN THÀNH PHẨM</h4>
+              <span id="poka-yoke-global-status" class="status-pill pill-amber">Chờ quét đủ 7 hợp phần</span>
             </div>
 
             <div id="poka-yoke-alarm-container"></div>
@@ -340,7 +358,7 @@
               <!-- 3. Steel Belt 1 -->
               <div class="component-scan-row" id="row-comp-BELT_1">
                 <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 2px;">
-                  <span><strong>3. Mành thép 1 (Steel Belt 1)</strong> - <span class="spec-label" id="spec-BELT_1">--</span></span>
+                  <span><strong>3. Mành thép 1 (Belt 1)</strong> - <span class="spec-label" id="spec-BELT_1">--</span></span>
                   <span class="status-label" id="status-BELT_1">Chưa quét</span>
                 </div>
                 <div style="display: flex; gap: 0.5rem;">
@@ -352,7 +370,7 @@
               <!-- 4. Steel Belt 2 -->
               <div class="component-scan-row" id="row-comp-BELT_2">
                 <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 2px;">
-                  <span><strong>4. Mành thép 2 (Steel Belt 2)</strong> - <span class="spec-label" id="spec-BELT_2">--</span></span>
+                  <span><strong>4. Mành thép 2 (Belt 2)</strong> - <span class="spec-label" id="spec-BELT_2">--</span></span>
                   <span class="status-label" id="status-BELT_2">Chưa quét</span>
                 </div>
                 <div style="display: flex; gap: 0.5rem;">
@@ -400,8 +418,8 @@
 
             <!-- Build Action -->
             <div style="margin-top: 1.25rem;">
-              <button class="btn btn-success btn-lg" id="btn-build-green-tire" style="width: 100%; font-size: 1.05rem;" onclick="executeBuildGreenTire()">
-                🚀 KÍCH HOẠT ĐÓNG LỐP (BUILD GREEN TIRE)
+              <button class="btn btn-success btn-lg" id="btn-build-green-tire" style="width: 100%; font-size: 1rem;" onclick="executeBuildGreenTire()">
+                Kích Hoạt Đóng Lốp (Build Green Tire)
               </button>
             </div>
           </div>
@@ -416,14 +434,11 @@
       <div class="card">
         <div class="card-header">
           <div>
-            <div class="card-title">🔥 Trạm Lưu Hóa Lốp (Curing Presses SCADA Matrix)</div>
-            <div class="card-subtitle">Giám sát áp suất hơi nhiệt, nhiệt độ khuôn, chu kỳ bàng lưu hóa và điều khiển ép nhiệt</div>
+            <div class="card-title">Trạm Lưu Hóa Lốp (Curing Presses)</div>
+            <div class="card-subtitle">Giám sát áp suất hơi, nhiệt độ khuôn, chu kỳ bàng lưu hóa theo thời gian thực</div>
           </div>
-          <div style="display: flex; gap: 0.5rem;">
-            <span class="status-badge" style="background: rgba(6, 182, 212, 0.1); border-color: rgba(6, 182, 212, 0.3); color: #38bdf8;">
-              <span class="pulse-dot" style="background-color: #38bdf8;"></span>
-              Chu kỳ cập nhật SCADA: 3s
-            </span>
+          <div style="display: flex; gap: 0.5rem; align-items: center;">
+            <span class="status-pill pill-blue">Chu kỳ SCADA: 3s</span>
             <button class="btn btn-secondary btn-sm" onclick="loadCuringPresses()">Làm Mới</button>
           </div>
         </div>
@@ -433,52 +448,48 @@
           <!-- Populated by JS -->
         </div>
 
-        <!-- REAL-TIME STREAMING TELEMETRY HISTORIAN (MODULE 5) -->
-        <div class="card" style="margin-top: 1.5rem; background: #0b0f19; border: 1px solid #1e293b;">
-          <div class="card-header" style="border-bottom: 1px solid #1e293b;">
+        <!-- Real-Time Telemetry Historian -->
+        <div class="card" style="margin-top: 1.5rem;">
+          <div class="card-header">
             <div>
-              <div class="card-title" style="font-size: 0.95rem; color: #38bdf8;">
-                📡 Luồng Dữ Liệu Cảm Biến PLC Đẩy Về Thời Gian Thực (Live Historian Stream & WAL Persistence)
-              </div>
+              <div class="card-title">Luồng Dữ Liệu Cảm Biến PLC Lưu Hóa</div>
               <div class="card-subtitle">
-                Tần số quét: <strong>3000ms/chu kỳ</strong> &bull; Ghi vĩnh viễn vào CSDL bảng <code>curing_telemetry_history</code> &bull; Hỗ trợ WebSocket <code>ws://localhost:8000/ws/telemetry</code>
+                Ghi nhận lịch sử nhiệt áp &bull; Bảng: <code>curing_telemetry_history</code>
               </div>
             </div>
             <div style="display: flex; gap: 0.75rem; align-items: center;">
-              <span class="status-badge" style="background: rgba(16, 185, 129, 0.1); color: #34d399; font-size: 0.75rem;">
-                <span class="pulse-dot"></span> STREAMING REAL-TIME
-              </span>
-              <div style="font-size: 0.8rem; color: #94a3b8; font-family: var(--font-mono);">
-                Đã lưu CSDL: <strong id="stream-total-logged" style="color: #38bdf8;">--</strong> điểm
+              <span class="status-pill pill-green">Đang Nhận Dữ Liệu</span>
+              <div style="font-size: 0.8rem; color: var(--text-secondary); font-family: var(--font-mono);">
+                Đã lưu: <strong id="stream-total-logged" style="color: var(--m365-blue);">--</strong> điểm
               </div>
             </div>
           </div>
 
           <!-- Live Oscilloscope Canvas -->
           <div style="padding: 0.5rem 0; margin-bottom: 0.75rem;">
-            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #94a3b8; margin-bottom: 4px;">
-              <span>Đồ thị dao động nhiệt áp thời gian thực (Live PLC Sensor Waveform):</span>
+            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 6px;">
+              <span>Đồ thị dao động nhiệt áp thời gian thực:</span>
               <span>
-                <span style="color: #f59e0b; font-weight: 700;">● Nhiệt độ khuôn (170&deg;C)</span> &nbsp;&bull;&nbsp;
-                <span style="color: #06b6d4; font-weight: 700;">● Áp suất bàng (21 bar)</span>
+                <span style="color: #d83b01; font-weight: 600;">● Nhiệt độ khuôn (170°C)</span> &nbsp;&bull;&nbsp;
+                <span style="color: #0078d4; font-weight: 600;">● Áp suất bàng (21 bar)</span>
               </span>
             </div>
-            <canvas id="telemetry-live-canvas" width="1000" height="110" style="width: 100%; height: 110px; background: #070a12; border-radius: 6px; border: 1px solid #1e293b; display: block;"></canvas>
+            <canvas id="telemetry-live-canvas" width="1000" height="110" style="width: 100%; height: 110px; background: #ffffff; border-radius: 4px; border: 1px solid var(--border-color); display: block;"></canvas>
           </div>
 
           <!-- Latest Logged Ingestion Records Table -->
-          <div class="table-responsive">
+          <div class="table-container">
             <table class="table" style="font-size: 0.78rem;">
               <thead>
                 <tr>
                   <th>ID Bản Ghi</th>
-                  <th>Thời Gian (Timestamp)</th>
+                  <th>Thời Gian</th>
                   <th>Thiết Bị / Hộc Khuôn</th>
-                  <th>Nhiệt Độ Khuôn (&deg;C)</th>
+                  <th>Nhiệt Độ (°C)</th>
                   <th>Áp Suất Bàng (bar)</th>
                   <th>Áp Suất Hơi (bar)</th>
-                  <th>Giai Đoạn (Phase)</th>
-                  <th>Trạng Thái Ghi Đĩa</th>
+                  <th>Giai Đoạn</th>
+                  <th>Trạng Thái Ghi</th>
                 </tr>
               </thead>
               <tbody id="stream-live-tbody">
@@ -497,8 +508,8 @@
       <div class="card">
         <div class="card-header">
           <div>
-            <div class="card-title">🔍 Trạm Kiểm Tra Hoàn Thiện & KCS (Finishing & Quality Gate)</div>
-            <div class="card-subtitle">Soi X-Ray cấu trúc mành thép, kiểm tra ngoại quan và đo cân bằng động / độ đồng đều UF</div>
+            <div class="card-title">Trạm Kiểm Tra Hoàn Thiện & KCS</div>
+            <div class="card-subtitle">Soi X-Ray cấu trúc mành, kiểm tra ngoại quan và đo cân bằng động</div>
           </div>
           <button class="btn btn-secondary btn-sm" onclick="loadInspectionQueue()">Làm Mới Hàng Đợi</button>
         </div>
@@ -506,34 +517,34 @@
         <div style="display: grid; grid-template-columns: 1fr 1.8fr; gap: 1.5rem;">
           <!-- Left: Inspection Queue -->
           <div>
-            <h4 style="color: #38bdf8; font-size: 0.9rem; margin-bottom: 0.75rem;">HÀNG ĐỢI LỐP CHỜ KIỂM TRA (INSPECTION QUEUE)</h4>
+            <h4 style="color: var(--text-primary); font-size: 0.9rem; font-weight: 600; margin-bottom: 0.75rem;">HÀNG ĐỢI LỐP CHỜ KIỂM TRA</h4>
             <div id="inspection-queue-list" style="max-height: 520px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.5rem;">
               <!-- Populated by JS -->
             </div>
           </div>
 
           <!-- Right: Inspection Test Bench -->
-          <div id="qc-testbench" style="background: #162032; padding: 1.25rem; border-radius: 8px; border: 1px solid var(--border-color);">
-            <div id="qc-placeholder-msg" style="text-align: center; padding: 3rem 1rem; color: #94a3b8;">
-              Vui lòng chọn 1 chiếc lốp từ Hàng Đợi bên trái để tiến hành kiểm tra KCS.
+          <div id="qc-testbench" style="background: var(--bg-subtle); padding: 1.25rem; border-radius: 4px; border: 1px solid var(--border-color);">
+            <div id="qc-placeholder-msg" style="text-align: center; padding: 3rem 1rem; color: var(--text-secondary);">
+              Vui lòng chọn 1 chiếc lốp từ hàng đợi bên trái để tiến hành kiểm tra KCS.
             </div>
 
             <div id="qc-active-form" style="display: none;">
               <!-- Tire header -->
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 1px solid rgba(255, 255, 255, 0.08);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border-color);">
                 <div>
-                  <h3 id="qc-tire-serial" style="color: #38bdf8; font-family: var(--font-mono);">VN-T-XXXXX</h3>
-                  <div id="qc-tire-desc" style="font-size: 0.85rem; color: #cbd5e1;">205/55R16 TURBO-GRIP T7</div>
+                  <h3 id="qc-tire-serial" style="color: var(--m365-blue); font-family: var(--font-mono); font-size: 1.15rem;">VN-T-XXXXX</h3>
+                  <div id="qc-tire-desc" style="font-size: 0.85rem; color: var(--text-secondary);">205/55R16 TURBO-GRIP T7</div>
                 </div>
                 <div style="text-align: right;">
-                  <div style="font-size: 0.75rem; color: #94a3b8;">NGUỒN LƯU HÓA:</div>
-                  <div id="qc-press-origin" style="font-weight: 700; color: #f1f5f9;">CP-01 L</div>
+                  <div style="font-size: 0.75rem; color: var(--text-muted);">NGUỒN LƯU HÓA:</div>
+                  <div id="qc-press-origin" style="font-weight: 700; color: var(--text-primary);">CP-01 L</div>
                 </div>
               </div>
 
               <!-- Inspector Selector -->
               <div class="form-group">
-                <label class="form-label">KCS Inspector (Kiểm Nghiệm Viên)</label>
+                <label class="form-label">Kiểm Nghiệm Viên (Inspector)</label>
                 <select class="form-control" id="qc-inspector-select">
                   <option value="OP-3001">OP-3001: Đỗ Thị Mai (KCS Trưởng - Bậc 5/5)</option>
                   <option value="OP-3002">OP-3002: Hoàng Đức Trọng (Chuyên Viên X-Ray - Bậc 4/5)</option>
@@ -541,9 +552,9 @@
               </div>
 
               <!-- Test 1: Visual Inspection -->
-              <div style="background: #111827; padding: 1rem; border-radius: 6px; border: 1px solid var(--border-color); margin-bottom: 1rem;">
+              <div style="background: #ffffff; padding: 1rem; border-radius: 4px; border: 1px solid var(--border-color); margin-bottom: 1rem;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                  <strong style="color: #f1f5f9; font-size: 0.88rem;">1. Kiểm Tra Ngoại Quan & Cảm Quan (Visual Test)</strong>
+                  <strong style="color: var(--text-primary); font-size: 0.88rem;">1. Kiểm Tra Ngoại Quan (Visual Test)</strong>
                   <div>
                     <label style="margin-right: 1rem;"><input type="radio" name="qc-visual-radio" value="PASS" checked onchange="toggleVisualDefectUI()"> Đạt (Pass)</label>
                     <label><input type="radio" name="qc-visual-radio" value="FAIL" onchange="toggleVisualDefectUI()"> Không Đạt (Fail)</label>
@@ -569,9 +580,9 @@
               </div>
 
               <!-- Test 2: X-Ray Inspection -->
-              <div style="background: #111827; padding: 1rem; border-radius: 6px; border: 1px solid var(--border-color); margin-bottom: 1rem;">
+              <div style="background: #ffffff; padding: 1rem; border-radius: 4px; border: 1px solid var(--border-color); margin-bottom: 1rem;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                  <strong style="color: #f1f5f9; font-size: 0.88rem;">2. Soi Cấu Trúc X-Ray (X-Ray Tire Inspection)</strong>
+                  <strong style="color: var(--text-primary); font-size: 0.88rem;">2. Soi Cấu Trúc X-Ray (X-Ray Inspection)</strong>
                   <div>
                     <label style="margin-right: 1rem;"><input type="radio" name="qc-xray-radio" value="PASS" checked onchange="toggleXrayDefectUI()"> Đạt (Pass)</label>
                     <label><input type="radio" name="qc-xray-radio" value="FAIL" onchange="toggleXrayDefectUI()"> Lỗi Mành (Fail)</label>
@@ -595,8 +606,8 @@
               </div>
 
               <!-- Test 3: Uniformity & Dynamic Balancing (UF) -->
-              <div style="background: #111827; padding: 1rem; border-radius: 6px; border: 1px solid var(--border-color); margin-bottom: 1rem;">
-                <strong style="color: #f1f5f9; font-size: 0.88rem; display: block; margin-bottom: 0.5rem;">
+              <div style="background: #ffffff; padding: 1rem; border-radius: 4px; border: 1px solid var(--border-color); margin-bottom: 1rem;">
+                <strong style="color: var(--text-primary); font-size: 0.88rem; display: block; margin-bottom: 0.5rem;">
                   3. Độ Đồng Đều & Cân Bằng Động (UF / Dynamic Balancing)
                 </strong>
                 <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem;">
@@ -617,46 +628,41 @@
 
               <!-- Submit Button -->
               <button class="btn btn-primary btn-lg" style="width: 100%;" onclick="submitQCInspection()">
-                ✅ XÁC NHẬN KẾT QUẢ KCS & PHÂN LOẠI CẤP HẠNG
+                Xác Nhận Kết Quả KCS & Phân Loại Cấp Hạng
               </button>
             </div>
           </div>
         </div>
 
-        <!-- ANTI-SKIP & SEQUENCE INTERLOCK CONTROL PANEL (CHỐNG NHẢY CÓC CÔNG ĐOẠN) -->
-        <div class="card" style="margin-top: 1.5rem; background: #0c1322; border: 1px solid #1e293b;">
-          <div class="card-header" style="border-bottom: 1px solid #1e293b;">
+        <!-- Anti-Skip Sequence Interlock -->
+        <div class="card" style="margin-top: 1.5rem;">
+          <div class="card-header">
             <div>
-              <div class="card-title" style="color: #f59e0b; display: flex; align-items: center; gap: 8px;">
-                <span>🔒 CƠ CHẾ LIÊN KHÓA CHỐNG NHẢY CÓC CÔNG ĐOẠN (ANTI-SKIP SEQUENCE INTERLOCK)</span>
-                <span class="status-pill pill-amber" style="font-size: 0.72rem;">ISA-95 LEVEL 3 ENFORCEMENT</span>
-              </div>
+              <div class="card-title">Cơ Chế Liên Khóa Chống Nhảy Cóc Công Đoạn (Anti-Skip Interlock)</div>
               <div class="card-subtitle">
-                Kiểm soát luồng sản phẩm nghiêm ngặt: <em>Bán thành phẩm &rarr; Đóng lốp TBM &rarr; Lưu hóa nhiệt áp &rarr; Kiểm định KCS &rarr; Nhập kho xuất xưởng</em>. Cấm tuyệt đối bỏ qua công đoạn!
+                Kiểm soát luồng sản xuất: <em>Thành hình &rarr; Lưu hóa &rarr; KCS &rarr; Nhập kho</em>
               </div>
             </div>
-            <span class="status-badge" style="background: rgba(245, 158, 11, 0.1); border-color: rgba(245, 158, 11, 0.3); color: #fbbf24;">
-              Interlock Active: 100% Gates Protected
-            </span>
+            <span class="status-pill pill-amber">Bảo Vệ Cổng 100%</span>
           </div>
 
           <!-- Quick Test Simulation Presets -->
-          <div style="padding: 1rem 0; border-bottom: 1px dashed rgba(255,255,255,0.1);">
-            <div style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 0.5rem; font-weight: 600;">
-              🧪 KỊCH BẢN THỬ NGHIỆM XÂM PHẠM QUY TRÌNH (TEST CASES NHẢY CÓC):
+          <div style="padding: 1rem 0; border-bottom: 1px solid var(--border-color);">
+            <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem; font-weight: 600;">
+              Kịch bản thử nghiệm:
             </div>
             <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-              <button class="btn btn-secondary btn-sm" onclick="testAntiSkipPreset('CURING_SKIP')" style="border-color: #ef4444; color: #fca5a5;">
-                🚫 Thử Lỗi 1: Lốp sống chưa lưu hóa đòi sang KCS (Skip Curing)
+              <button class="btn btn-secondary btn-sm" onclick="testAntiSkipPreset('CURING_SKIP')">
+                Thử Lỗi 1: Chưa lưu hóa đòi sang KCS
               </button>
-              <button class="btn btn-secondary btn-sm" onclick="testAntiSkipPreset('QC_SKIP')" style="border-color: #ef4444; color: #fca5a5;">
-                🚫 Thử Lỗi 2: Lốp đã chín chưa KCS đòi xuất kho (Skip QC)
+              <button class="btn btn-secondary btn-sm" onclick="testAntiSkipPreset('QC_SKIP')">
+                Thử Lỗi 2: Chưa KCS đòi xuất kho
               </button>
-              <button class="btn btn-secondary btn-sm" onclick="testAntiSkipPreset('SCRAP_BREACH')" style="border-color: #ef4444; color: #fca5a5;">
-                🚫 Thử Lỗi 3: Lốp Phế phẩm (Scrap) cố tình xuất kho (Scrap Breach)
+              <button class="btn btn-secondary btn-sm" onclick="testAntiSkipPreset('SCRAP_BREACH')">
+                Thử Lỗi 3: Lốp Phế phẩm đòi xuất kho
               </button>
-              <button class="btn btn-secondary btn-sm" onclick="testAntiSkipPreset('VALID_DISPATCH')" style="border-color: #10b981; color: #6ee7b7;">
-                ✅ Thử Hợp Lệ: Lốp Hạng A đầy đủ phả hệ xuất kho (Pass)
+              <button class="btn btn-secondary btn-sm" onclick="testAntiSkipPreset('VALID_DISPATCH')">
+                Thử Hợp Lệ: Lốp Hạng A xuất kho
               </button>
             </div>
           </div>
@@ -664,7 +670,7 @@
           <!-- Interactive Scanner Test Form -->
           <div style="display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 0.75rem; align-items: flex-end; margin-top: 1rem;">
             <div class="form-group" style="margin-bottom: 0;">
-              <label class="form-label">Mã Lốp Quét Được (Barcode / Sê-ri)</label>
+              <label class="form-label">Mã Lốp Quét Được (Barcode)</label>
               <input type="text" class="form-control" id="anti-skip-input-id" value="GT-202610-0019" placeholder="GT-... hoặc VN-T-..." style="font-family: var(--font-mono);">
             </div>
             <div class="form-group" style="margin-bottom: 0;">
@@ -677,7 +683,7 @@
             </div>
             <div class="form-group" style="margin-bottom: 0;">
               <button class="btn btn-primary" onclick="verifyStageManual()" style="width: 100%;">
-                ⚡ Kiểm Tra Liên Khóa (Verify Gate)
+                Kiểm Tra Liên Khóa
               </button>
             </div>
           </div>
@@ -695,8 +701,8 @@
       <div class="card">
         <div class="card-header">
           <div>
-            <div class="card-title">🛡️ Hộ Chiếu Số & Truy Xuất Nguồn Gốc 100% (Digital Tire Passport)</div>
-            <div class="card-subtitle">Tra cứu toàn diện toàn bộ lịch sử từ mẻ cao su Banbury, cuộn mành thép, máy đóng lốp, lò lưu hóa đến KCS</div>
+            <div class="card-title">Hộ Chiếu Số & Truy Xuất Nguồn Gốc Lốp (Genealogy)</div>
+            <div class="card-subtitle">Tra cứu toàn diện lịch sử mẻ luyện cao su, cuộn mành thép, máy thành hình, lò lưu hóa đến KCS</div>
           </div>
         </div>
 
@@ -704,14 +710,14 @@
         <div style="margin-bottom: 1.5rem;">
           <div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem;">
             <input type="text" class="form-control" id="passport-search-input" placeholder="Nhập Số sê-ri lốp (VN-T-...) hoặc Mã lốp sống (GT-...)" value="VN-T-202610-00101" style="font-size: 1rem; font-family: var(--font-mono);">
-            <button class="btn btn-primary" onclick="lookupPassport()">🔍 Tra Cứu</button>
+            <button class="btn btn-primary" onclick="lookupPassport()">Tra Cứu</button>
           </div>
 
           <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
-            <span style="font-size: 0.8rem; color: #94a3b8;">Mẫu thử nghiệm nhanh:</span>
-            <button class="btn btn-secondary btn-sm" onclick="quickLookup('VN-T-202610-00101')">✨ Lốp Hạng A Xuất Khẩu (VN-T-202610-00101)</button>
-            <button class="btn btn-secondary btn-sm" onclick="quickLookup('VN-T-202610-00105')">⚠️ Lốp Hạng B Thương Mại (VN-T-202610-00105)</button>
-            <button class="btn btn-secondary btn-sm" onclick="quickLookup('VN-T-202610-00108')">❌ Lốp Phế Phẩm X-Ray (VN-T-202610-00108)</button>
+            <span style="font-size: 0.8rem; color: var(--text-secondary);">Mẫu thử nghiệm nhanh:</span>
+            <button class="btn btn-secondary btn-sm" onclick="quickLookup('VN-T-202610-00101')">Lốp Hạng A Xuất Khẩu (VN-T-202610-00101)</button>
+            <button class="btn btn-secondary btn-sm" onclick="quickLookup('VN-T-202610-00105')">Lốp Hạng B Thương Mại (VN-T-202610-00105)</button>
+            <button class="btn btn-secondary btn-sm" onclick="quickLookup('VN-T-202610-00108')">Lốp Phế Phẩm X-Ray (VN-T-202610-00108)</button>
           </div>
         </div>
 
@@ -729,15 +735,15 @@
       <div class="card">
         <div class="card-header">
           <div>
-            <div class="card-title">📁 Dữ Liệu Nền Tảng (Master Data Management)</div>
-            <div class="card-subtitle">Danh mục sản phẩm, định mức BOM, đơn công nghệ lưu hóa và thư viện mã lỗi chuẩn</div>
+            <div class="card-title">Dữ Liệu Nền Tảng (Master Data)</div>
+            <div class="card-subtitle">Danh mục sản phẩm, định mức BOM, thiết bị và thư viện mã lỗi chuẩn</div>
           </div>
           <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
             <button class="btn btn-secondary btn-sm" onclick="showMasterSubTab('products')">Sản Phẩm (SKU)</button>
             <button class="btn btn-secondary btn-sm" onclick="showMasterSubTab('equipment')">Thiết Bị (Equipment)</button>
             <button class="btn btn-secondary btn-sm" onclick="showMasterSubTab('defects')">Mã Lỗi (Defects)</button>
             <button class="btn btn-secondary btn-sm" onclick="showMasterSubTab('operators')">Nhân Sự (Operators)</button>
-            <button class="btn btn-primary btn-sm" onclick="showMasterSubTab('documents')">📄 Tài Liệu & SOP (Doc Control)</button>
+            <button class="btn btn-primary btn-sm" onclick="showMasterSubTab('documents')">Tài Liệu & SOP</button>
           </div>
         </div>
 
@@ -754,130 +760,127 @@
       <div class="card">
         <div class="card-header">
           <div>
-            <div class="card-title">🌐 Cổng Kết Nối Đa Giao Thức PLC & IIoT (Industrial Protocol Gateway)</div>
-            <div class="card-subtitle">Hỗ trợ đầy đủ 5 giao thức công nghiệp: OPC-UA, OPC-DA (DCOM), Modbus TCP, MQTT (Sparkplug B) và TCP/IP Raw Sockets</div>
+            <div class="card-title">Cổng Kết Nối Đa Giao Thức PLC & IIoT</div>
+            <div class="card-subtitle">Hỗ trợ 5 giao thức công nghiệp: OPC-UA, OPC-DA, Modbus TCP, MQTT Sparkplug B và TCP Socket</div>
           </div>
           <button class="btn btn-secondary btn-sm" onclick="loadGatewayConnectors()">Làm Mới Trạng Thái</button>
         </div>
 
         <!-- Protocol Comparison Banner -->
-        <div style="background: linear-gradient(90deg, #162032, #101c2e); border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem; margin-bottom: 1.25rem; font-size: 0.85rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
-          <div style="display: flex; gap: 1.5rem; flex-wrap: wrap;">
-            <div>🟢 <strong>OPC-UA</strong>: Bảo mật TLS, Binary TCP 4840</div>
-            <div>🟡 <strong>OPC-DA</strong>: Chuẩn DCOM kinh điển Port 135</div>
-            <div>🔵 <strong>Modbus TCP</strong>: Thanh ghi 40001+ Port 502</div>
-            <div>🟣 <strong>MQTT</strong>: Pub/Sub IIoT Cloud Port 1883</div>
-            <div>🟠 <strong>TCP Socket</strong>: ASCII Raw Stream Port 2001</div>
+        <div style="background: var(--bg-subtle); border: 1px solid var(--border-color); border-radius: 4px; padding: 0.85rem 1rem; margin-bottom: 1.25rem; font-size: 0.85rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+          <div style="display: flex; gap: 1.5rem; flex-wrap: wrap; color: var(--text-secondary);">
+            <div><strong>OPC-UA</strong>: Port 4840</div>
+            <div><strong>OPC-DA</strong>: DCOM Port 135</div>
+            <div><strong>Modbus TCP</strong>: Port 502</div>
+            <div><strong>MQTT</strong>: Port 1883</div>
+            <div><strong>TCP Socket</strong>: Port 2001</div>
           </div>
-          <span class="status-pill pill-green">5/5 CỔNG ĐANG ONLINE</span>
+          <span class="status-pill pill-green">5/5 Cổng Hoạt Động</span>
         </div>
 
         <!-- MULTI-PLC PIPELINE SIMULATOR CONTROL CARD -->
-        <div class="card" style="background: linear-gradient(135deg, #111c30, #0c1424); border: 1px solid #38bdf8; margin-bottom: 1.5rem; box-shadow: 0 4px 20px rgba(56, 189, 248, 0.12);">
-          <div class="card-header" style="border-bottom: 1px solid rgba(56, 189, 248, 0.2);">
+        <div class="card" style="margin-bottom: 1.5rem;">
+          <div class="card-header">
             <div>
-              <div class="card-title" style="display: flex; align-items: center; gap: 0.5rem; color: #38bdf8;">
-                <span class="pulse-dot"></span> ⚡ PIPELINE MÔ PHỎNG INPUT TỰ ĐỘNG TỪ 5 CỤM PLC (MULTI-PLC INDUSTRIAL PIPELINE)
-              </div>
+              <div class="card-title">Pipeline Mô Phỏng Input Tự Động Từ 5 Cụm PLC</div>
               <div class="card-subtitle">
-                Tự động sinh chuỗi telemetry thời gian thực từ PLC-MIX, PLC-EXT, PLC-TBM, PLC-CUR, PLC-FIN & Đóng gói khung tin chuẩn (OPC-UA, Modbus-TCP, MQTT Sparkplug B)
+                Tự động sinh chuỗi telemetry và ghi nhận đồng bộ vào cơ sở dữ liệu
               </div>
             </div>
             <div style="display: flex; gap: 0.5rem; align-items: center;">
               <span id="pipeline-status-badge" class="status-pill pill-green">ĐANG CHẠY (2.0s / TICK)</span>
-              <button class="btn btn-primary btn-sm" onclick="togglePipelinePower()">⏸️ Tạm Dừng / Tiếp Tục</button>
-              <button class="btn btn-secondary btn-sm" onclick="triggerPipelineTick()">⚡ Quét Ngay 1 Tick</button>
+              <button class="btn btn-primary btn-sm" onclick="togglePipelinePower()">Tạm Dừng / Tiếp Tục</button>
+              <button class="btn btn-secondary btn-sm" onclick="triggerPipelineTick()">Quét Ngay 1 Tick</button>
             </div>
           </div>
 
           <!-- Scenario Switcher & Metrics -->
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
             <!-- Left: Scenarios -->
-            <div style="background: #090e1a; padding: 1rem; border-radius: 8px; border: 1px solid #1e293b;">
-              <div style="font-weight: 700; color: #cbd5e1; font-size: 0.85rem; margin-bottom: 0.5rem;">
-                🎯 CHỌN KỊCH BẢN MÔ PHỎNG SỰ CỐ NHÀ MÁY:
+            <div style="background: var(--bg-subtle); padding: 1rem; border-radius: 4px; border: 1px solid var(--border-color);">
+              <div style="font-weight: 600; color: var(--text-primary); font-size: 0.85rem; margin-bottom: 0.5rem;">
+                CHỌN KỊCH BẢN MÔ PHỎNG:
               </div>
               <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
                 <button class="btn btn-sm btn-success" id="btn-scen-normal" onclick="setPipelineScenario('NORMAL')">
-                  🟢 1. Chuẩn SOP
+                  1. Chuẩn SOP
                 </button>
                 <button class="btn btn-sm btn-secondary" id="btn-scen-takt" onclick="setPipelineScenario('TAKT_CREEP')">
-                  🟡 2. Trôi Chu Kỳ Takt (Tab 9)
+                  2. Trôi Chu Kỳ Takt
                 </button>
                 <button class="btn btn-sm btn-secondary" id="btn-scen-bottle" onclick="setPipelineScenario('BOTTLENECK_SURGE')">
-                  🟠 3. Dồn Ứ Cổ Chai (Tab 10)
+                  3. Dồn Ứ Cổ Chai
                 </button>
                 <button class="btn btn-sm btn-secondary" id="btn-scen-defect" onclick="setPipelineScenario('DEFECT_SPIKE')">
-                  🔴 4. Tụt Áp Bàng Bọng (Tab 11, 12)
+                  4. Tụt Áp Bàng Bọng
                 </button>
               </div>
-              <div id="pipeline-scenario-desc" style="font-size: 0.78rem; color: #94a3b8; margin-top: 0.75rem; font-style: italic;">
+              <div id="pipeline-scenario-desc" style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 0.75rem;">
                 Vận hành chuẩn SOP: Takt time 45s, nhiệt áp 170°C/21 bar, FPY > 90%
               </div>
             </div>
 
             <!-- Right: Real-time Stats -->
-            <div style="background: #090e1a; padding: 1rem; border-radius: 8px; border: 1px solid #1e293b; display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; text-align: center;">
+            <div style="background: var(--bg-subtle); padding: 1rem; border-radius: 4px; border: 1px solid var(--border-color); display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; text-align: center;">
               <div>
-                <div style="font-size: 0.7rem; color: #94a3b8;">TỔNG TICKS QUÉT</div>
-                <div id="pipe-stat-ticks" style="font-size: 1.4rem; font-weight: 800; color: #38bdf8; font-family: var(--font-mono);">0</div>
+                <div style="font-size: 0.7rem; color: var(--text-secondary);">TỔNG TICKS</div>
+                <div id="pipe-stat-ticks" style="font-size: 1.4rem; font-weight: 700; color: var(--m365-blue); font-family: var(--font-mono);">0</div>
               </div>
               <div>
-                <div style="font-size: 0.7rem; color: #94a3b8;">GÓI TIN ĐÃ PHÁT</div>
-                <div id="pipe-stat-frames" style="font-size: 1.4rem; font-weight: 800; color: #10b981; font-family: var(--font-mono);">0</div>
+                <div style="font-size: 0.7rem; color: var(--text-secondary);">GÓI TIN ĐÃ PHÁT</div>
+                <div id="pipe-stat-frames" style="font-size: 1.4rem; font-weight: 700; color: #107c41; font-family: var(--font-mono);">0</div>
               </div>
               <div>
-                <div style="font-size: 0.7rem; color: #94a3b8;">CHU KỲ QUÉT</div>
-                <div id="pipe-stat-interval" style="font-size: 1.4rem; font-weight: 800; color: #f59e0b; font-family: var(--font-mono);">2.0s</div>
+                <div style="font-size: 0.7rem; color: var(--text-secondary);">CHU KỲ QUÉT</div>
+                <div id="pipe-stat-interval" style="font-size: 1.4rem; font-weight: 700; color: #7a4100; font-family: var(--font-mono);">2.0s</div>
               </div>
             </div>
           </div>
 
           <!-- Live Protocol Stream Ticker -->
-          <div style="margin-top: 1rem; background: #070a12; border: 1px solid #1e293b; border-radius: 6px; padding: 0.75rem;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; font-size: 0.75rem; color: #94a3b8;">
-              <span style="font-weight: 700; color: #cbd5e1;">📡 KHUNG TIN TRUYỀN THÔNG ĐA GIAO THỨC THỜI GIAN THỰC (LIVE FIELDBUS FRAMES):</span>
-              <span style="font-family: var(--font-mono); color: #38bdf8;" id="pipe-stat-last-time">--:--:--</span>
+          <div style="margin-top: 1rem; background: var(--bg-subtle); border: 1px solid var(--border-color); border-radius: 4px; padding: 0.75rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; font-size: 0.75rem; color: var(--text-secondary);">
+              <span style="font-weight: 600; color: var(--text-primary);">KHUNG TIN TRUYỀN THÔNG CÔNG NGHIỆP:</span>
+              <span style="font-family: var(--font-mono); color: var(--m365-blue);" id="pipe-stat-last-time">--:--:--</span>
             </div>
-            <div id="pipeline-live-frames-container" style="max-height: 180px; overflow-y: auto; font-family: var(--font-mono); font-size: 0.76rem; display: flex; flex-direction: column; gap: 0.35rem;">
-              <div style="color: #64748b;">Đang kết nối luồng fieldbus từ các trạm PLC...</div>
+            <div id="pipeline-live-frames-container" style="max-height: 180px; overflow-y: auto; font-family: var(--font-mono); font-size: 0.76rem; display: flex; flex-direction: column; gap: 0.35rem; background: #ffffff; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 2px;">
+              <div style="color: var(--text-muted);">Đang kết nối luồng fieldbus từ các trạm PLC...</div>
             </div>
           </div>
         </div>
 
         <!-- Connectors Cards Grid -->
         <div id="gateway-connectors-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(480px, 1fr)); gap: 1.25rem;">
-
           <!-- Populated by JS -->
         </div>
 
         <!-- Terminal Log Viewer -->
-        <div class="card" style="margin-top: 1.5rem; background: #0b0f19;">
-          <div class="card-header" style="border-bottom: 1px solid #1e293b;">
+        <div class="card" style="margin-top: 1.5rem;">
+          <div class="card-header">
             <div class="card-title" style="font-size: 0.9rem;">
-              📟 Nhật Ký Giao Tiếp Gói Tin PLC / OT Network (Industrial Packet Inspector)
+              Nhật Ký Giao Tiếp Gói Tin PLC / OT Network
             </div>
             <button class="btn btn-secondary btn-sm" onclick="clearGatewayLogs()">Xóa Nhật Ký</button>
           </div>
-          <pre id="gateway-terminal-logs" style="background: #070a12; color: #38bdf8; font-family: var(--font-mono); font-size: 0.8rem; padding: 1rem; border-radius: 6px; max-height: 250px; overflow-y: auto; margin: 0; line-height: 1.4;">[SYSTEM] Sẵn sàng kiểm tra giao tiếp với 5 loại giao thức công nghiệp. Bấm '⚡ Test Handshake' trên từng cổng để kiểm tra ping thực tế...</pre>
+          <pre id="gateway-terminal-logs" style="background: var(--bg-subtle); color: var(--text-primary); font-family: var(--font-mono); font-size: 0.8rem; padding: 1rem; border-radius: 4px; border: 1px solid var(--border-color); max-height: 250px; overflow-y: auto; margin: 0; line-height: 1.4;">[SYSTEM] Sẵn sàng kiểm tra giao tiếp với 5 loại giao thức công nghiệp. Bấm 'Test Handshake' trên từng cổng để kiểm tra ping thực tế...</pre>
         </div>
       </div>
     </section>
 
     <!-- =================================================================== -->
-    <!-- TAB 9: AI ANOMALY DETECTION (ISOLATION FOREST & DEEP AUTOENCODER)   -->
+    <!-- TAB 9: AI ANOMALY DETECTION                                         -->
     <!-- =================================================================== -->
     <section id="pane-ai" class="tab-pane">
       <div class="card">
         <div class="card-header">
           <div>
-            <div class="card-title">🧠 Hệ Thống Giám Sát Bất Thường AI Học Không Giám Sát (Unsupervised Anomaly Detection)</div>
-            <div class="card-subtitle">Khám phá suy giảm năng suất tiềm ẩn (Takt Creep, Micro-stoppages, Dội ngược đệm WIP) bằng mô hình Ensemble: Isolation Forest (100 Trees) & Deep Autoencoder (PyTorch 5-16-8-2-8-16-5)</div>
+            <div class="card-title">Hệ Thống Giám Sát Bất Thường AI (Anomaly Detection)</div>
+            <div class="card-subtitle">Phát hiện suy giảm năng suất tiềm ẩn bằng mô hình kết hợp Isolation Forest & Deep Autoencoder</div>
           </div>
           <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-            <button class="btn btn-secondary btn-sm" onclick="loadAiStatus()">ℹ️ Trạng Thái AI</button>
-            <button class="btn btn-primary btn-sm" onclick="trainAiModels()">⚡ Tái Huấn Luyện AI</button>
-            <button class="btn btn-success btn-sm" onclick="scanAiCycles()">🔍 Quét Phân Tích Toàn Xưởng</button>
+            <button class="btn btn-secondary btn-sm" onclick="loadAiStatus()">Trạng Thái AI</button>
+            <button class="btn btn-primary btn-sm" onclick="trainAiModels()">Tái Huấn Luyện AI</button>
+            <button class="btn btn-success btn-sm" onclick="scanAiCycles()">Quét Phân Tích Toàn Xưởng</button>
           </div>
         </div>
 
@@ -888,15 +891,15 @@
             <div class="kpi-value"><span id="ai-kpi-anomaly-index">0.00</span><span class="kpi-unit">/1.0</span></div>
             <div class="kpi-foot">
               <span>Đánh giá: <strong id="ai-kpi-status-text">Bình Thường</strong></span>
-              <span class="status-pill pill-green" id="ai-kpi-status-pill">TỐI ƯU</span>
+              <span class="status-pill pill-green" id="ai-kpi-status-pill">Tối Ưu</span>
             </div>
           </div>
 
           <div class="kpi-card blue">
-            <div class="kpi-title">Độ Lệch Takt Trung Bình (Creep)</div>
+            <div class="kpi-title">Độ Lệch Takt Trung Bình</div>
             <div class="kpi-value"><span id="ai-kpi-takt-creep">0.0</span><span class="kpi-unit">giây</span></div>
             <div class="kpi-foot">
-              <span>Mức tiêu chuẩn: &le; +2.0s</span>
+              <span>Tiêu chuẩn: &le; +2.0s</span>
               <span>Hao hụt tiềm ẩn: <strong id="ai-kpi-loss-rate">0.0%</strong></span>
             </div>
           </div>
@@ -905,8 +908,8 @@
             <div class="kpi-title">Chu Kỳ Bất Thường Phát Hiện</div>
             <div class="kpi-value"><span id="ai-kpi-anomaly-count">0</span><span class="kpi-unit">chu kỳ</span></div>
             <div class="kpi-foot">
-              <span>Nghiêm trọng (Critical): <strong id="ai-kpi-crit-count">0</strong></span>
-              <span>Cảnh báo (Warning): <strong id="ai-kpi-warn-count">0</strong></span>
+              <span>Nghiêm trọng: <strong id="ai-kpi-crit-count">0</strong></span>
+              <span>Cảnh báo: <strong id="ai-kpi-warn-count">0</strong></span>
             </div>
           </div>
 
@@ -929,77 +932,35 @@
           </div>
         </div>
 
-        <!-- AI Model Architecture & Diagnostics Theory Banner -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 1.25rem; margin-bottom: 1.5rem;">
-          <div style="background: #0f172a; border: 1px solid #1e293b; border-radius: 8px; padding: 1.25rem;">
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
-              <strong style="color: #38bdf8; font-size: 0.95rem; display: flex; align-items: center; gap: 6px;">
-                🌲 1. Isolation Forest (Cây Phân Lập Ngẫu Nhiên)
-              </strong>
-              <span class="status-pill pill-cyan">Scikit-Learn 100 Trees</span>
-            </div>
-            <p style="font-size: 0.83rem; color: #94a3b8; line-height: 1.5; margin-bottom: 0.75rem;">
-              Phân lập các điểm dị biệt trong không gian đa chiều (Multi-dimensional Outliers). Do các điểm bất thường có giá trị cực đoan nên chúng bị chia cắt sớm ở các tầng nông của cây quyết định:
-            </p>
-            <div style="background: #090d16; padding: 0.5rem 0.75rem; border-radius: 6px; font-family: var(--font-mono); font-size: 0.78rem; color: #cbd5e1; margin-bottom: 0.75rem;">
-              s(x, n) = 2^(- E(h(x)) / c(n)) &rarr; Score &gt; 0.55: Điểm Dị Biệt
-            </div>
-            <ul style="font-size: 0.8rem; color: #cbd5e1; margin: 0; padding-left: 1.2rem; line-height: 1.5;">
-              <li>Bắt các cú trôi chu kỳ Takt time đột ngột (&gt; 15s).</li>
-              <li>Phát hiện tắc nghẽn hàng đợi WIP vượt ngưỡng đệm vật lý (&gt; 180 phút).</li>
-              <li>Hoạt động độc lập không cần dữ liệu gắn nhãn (Unsupervised).</li>
-            </ul>
-          </div>
-
-          <div style="background: #0f172a; border: 1px solid #1e293b; border-radius: 8px; padding: 1.25rem;">
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
-              <strong style="color: #c084fc; font-size: 0.95rem; display: flex; align-items: center; gap: 6px;">
-                🧠 2. PyTorch Deep Autoencoder (Không Gian Ẩn 2 Chiều)
-              </strong>
-              <span class="status-pill pill-purple">Deep PyTorch 2.x</span>
-            </div>
-            <p style="font-size: 0.83rem; color: #94a3b8; line-height: 1.5; margin-bottom: 0.75rem;">
-              Mạng nơ-ron sâu phi tuyến nén vector 5 chiều qua nút thắt 2 chiều (Latent Space 2D) để học cấu trúc vận hành hoàn hảo của dây chuyền.
-            </p>
-            <div style="background: #090d16; padding: 0.5rem 0.75rem; border-radius: 6px; font-family: var(--font-mono); font-size: 0.78rem; color: #cbd5e1; margin-bottom: 0.75rem;">
-              Loss_MSE = (1/d) &Sigma; (x_i - x̂_i)^2 &gt; &theta; (Reconstruction Loss)
-            </div>
-            <ul style="font-size: 0.8rem; color: #cbd5e1; margin: 0; padding-left: 1.2rem; line-height: 1.5;">
-              <li>Phát hiện <strong>suy giảm ngầm (Micro-stoppages)</strong>: từng thông số riêng lẻ có vẻ hợp lệ nhưng quan hệ phi tuyến tương hỗ bị lệch chuẩn.</li>
-              <li>Bắt sớm lỗi tụt áp thủy lực, trễ van đảo chiều và trôi nhiệt độ buồng ép.</li>
-            </ul>
-          </div>
-        </div>
-
         <!-- 2D Scatter Canvas & Live Distribution -->
-        <div class="card" style="margin-bottom: 1.5rem; background: #0c101d; border: 1px solid #1e293b;">
+        <div class="card" style="margin-bottom: 1.5rem;">
           <div class="card-header" style="padding-bottom: 0.75rem;">
             <div>
-              <div class="card-title" style="font-size: 0.95rem;">📈 Bản Đồ Dị Biệt Không Gian 2D (Takt Deviation vs WIP Queue Dwell)</div>
-              <div class="card-subtitle">Trục hoành: Độ lệch Takt máy (giây) &bull; Trục tung: Thời gian đệm WIP (phút) &bull; Kích thước chấm: Anomaly Score</div>
+              <div class="card-title">Bản Đồ Dị Biệt Không Gian 2D (Takt Deviation vs WIP Queue Dwell)</div>
+              <div class="card-subtitle">Trục hoành: Độ lệch Takt (s) &bull; Trục tung: Thời gian đệm WIP (phút)</div>
             </div>
             <div style="display: flex; gap: 0.75rem; align-items: center; font-size: 0.8rem;">
-              <span style="display: flex; align-items: center; gap: 5px;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #10b981; display: inline-block;"></span> Bình thường</span>
-              <span style="display: flex; align-items: center; gap: 5px;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #f59e0b; display: inline-block;"></span> Cảnh báo</span>
-              <span style="display: flex; align-items: center; gap: 5px;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #ef4444; display: inline-block;"></span> Bất thường nghiêm trọng</span>
+              <span style="display: flex; align-items: center; gap: 5px;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #107c41; display: inline-block;"></span> Bình thường</span>
+              <span style="display: flex; align-items: center; gap: 5px;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #7a4100; display: inline-block;"></span> Cảnh báo</span>
+              <span style="display: flex; align-items: center; gap: 5px;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #a80000; display: inline-block;"></span> Nghiêm trọng</span>
             </div>
           </div>
           <div style="padding: 1rem;">
-            <canvas id="ai-scatter-canvas" width="900" height="320" style="width: 100%; height: 320px; background: #070a13; border: 1px solid #1e293b; border-radius: 8px;"></canvas>
+            <canvas id="ai-scatter-canvas" width="900" height="320" style="width: 100%; height: 320px; background: #ffffff; border: 1px solid var(--border-color); border-radius: 4px;"></canvas>
           </div>
         </div>
 
         <!-- Live Simulation / Edge PLC Diagnostic Box -->
-        <div class="card" style="margin-bottom: 1.5rem; background: #0f172a; border: 1px solid #334155;">
+        <div class="card" style="margin-bottom: 1.5rem;">
           <div class="card-header">
             <div>
-              <div class="card-title" style="font-size: 0.95rem; color: #f8fafc;">⚡ Kiểm Thử Trực Tuyến Gói Dữ Liệu Chu Kỳ Máy (Edge PLC Live Simulator)</div>
-              <div class="card-subtitle">Mô phỏng đẩy dữ liệu chu kỳ thời gian thực từ PLC máy thành hình/lưu hóa vào bộ suy luận AI</div>
+              <div class="card-title">Kiểm Thử Trực Tuyến Gói Dữ Liệu Chu Kỳ Máy</div>
+              <div class="card-subtitle">Mô phỏng đẩy dữ liệu chu kỳ thời gian thực từ PLC vào bộ suy luận AI</div>
             </div>
             <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
               <button class="btn btn-secondary btn-sm" onclick="setAiPreset('NORMAL')">Mẫu Bình Thường</button>
-              <button class="btn btn-secondary btn-sm" onclick="setAiPreset('TAKT_CREEP')">Mẫu Takt Trôi (Micro-stoppage)</button>
-              <button class="btn btn-secondary btn-sm" onclick="setAiPreset('QUEUE_CONGESTION')">Mẫu Nghẽn Đệm WIP</button>
+              <button class="btn btn-secondary btn-sm" onclick="setAiPreset('TAKT_CREEP')">Mẫu Takt Trôi</button>
+              <button class="btn btn-secondary btn-sm" onclick="setAiPreset('QUEUE_CONGESTION')">Mẫu Nghẽn WIP</button>
               <button class="btn btn-secondary btn-sm" onclick="setAiPreset('CURING_DRIFT')">Mẫu Sụt Áp & Nhiệt</button>
             </div>
           </div>
@@ -1041,7 +1002,7 @@
 
           <div style="display: flex; justify-content: flex-end; margin-bottom: 1rem;">
             <button class="btn btn-primary" onclick="evaluateLiveCycleSim()">
-              🧠 Suy Luận AI Trực Tuyến (Evaluate Live Cycle)
+              Suy Luận AI Trực Tuyến
             </button>
           </div>
 
@@ -1049,31 +1010,31 @@
         </div>
 
         <!-- Anomaly Alert Logs Table -->
-        <div class="card" style="background: #0c101d; border: 1px solid #1e293b;">
+        <div class="card">
           <div class="card-header">
             <div>
-              <div class="card-title" style="font-size: 0.95rem;">🚨 Nhật Ký Cảnh Báo Bất Thường AI (AI Anomalies Telemetry Log)</div>
-              <div class="card-subtitle">Tự động ghi nhận và phân loại độ nghiêm trọng, xác định nguyên nhân gốc rễ và đề xuất biện pháp khắc phục kỹ thuật</div>
+              <div class="card-title">Nhật Ký Cảnh Báo Bất Thường AI</div>
+              <div class="card-subtitle">Tự động phân loại mức độ và đề xuất giải pháp khắc phục</div>
             </div>
-            <button class="btn btn-secondary btn-sm" onclick="loadAiAnomalyLogs()">Làm Mới Nhật Ký</button>
+            <button class="btn btn-secondary btn-sm" onclick="loadAiAnomalyLogs()">Làm Mới</button>
           </div>
           <div class="table-container">
-            <table class="data-table">
+            <table class="table">
               <thead>
                 <tr>
                   <th>Mã Sự Kiện</th>
                   <th>Thiết Bị</th>
                   <th>Thời Điểm</th>
-                  <th>Điểm Dị Biệt (Ensemble)</th>
+                  <th>Điểm Dị Biệt</th>
                   <th>Mức Độ</th>
-                  <th>Chẩn Đoán Nguyên Nhân Gốc (Root Cause)</th>
-                  <th>Khuyến Nghị Khắc Phục (Action)</th>
+                  <th>Chẩn Đoán Nguyên Nhân</th>
+                  <th>Khuyến Nghị Khắc Phục</th>
                   <th>Thao Tác</th>
                 </tr>
               </thead>
               <tbody id="ai-anomalies-table-body">
                 <tr>
-                  <td colspan="8" style="text-align: center; color: #64748b; padding: 2rem;">
+                  <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 2rem;">
                     Đang tải nhật ký cảnh báo AI...
                   </td>
                 </tr>
@@ -1092,24 +1053,24 @@
       <div class="card">
         <div class="card-header">
           <div>
-            <div class="card-title">🔀 Dự Báo Cổ Chai Động (2–4h) & Tự Động Điều Hướng Luồng Vật Liệu (AI Dynamic Routing)</div>
-            <div class="card-subtitle">Ứng dụng mô hình cân bằng dòng chảy đa tầng (Multi-Horizon Flow Model) phát hiện sự dịch chuyển điểm tắc nghẽn và tự động bẻ ghi luồng sản xuất sang các dây chuyền thay thế</div>
+            <div class="card-title">Dự Báo Cổ Chai (2–4h) & Tự Động Điều Hướng Vật Liệu</div>
+            <div class="card-subtitle">Phát hiện sự dịch chuyển điểm tắc nghẽn và tự động bẻ ghi luồng sản xuất</div>
           </div>
           <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-            <button class="btn btn-secondary btn-sm" onclick="loadBottleneckForecast()">🔮 Chạy Dự Báo AI 2–4h</button>
-            <button class="btn btn-primary btn-sm" onclick="applyAiRerouting()">⚡ Kích Hoạt Tự Động Điều Hướng</button>
-            <button class="btn btn-secondary btn-sm" onclick="resetAiRouting()">↺ Khôi Phục Luồng Chuẩn</button>
+            <button class="btn btn-secondary btn-sm" onclick="loadBottleneckForecast()">Chạy Dự Báo AI 2–4h</button>
+            <button class="btn btn-primary btn-sm" onclick="applyAiRerouting()">Kích Hoạt Tự Động Điều Hướng</button>
+            <button class="btn btn-secondary btn-sm" onclick="resetAiRouting()">Khôi Phục Luồng Chuẩn</button>
           </div>
         </div>
 
         <!-- Top KPI Grid -->
         <div class="kpi-grid" style="margin-bottom: 1.5rem;">
           <div class="kpi-card blue">
-            <div class="kpi-title">Cổ Chai Hiện Tại (T = Hiện Tại)</div>
+            <div class="kpi-title">Cổ Chai Hiện Tại</div>
             <div class="kpi-value"><span id="bn-kpi-current-st">BUFFER_GREEN_TIRE</span></div>
             <div class="kpi-foot">
               <span>Chỉ số BLI: <strong id="bn-kpi-current-bli">0.78</strong></span>
-              <span class="status-pill pill-yellow">ĐANG NGHẼN</span>
+              <span class="status-pill pill-amber">Đang Nghẽn</span>
             </div>
           </div>
 
@@ -1118,7 +1079,7 @@
             <div class="kpi-value"><span id="bn-kpi-pred-st">CP-02</span></div>
             <div class="kpi-foot">
               <span>Xác suất dịch chuyển: <strong id="bn-kpi-shift-prob">88.5%</strong></span>
-              <span class="status-pill pill-red" id="bn-kpi-shift-pill">CÓ DỊCH CHUYỂN</span>
+              <span class="status-pill pill-red" id="bn-kpi-shift-pill">Có Dịch Chuyển</span>
             </div>
           </div>
 
@@ -1127,16 +1088,16 @@
             <div class="kpi-value"><span id="bn-kpi-buffer-fill">68.5</span><span class="kpi-unit">%</span></div>
             <div class="kpi-foot">
               <span>Dung tích: <strong>120 Lốp Sống</strong></span>
-              <span id="bn-kpi-buffer-status" class="status-pill pill-yellow">CẢNH BÁO DỘI NGƯỢC</span>
+              <span id="bn-kpi-buffer-status" class="status-pill pill-amber">Cảnh Báo Đầy</span>
             </div>
           </div>
 
           <div class="kpi-card green">
             <div class="kpi-title">Trạng Thái Bẻ Ghi Tự Động</div>
-            <div class="kpi-value"><span id="bn-kpi-reroute-status" style="font-size: 1.3rem;">CHUẨN BỊ BẺ GHI</span></div>
+            <div class="kpi-value"><span id="bn-kpi-reroute-status" style="font-size: 1.25rem;">CHUẨN BỊ BẺ GHI</span></div>
             <div class="kpi-foot">
               <span>Quy tắc: <strong>Bẻ 45% &rarr; CP-03/04</strong></span>
-              <span class="status-pill pill-green" id="bn-kpi-reroute-pill">SẴN SÀNG</span>
+              <span class="status-pill pill-green" id="bn-kpi-reroute-pill">Sẵn Sàng</span>
             </div>
           </div>
 
@@ -1151,11 +1112,11 @@
         </div>
 
         <!-- Multi-Horizon Timeline Forecast Bar -->
-        <div class="card" style="margin-bottom: 1.5rem; background: #0c101d; border: 1px solid #1e293b;">
+        <div class="card" style="margin-bottom: 1.5rem;">
           <div class="card-header" style="padding-bottom: 0.5rem;">
             <div>
-              <div class="card-title" style="font-size: 0.95rem;">⏱️ Tiến Trình Dịch Chuyển Điểm Nghẽn Theo Thời Gian (Multi-Horizon Timeline)</div>
-              <div class="card-subtitle">Quan sát sự di chuyển của nút thắt cổ chai qua các mốc thời gian: Hiện tại &rarr; T+1h &rarr; T+2h &rarr; T+3h &rarr; T+4h</div>
+              <div class="card-title">Tiến Trình Dịch Chuyển Điểm Nghẽn Theo Thời Gian</div>
+              <div class="card-subtitle">Hiện tại &rarr; T+1h &rarr; T+2h &rarr; T+3h &rarr; T+4h</div>
             </div>
           </div>
           <div id="bn-timeline-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; padding: 1rem;">
@@ -1164,67 +1125,67 @@
         </div>
 
         <!-- Plant Topology Dynamic Flow Canvas -->
-        <div class="card" style="margin-bottom: 1.5rem; background: #0c101d; border: 1px solid #1e293b;">
+        <div class="card" style="margin-bottom: 1.5rem;">
           <div class="card-header" style="padding-bottom: 0.75rem;">
             <div>
-              <div class="card-title" style="font-size: 0.95rem;">🌐 Sơ Đồ Mạng Lưới Sản Xuất & Luồng Điều Hướng Tự Động (Topology Flow Diagram)</div>
-              <div class="card-subtitle">Xanh Cyan: Tuyến luồng tiêu chuẩn (Standard SOP) &bull; Vàng / Hồng: Luồng bẻ ghi tự động (Automated Diverting) sang dây chuyền dự phòng</div>
+              <div class="card-title">Sơ Đồ Mạng Lưới Sản Xuất & Luồng Điều Hướng</div>
+              <div class="card-subtitle">Tuyến xanh: Luồng chuẩn &bull; Tuyến màu: Luồng bẻ ghi tự động sang dây chuyền phụ</div>
             </div>
             <div style="display: flex; gap: 0.75rem; align-items: center; font-size: 0.8rem;">
-              <span style="display: flex; align-items: center; gap: 5px;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #10b981; display: inline-block;"></span> BLI &le; 50% (Thông suốt)</span>
-              <span style="display: flex; align-items: center; gap: 5px;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #f59e0b; display: inline-block;"></span> BLI 50-70% (Tải cao)</span>
-              <span style="display: flex; align-items: center; gap: 5px;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #ef4444; display: inline-block;"></span> BLI &ge; 70% (Cổ chai)</span>
+              <span style="display: flex; align-items: center; gap: 5px;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #107c41; display: inline-block;"></span> Thông suốt (&le;50%)</span>
+              <span style="display: flex; align-items: center; gap: 5px;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #7a4100; display: inline-block;"></span> Tải cao (50-70%)</span>
+              <span style="display: flex; align-items: center; gap: 5px;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #a80000; display: inline-block;"></span> Cổ chai (&ge;70%)</span>
             </div>
           </div>
           <div style="padding: 1rem;">
-            <canvas id="bn-topology-canvas" width="950" height="340" style="width: 100%; height: 340px; background: #070a13; border: 1px solid #1e293b; border-radius: 8px;"></canvas>
+            <canvas id="bn-topology-canvas" width="950" height="340" style="width: 100%; height: 340px; background: #ffffff; border: 1px solid var(--border-color); border-radius: 4px;"></canvas>
           </div>
         </div>
 
         <!-- Simulation Testing Sandbox -->
-        <div class="card" style="margin-bottom: 1.5rem; background: #0f172a; border: 1px solid #334155;">
+        <div class="card" style="margin-bottom: 1.5rem;">
           <div class="card-header">
             <div>
-              <div class="card-title" style="font-size: 0.95rem; color: #f8fafc;">🧪 Hộp Thử Nghiệm Kịch Bản Sốc Tải Xưởng (Production Surge Simulation Sandbox)</div>
-              <div class="card-subtitle">Kích hoạt các biến cố thực tế tại xưởng để kiểm thử thuật toán dự báo dịch chuyển cổ chai và phản xạ điều hướng của MES</div>
+              <div class="card-title">Kịch Bản Thử Nghiệm Tải Xưởng</div>
+              <div class="card-subtitle">Kiểm thử thuật toán dự báo dịch chuyển cổ chai và phản xạ điều hướng</div>
             </div>
             <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-              <button class="btn btn-secondary btn-sm" onclick="simulateBottleneckSurge('CURING_VALVE_DEGRADE')">🔥 Sụt Áp Hơi Buồng Ép CP-02</button>
-              <button class="btn btn-secondary btn-sm" onclick="simulateBottleneckSurge('TBM_INFLOW_SURGE')">⚡ Sốc Tải Lốp Sống Từ TBM-01</button>
-              <button class="btn btn-secondary btn-sm" onclick="simulateBottleneckSurge('XR_HIGH_SCRAP')">🔍 Kẹt Trạm Soi Tia X (XR-01)</button>
-              <button class="btn btn-secondary btn-sm" onclick="simulateBottleneckSurge('NORMAL')">↺ Khôi Phục Bình Thường</button>
+              <button class="btn btn-secondary btn-sm" onclick="simulateBottleneckSurge('CURING_VALVE_DEGRADE')">Sụt Áp Hơi CP-02</button>
+              <button class="btn btn-secondary btn-sm" onclick="simulateBottleneckSurge('TBM_INFLOW_SURGE')">Sốc Tải TBM-01</button>
+              <button class="btn btn-secondary btn-sm" onclick="simulateBottleneckSurge('XR_HIGH_SCRAP')">Kẹt Soi Tia X XR-01</button>
+              <button class="btn btn-secondary btn-sm" onclick="simulateBottleneckSurge('NORMAL')">Khôi Phục Bình Thường</button>
             </div>
           </div>
-          <div id="bn-simulation-feedback" style="display: none; padding: 1rem; border-top: 1px solid #1e293b;"></div>
+          <div id="bn-simulation-feedback" style="display: none; padding: 1rem; border-top: 1px solid var(--border-color);"></div>
         </div>
 
         <!-- Dynamic Routing Rules Matrix Table -->
-        <div class="card" style="background: #0c101d; border: 1px solid #1e293b;">
+        <div class="card">
           <div class="card-header">
             <div>
-              <div class="card-title" style="font-size: 0.95rem;">📋 Ma Trận Quy Tắc Điều Hướng Động (Dynamic Routing & Diverting Matrix)</div>
-              <div class="card-subtitle">Các tuyến chuyển hướng tự động được MES thiết lập để bảo vệ nhịp chuyền khi phát hiện nguy cơ tắc nghẽn</div>
+              <div class="card-title">Ma Trận Quy Tắc Điều Hướng Động</div>
+              <div class="card-subtitle">Các tuyến chuyển hướng tự động khi phát hiện nguy cơ tắc nghẽn</div>
             </div>
-            <button class="btn btn-secondary btn-sm" onclick="loadDynamicRoutingRules()">Làm Mới Ma Trận</button>
+            <button class="btn btn-secondary btn-sm" onclick="loadDynamicRoutingRules()">Làm Mới</button>
           </div>
           <div class="table-container">
-            <table class="data-table">
+            <table class="table">
               <thead>
                 <tr>
                   <th>Mã Quy Tắc</th>
                   <th>Nút Nguồn</th>
-                  <th>Tuyến Chuẩn (Đích)</th>
-                  <th>Tuyến Dự Phòng (Thay Thế)</th>
+                  <th>Tuyến Chuẩn</th>
+                  <th>Tuyến Thay Thế</th>
                   <th>Loại Vật Liệu</th>
                   <th>Tỷ Lệ Bẻ Ghi</th>
-                  <th>Trạng Thái Điều Hướng</th>
+                  <th>Trạng Thái</th>
                   <th>Hiệu Quả Dự Báo</th>
                   <th>Thao Tác</th>
                 </tr>
               </thead>
               <tbody id="bn-rules-table-body">
                 <tr>
-                  <td colspan="9" style="text-align: center; color: #64748b; padding: 1.5rem;">
+                  <td colspan="9" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">
                     Đang tải ma trận quy tắc điều hướng...
                   </td>
                 </tr>
@@ -1237,18 +1198,18 @@
     </section>
 
     <!-- =================================================================== -->
-    <!-- TAB 11: MULTIVARIATE FEATURE IMPORTANCE & DECISION TREES / SHAP     -->
+    <!-- TAB 11: MULTIVARIATE FEATURE IMPORTANCE & SHAP                      -->
     <!-- =================================================================== -->
     <section id="pane-shap" class="tab-pane">
       <div class="card">
         <div class="card-header">
           <div>
-            <div class="card-title">🔬 Phân Tích Đa Biến & Định Vị Căn Nguyên Gốc (Feature Importance & Decision Trees / SHAP)</div>
-            <div class="card-subtitle">Ứng dụng Trí tuệ Nhân tạo giải thích được (Explainable AI - TreeSHAP & Decision Trees) phân tích 19+ thông số mẻ luyện kín, đùn cán, thành hình và lưu hóa để chỉ điểm chính xác yếu tố gây ra tỷ lệ lỗi đột biến</div>
+            <div class="card-title">Phân Tích Đa Biến & Định Vị Căn Nguyên (SHAP)</div>
+            <div class="card-subtitle">Ứng dụng TreeSHAP phân tích 19+ thông số để xác định nguyên nhân gây lỗi đột biến</div>
           </div>
           <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-            <button class="btn btn-secondary btn-sm" onclick="loadGlobalShapImportance()">📊 Phân Tích Toàn Cục (Global SHAP)</button>
-            <button class="btn btn-primary btn-sm" onclick="retrainShapModels()">⚡ Tái Huấn Luyện XAI</button>
+            <button class="btn btn-secondary btn-sm" onclick="loadGlobalShapImportance()">Phân Tích Toàn Cục</button>
+            <button class="btn btn-primary btn-sm" onclick="retrainShapModels()">Tái Huấn Luyện XAI</button>
           </div>
         </div>
 
@@ -1259,16 +1220,16 @@
             <div class="kpi-value"><span id="shap-kpi-defect-rate">7.8</span><span class="kpi-unit">%</span></div>
             <div class="kpi-foot">
               <span>Định mức: <strong>1.8%</strong></span>
-              <span class="status-pill pill-red" id="shap-kpi-spike-pill">ĐỘT BIẾN LỖI</span>
+              <span class="status-pill pill-red" id="shap-kpi-spike-pill">Đột Biến Lỗi</span>
             </div>
           </div>
 
           <div class="kpi-card cyan">
-            <div class="kpi-title">Căn Nguyên Hàng Đầu (Top Culprit)</div>
+            <div class="kpi-title">Căn Nguyên Hàng Đầu</div>
             <div class="kpi-value"><span id="shap-kpi-top-cause" style="font-size: 1.25rem;">Áp Suất Bàng Bọng</span></div>
             <div class="kpi-foot">
               <span>Công đoạn: <strong id="shap-kpi-top-area">Lưu Hóa (CP-02)</strong></span>
-              <span class="status-pill pill-yellow">THỦ PHẠM CHÍNH</span>
+              <span class="status-pill pill-amber">Thủ Phạm Chính</span>
             </div>
           </div>
 
@@ -1277,7 +1238,7 @@
             <div class="kpi-value"><span id="shap-kpi-top-share">36.4</span><span class="kpi-unit">%</span></div>
             <div class="kpi-foot">
               <span>Điểm SHAP: <strong id="shap-kpi-top-val">0.0825</strong></span>
-              <span>Độ lệch: <strong style="color: #f87171;">-2.5 bar</strong></span>
+              <span>Độ lệch: <strong style="color: #a80000;">-2.5 bar</strong></span>
             </div>
           </div>
 
@@ -1294,33 +1255,30 @@
             <div class="kpi-value"><span id="shap-kpi-accuracy">1.00</span><span class="kpi-unit">AUC</span></div>
             <div class="kpi-foot">
               <span>F1-Score: <strong id="shap-kpi-f1">0.96</strong></span>
-              <span class="status-pill pill-green">RẤT CHÍNH XÁC</span>
+              <span class="status-pill pill-green">Độ Chính Xác Cao</span>
             </div>
           </div>
         </div>
 
         <!-- Global SHAP Feature Importance Canvas -->
-        <div class="card" style="margin-bottom: 1.5rem; background: #0c101d; border: 1px solid #1e293b;">
+        <div class="card" style="margin-bottom: 1.5rem;">
           <div class="card-header" style="padding-bottom: 0.75rem;">
             <div>
-              <div class="card-title" style="font-size: 0.95rem;">📊 Xếp Hạng Đa Biến Mức Độ Quan Trọng Toàn Cục: mean(|SHAP value|)</div>
-              <div class="card-subtitle">Đo lường mức độ ảnh hưởng của từng thông số vào việc làm tăng nguy cơ phế phẩm trên toàn nhà máy</div>
-            </div>
-            <div style="font-size: 0.8rem; color: #94a3b8;">
-              Thuật toán: <strong>TreeSHAP (Cooperative Game Theory)</strong>
+              <div class="card-title">Xếp Hạng Đa Biến Mức Độ Quan Trọng Toàn Cục: mean(|SHAP value|)</div>
+              <div class="card-subtitle">Mức độ ảnh hưởng của từng thông số vào việc làm tăng nguy cơ phế phẩm</div>
             </div>
           </div>
           <div style="padding: 1rem;">
-            <canvas id="shap-global-canvas" width="950" height="380" style="width: 100%; height: 380px; background: #070a13; border: 1px solid #1e293b; border-radius: 8px;"></canvas>
+            <canvas id="shap-global-canvas" width="950" height="380" style="width: 100%; height: 380px; background: #ffffff; border: 1px solid var(--border-color); border-radius: 4px;"></canvas>
           </div>
         </div>
 
         <!-- Local SHAP Waterfall Breakdown for Single Batch/Tire -->
-        <div class="card" style="margin-bottom: 1.5rem; background: #0f172a; border: 1px solid #334155;">
+        <div class="card" style="margin-bottom: 1.5rem;">
           <div class="card-header">
             <div>
-              <div class="card-title" style="font-size: 0.95rem; color: #f8fafc;">🔍 Giải Thích Nguyên Nhân Gốc Chi Tiết Từng Lốp / Từng Mẻ (Local Waterfall Breakdown)</div>
-              <div class="card-subtitle">Chỉ rõ tại sao một chiếc lốp cụ thể bị hỏng: Tác nhân kéo tăng rủi ro lỗi (+) vs Tác nhân triệt tiêu (-)</div>
+              <div class="card-title">Giải Thích Nguyên Nhân Gốc Chi Tiết Từng Lốp / Từng Mẻ</div>
+              <div class="card-subtitle">Tác nhân kéo tăng rủi ro lỗi (+) so với tác nhân triệt tiêu (-)</div>
             </div>
             <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
               <select class="form-control" id="shap-sample-picker" style="max-width: 260px; font-size: 0.82rem;" onchange="explainSelectedSample()">
@@ -1336,11 +1294,11 @@
         </div>
 
         <!-- Decision Tree If-Then Rules Mining Panel -->
-        <div class="card" style="margin-bottom: 1.5rem; background: #0c101d; border: 1px solid #1e293b;">
+        <div class="card" style="margin-bottom: 1.5rem;">
           <div class="card-header">
             <div>
-              <div class="card-title" style="font-size: 0.95rem;">🌲 Quy Tắc Vận Hành Khai Phá Từ Cây Quyết Định (Decision Tree Operational Rules)</div>
-              <div class="card-subtitle">Trích xuất điều kiện logic If-Then rõ ràng giúp kỹ sư công nghệ và quản đốc phân xưởng ban hành hướng dẫn thao tác chuẩn (SOP)</div>
+              <div class="card-title">Quy Tắc Vận Hành Khai Phá Từ Cây Quyết Định</div>
+              <div class="card-subtitle">Điều kiện logic If-Then hỗ trợ cập nhật hướng dẫn thao tác chuẩn (SOP)</div>
             </div>
           </div>
           <div id="shap-rules-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 1rem; padding: 1.25rem;">
@@ -1349,20 +1307,20 @@
         </div>
 
         <!-- Defect Spike Simulation Sandbox -->
-        <div class="card" style="background: #0f172a; border: 1px solid #334155;">
+        <div class="card">
           <div class="card-header">
             <div>
-              <div class="card-title" style="font-size: 0.95rem; color: #f8fafc;">🧪 Hộp Thử Nghiệm Kịch Bản Đột Biến Lỗi (Defect Spike Simulation Sandbox)</div>
-              <div class="card-subtitle">Cố tình kích hoạt các cụm sự cố công nghệ thực tế để kiểm tra năng lực "bắt bệnh" và chỉ điểm chính xác của SHAP</div>
+              <div class="card-title">Hộp Thử Nghiệm Kịch Bản Đột Biến Lỗi</div>
+              <div class="card-subtitle">Kích hoạt sự cố để kiểm tra khả năng định vị lỗi của mô hình SHAP</div>
             </div>
             <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-              <button class="btn btn-secondary btn-sm" onclick="simulateShapSpike('BLADDER_PRESSURE_DROP')">🔥 Đột Biến: Bọt Khí Hông Lốp (Sụt Áp Bàng)</button>
-              <button class="btn btn-secondary btn-sm" onclick="simulateShapSpike('UNDER_CURE_TEMPERATURE')">⚠️ Đột Biến: Lưu Hóa Non (Tụt Nhiệt Khuôn)</button>
-              <button class="btn btn-secondary btn-sm" onclick="simulateShapSpike('BANBURY_OVERHEAT')">⚡ Đột Biến: Bóc Tách Gai (Nhiệt Luyện Quá Cao)</button>
-              <button class="btn btn-secondary btn-sm" onclick="simulateShapSpike('NORMAL')">↺ Khôi Phục Vận Hành Ổn Định</button>
+              <button class="btn btn-secondary btn-sm" onclick="simulateShapSpike('BLADDER_PRESSURE_DROP')">Sụt Áp Bàng (Bọt Khí Hông Lốp)</button>
+              <button class="btn btn-secondary btn-sm" onclick="simulateShapSpike('UNDER_CURE_TEMPERATURE')">Tụt Nhiệt Khuôn (Lưu Hóa Non)</button>
+              <button class="btn btn-secondary btn-sm" onclick="simulateShapSpike('BANBURY_OVERHEAT')">Nhiệt Luyện Quá Cao (Bóc Tách Gai)</button>
+              <button class="btn btn-secondary btn-sm" onclick="simulateShapSpike('NORMAL')">Khôi Phục Bình Thường</button>
             </div>
           </div>
-          <div id="shap-simulation-feedback" style="display: none; padding: 1rem; border-top: 1px solid #1e293b;"></div>
+          <div id="shap-simulation-feedback" style="display: none; padding: 1rem; border-top: 1px solid var(--border-color);"></div>
         </div>
 
       </div>
@@ -1374,23 +1332,18 @@
     <section id="pane-graph" class="tab-pane">
       <div style="display: flex; flex-direction: column; gap: 1.5rem;">
 
-        <!-- Header Banner -->
-        <div class="card" style="border-left: 4px solid #f59e0b; background: linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(15, 23, 42, 0.95) 100%);">
+        <!-- Header Card -->
+        <div class="card" style="border-left: 4px solid var(--m365-blue);">
           <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
             <div>
-              <h2 style="color: #f59e0b; margin-bottom: 0.35rem; display: flex; align-items: center; gap: 0.5rem;">
-                <span>🕸️</span> Mạng Đồ Thị Phả Hệ & Dự Báo Rủi Ro Lây Lan (Graph ML Contagion)
+              <h2 style="color: var(--text-primary); font-size: 1.15rem; font-weight: 600; margin-bottom: 0.35rem;">
+                Mạng Đồ Thị Phả Hệ & Dự Báo Rủi Ro Lây Lan (Graph ML)
               </h2>
-              <p style="color: #94a3b8; font-size: 0.88rem; max-width: 900px; margin: 0;">
-                Chuyển hóa dữ liệu phả hệ ISA-95 Level 3 thành Đồ thị Tri thức Dị thể (Heterogeneous Traceability Knowledge Graph).
-                Ứng dụng <strong>PyTorch Message Passing Neural Network (MPNN)</strong> và <strong>Random Walk with Restart (RWR) Diffusion</strong>
-                để dự đoán chính xác bán kính lây lan (Blast Radius) của một lô linh kiện lỗi sang tất cả các đơn hàng đang chạy trên sàn theo chuẩn <strong>IATF 16949 Section 8.7</strong>.
+              <p style="color: var(--text-secondary); font-size: 0.88rem; max-width: 900px; margin: 0;">
+                Mô hình hóa dữ liệu phả hệ thành đồ thị tri thức. Ứng dụng thuật toán lan truyền tin nhắn trên đồ thị để dự đoán phạm vi lây lan khi một lô vật tư gặp sự cố.
               </p>
             </div>
             <div style="display: flex; gap: 0.75rem; align-items: center;">
-              <span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); padding: 0.4rem 0.75rem; font-size: 0.82rem;">
-                ⚡ Heterogeneous MPNN
-              </span>
               <button class="btn btn-secondary btn-sm" onclick="loadGraphTab()">
                 ↺ Làm Mới Đồ Thị
               </button>
@@ -1400,67 +1353,67 @@
 
         <!-- KPI Grid -->
         <div class="kpi-grid">
-          <div class="kpi-card">
-            <div class="kpi-label">Tổng Nodes Trong Mạng</div>
-            <div class="kpi-value" id="kpi-graph-nodes" style="color: #38bdf8;">--</div>
-            <div class="kpi-sub">Lô, Mẻ Luyện, Máy, Lốp, Lệnh SX</div>
+          <div class="kpi-card blue">
+            <div class="kpi-title">Tổng Nút Trong Mạng</div>
+            <div class="kpi-value" id="kpi-graph-nodes">--</div>
+            <div class="kpi-foot">Lô, mẻ luyện, máy móc, lốp, lệnh SX</div>
           </div>
-          <div class="kpi-card">
-            <div class="kpi-label">Tổng Cạnh Quan Hệ (Edges)</div>
-            <div class="kpi-value" id="kpi-graph-edges" style="color: #a78bfa;">--</div>
-            <div class="kpi-sub">BOM, Gia công, Chung máy, Đồng lưu hóa</div>
+          <div class="kpi-card purple">
+            <div class="kpi-title">Tổng Cạnh Quan Hệ (Edges)</div>
+            <div class="kpi-value" id="kpi-graph-edges">--</div>
+            <div class="kpi-foot">BOM, gia công, chung máy, lưu hóa</div>
           </div>
-          <div class="kpi-card">
-            <div class="kpi-label">Đơn Hàng Đang Chạy Trên Sàn</div>
-            <div class="kpi-value" id="kpi-graph-active-wos" style="color: #10b981;">--</div>
-            <div class="kpi-sub">TBM-01, TBM-02, CP-01..CP-04</div>
+          <div class="kpi-card green">
+            <div class="kpi-title">Đơn Hàng Đang Chạy</div>
+            <div class="kpi-value" id="kpi-graph-active-wos">--</div>
+            <div class="kpi-foot">TBM-01, TBM-02, CP-01..CP-04</div>
           </div>
-          <div class="kpi-card">
-            <div class="kpi-label">Đơn Hàng Nguy Cấp (Blast Radius)</div>
-            <div class="kpi-value" id="kpi-graph-critical-wos" style="color: #ef4444;">0</div>
-            <div class="kpi-sub" id="kpi-graph-critical-sub">Chưa phát hiện lây nhiễm</div>
+          <div class="kpi-card red">
+            <div class="kpi-title">Đơn Hàng Nguy Cấp</div>
+            <div class="kpi-value" id="kpi-graph-critical-wos">0</div>
+            <div class="kpi-foot" id="kpi-graph-critical-sub">Chưa phát hiện lây nhiễm</div>
           </div>
         </div>
 
         <!-- Simulation Control Bar -->
-        <div class="card" style="background: #0f172a; border: 1px solid #334155;">
-          <h3 style="color: #e2e8f0; font-size: 1rem; margin-bottom: 0.85rem; display: flex; align-items: center; gap: 0.5rem;">
-            <span>🧪</span> Bơm Giả Lập Phát Hiện Khuyết Tật Lô Linh Kiện (Outbreak Injection Sandbox)
+        <div class="card">
+          <h3 style="color: var(--text-primary); font-size: 0.95rem; font-weight: 600; margin-bottom: 0.85rem;">
+            Giả Lập Phát Hiện Khuyết Tật Lô Linh Kiện
           </h3>
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)) 180px; gap: 1rem; align-items: flex-end;">
             <div class="form-group" style="margin: 0;">
-              <label class="form-label" style="font-size: 0.8rem; color: #94a3b8;">Chọn Lô Linh Kiện / Mẻ Banbury Nghi Vấn</label>
-              <select class="form-control" id="graph-sim-lot-select" style="font-size: 0.85rem; background: #1e293b; color: #fff;">
+              <label class="form-label" style="font-size: 0.8rem;">Chọn Lô Linh Kiện / Mẻ Nghi Vấn</label>
+              <select class="form-control" id="graph-sim-lot-select" style="font-size: 0.85rem;">
                 <option value="">-- Đang tải danh sách lô vật tư... --</option>
               </select>
             </div>
             <div class="form-group" style="margin: 0;">
-              <label class="form-label" style="font-size: 0.8rem; color: #94a3b8;">Mô Tả Lỗi Kỹ Thuật (Phát Hiện Kiểm Định)</label>
-              <input type="text" class="form-control" id="graph-sim-defect-desc" value="Khuyết tật nứt vai lốp & phân tán muội than kém" style="font-size: 0.85rem; background: #1e293b; color: #fff;">
+              <label class="form-label" style="font-size: 0.8rem;">Mô Tả Lỗi Kỹ Thuật</label>
+              <input type="text" class="form-control" id="graph-sim-defect-desc" value="Khuyết tật nứt vai lốp & phân tán muội than kém" style="font-size: 0.85rem;">
             </div>
             <div>
-              <button class="btn btn-primary" onclick="runGraphOutbreakSimulation()" style="width: 100%; height: 38px; display: flex; align-items: center; justify-content: center; gap: 0.5rem; background: #f59e0b; color: #0f172a; font-weight: 600; border: none;">
-                <span>⚡</span> Quét Lây Lan ML
+              <button class="btn btn-primary" onclick="runGraphOutbreakSimulation()" style="width: 100%; height: 36px;">
+                Quét Lây Lan ML
               </button>
             </div>
           </div>
         </div>
 
         <!-- Executive Blast Radius Directive Alert Banner (Initially Hidden) -->
-        <div id="graph-blast-radius-alert" class="card" style="display: none; border-left: 4px solid #ef4444; background: rgba(239, 68, 68, 0.08);">
+        <div id="graph-blast-radius-alert" class="card" style="display: none; border-left: 4px solid #a80000; background: var(--color-red-bg);">
           <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
             <div>
               <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.35rem;">
-                <span class="badge" style="background: #ef4444; color: #fff; font-weight: 700;">IATF 16949 SECTION 8.7</span>
-                <strong style="color: #fca5a5; font-size: 1rem;" id="graph-alert-headline">CẢNH BÁO LÂY NHIỄM PHẢ HỆ</strong>
+                <span class="status-pill pill-red">CẢNH BÁO LÂY NHIỄM</span>
+                <strong style="color: #a80000; font-size: 1rem;" id="graph-alert-headline">CẢNH BÁO LÂY NHIỄM PHẢ HỆ</strong>
               </div>
-              <p style="color: #e2e8f0; font-size: 0.86rem; margin: 0;" id="graph-alert-directive">
+              <p style="color: var(--text-primary); font-size: 0.86rem; margin: 0;" id="graph-alert-directive">
                 Đang chuẩn bị lệnh cách ly...
               </p>
             </div>
             <div style="display: flex; gap: 0.5rem;">
-              <button class="btn btn-danger" id="btn-execute-graph-quarantine" onclick="executeGraphQuarantineAction()" style="font-weight: 600; display: flex; align-items: center; gap: 0.5rem;">
-                <span>🛡️</span> Khóa Cách Ly Khẩn Cấp (1-Click MES Quarantine)
+              <button class="btn btn-danger" id="btn-execute-graph-quarantine" onclick="executeGraphQuarantineAction()">
+                Khóa Cách Ly Khẩn Cấp (Quarantine)
               </button>
             </div>
           </div>
@@ -1470,40 +1423,40 @@
         <div class="card" style="padding: 1.25rem;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
             <div>
-              <h3 style="color: #e2e8f0; font-size: 1rem; margin: 0; display: flex; align-items: center; gap: 0.5rem;">
-                <span>🗺️</span> Cấu Trúc Đồ Thị Phả Hệ Nhà Máy (5-Tier Manufacturing Traceability Map)
+              <h3 style="color: var(--text-primary); font-size: 0.95rem; font-weight: 600; margin: 0;">
+                Cấu Trúc Đồ Thị Phả Hệ Nhà Máy
               </h3>
-              <p style="color: #64748b; font-size: 0.8rem; margin: 0.2rem 0 0 0;">
-                Tọa độ trực quan hóa: Banbury ➔ Bán Thành Phẩm ➔ Thiết Bị ➔ Lốp Mộc/Chín ➔ Lệnh Sản Xuất
+              <p style="color: var(--text-secondary); font-size: 0.8rem; margin: 0.2rem 0 0 0;">
+                Mẻ Luyện ➔ Bán Thành Phẩm ➔ Thiết Bị ➔ Lốp SX ➔ Lệnh Sản Xuất
               </p>
             </div>
             <!-- Legend -->
-            <div style="display: flex; gap: 0.8rem; font-size: 0.75rem; color: #cbd5e1; flex-wrap: wrap; align-items: center;">
-              <span style="display: flex; align-items: center; gap: 0.25rem;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #ec4899; display: inline-block;"></span> Mẻ Banbury</span>
-              <span style="display: flex; align-items: center; gap: 0.25rem;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #3b82f6; display: inline-block;"></span> Lô Vật Tư</span>
-              <span style="display: flex; align-items: center; gap: 0.25rem;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #8b5cf6; display: inline-block;"></span> Máy Móc</span>
-              <span style="display: flex; align-items: center; gap: 0.25rem;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #64748b; display: inline-block;"></span> Lốp SX</span>
-              <span style="display: flex; align-items: center; gap: 0.25rem;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #10b981; display: inline-block;"></span> Đơn Hàng An Toàn</span>
-              <span style="display: flex; align-items: center; gap: 0.25rem;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #ef4444; display: inline-block;"></span> Lô Lỗi / Nguy Cấp</span>
+            <div style="display: flex; gap: 0.8rem; font-size: 0.75rem; color: var(--text-secondary); flex-wrap: wrap; align-items: center;">
+              <span style="display: flex; align-items: center; gap: 0.25rem;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #e3008c; display: inline-block;"></span> Mẻ Banbury</span>
+              <span style="display: flex; align-items: center; gap: 0.25rem;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #0078d4; display: inline-block;"></span> Lô Vật Tư</span>
+              <span style="display: flex; align-items: center; gap: 0.25rem;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #5c2d91; display: inline-block;"></span> Máy Móc</span>
+              <span style="display: flex; align-items: center; gap: 0.25rem;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #8a8886; display: inline-block;"></span> Lốp SX</span>
+              <span style="display: flex; align-items: center; gap: 0.25rem;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #107c41; display: inline-block;"></span> Đơn An Toàn</span>
+              <span style="display: flex; align-items: center; gap: 0.25rem;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #a80000; display: inline-block;"></span> Lô Lỗi / Nguy Cấp</span>
             </div>
           </div>
-          <div style="width: 100%; height: 460px; background: #070d19; border: 1px solid #1e293b; border-radius: 8px; position: relative; overflow: hidden;">
+          <div style="width: 100%; height: 460px; background: #ffffff; border: 1px solid var(--border-color); border-radius: 4px; position: relative; overflow: hidden;">
             <canvas id="graph-traceability-canvas" width="960" height="460" style="width: 100%; height: 100%; display: block;"></canvas>
-            <div id="graph-canvas-tooltip" style="display: none; position: absolute; pointer-events: none; background: rgba(15, 23, 42, 0.95); border: 1px solid #38bdf8; padding: 0.5rem 0.75rem; border-radius: 6px; font-size: 0.78rem; color: #fff; z-index: 20; box-shadow: 0 4px 12px rgba(0,0,0,0.5);"></div>
+            <div id="graph-canvas-tooltip" style="display: none; position: absolute; pointer-events: none; background: #ffffff; border: 1px solid var(--border-color); padding: 0.5rem 0.75rem; border-radius: 4px; font-size: 0.78rem; color: var(--text-primary); z-index: 20; box-shadow: var(--shadow-md);"></div>
           </div>
         </div>
 
         <!-- Work Orders Risk Contagion Assessment Matrix -->
         <div class="card">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-            <h3 style="color: #e2e8f0; font-size: 1rem; margin: 0; display: flex; align-items: center; gap: 0.5rem;">
-              <span>📊</span> Ma Trận Đánh Giá Rủi Ro Lây Lan Từng Đơn Hàng (Work Order Blast Radius)
+            <h3 style="color: var(--text-primary); font-size: 0.95rem; font-weight: 600; margin: 0;">
+              Ma Trận Đánh Giá Rủi Ro Lây Lan Từng Đơn Hàng
             </h3>
-            <span style="color: #94a3b8; font-size: 0.8rem;" id="graph-assessed-timestamp">Chưa chạy mô phỏng</span>
+            <span style="color: var(--text-secondary); font-size: 0.8rem;" id="graph-assessed-timestamp">Chưa chạy mô phỏng</span>
           </div>
 
-          <div style="overflow-x: auto;">
-            <table class="data-table" style="width: 100%; font-size: 0.84rem;">
+          <div class="table-container">
+            <table class="table" style="width: 100%; font-size: 0.84rem;">
               <thead>
                 <tr>
                   <th>Mã Lệnh SX</th>
@@ -1512,14 +1465,14 @@
                   <th>Trạng Thái</th>
                   <th>Xác Suất Lây Nhiễm</th>
                   <th>Phân Hạng Rủi Ro</th>
-                  <th>Vectơ Truyền Bệnh</th>
+                  <th>Vectơ Truyền Nhiễm</th>
                   <th>Lốp Bị Đe Dọa</th>
-                  <th>Hành Động Khắc Phục (CAPA)</th>
+                  <th>Hành Động Khắc Phục</th>
                 </tr>
               </thead>
               <tbody id="graph-wo-table-body">
                 <tr>
-                  <td colspan="9" style="text-align: center; color: #64748b; padding: 2rem;">
+                  <td colspan="9" style="text-align: center; color: var(--text-muted); padding: 2rem;">
                     Chọn một lô linh kiện và bấm "Quét Lây Lan ML" để hiển thị ma trận đánh giá.
                   </td>
                 </tr>
@@ -1528,15 +1481,15 @@
           </div>
         </div>
 
-        <!-- Shortest Contagion Trajectory Explainer (Path-to-Infection) -->
+        <!-- Shortest Contagion Trajectory Explainer -->
         <div class="card" id="graph-path-explainer-card" style="display: none;">
-          <h3 style="color: #e2e8f0; font-size: 1rem; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
-            <span>🔍</span> Giải Thích Chuỗi Truyền Nhiễm Ngắn Nhất (Shortest Contagion Trajectory)
+          <h3 style="color: var(--text-primary); font-size: 0.95rem; font-weight: 600; margin-bottom: 0.75rem;">
+            Chuỗi Truyền Nhiễm Ngắn Nhất (Path-to-Infection)
           </h3>
-          <p style="color: #94a3b8; font-size: 0.84rem; margin-bottom: 0.75rem;">
-            Đường lan truyền rủi ro cao nhất từ lô lỗi tới đơn hàng bị ảnh hưởng theo trọng số đồ thị dị thể:
+          <p style="color: var(--text-secondary); font-size: 0.84rem; margin-bottom: 0.75rem;">
+            Đường lan truyền rủi ro cao nhất từ lô lỗi tới đơn hàng bị ảnh hưởng:
           </p>
-          <div id="graph-trajectory-flow" style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; background: #070d19; padding: 1rem; border-radius: 8px; border: 1px solid #1e293b;">
+          <div id="graph-trajectory-flow" style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; background: var(--bg-subtle); padding: 1rem; border-radius: 4px; border: 1px solid var(--border-color);">
           </div>
         </div>
 
@@ -1553,7 +1506,7 @@
   <div class="modal-backdrop" id="modal-create-wo">
     <div class="modal-content">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
-        <h3 style="color: #fff;">Tạo Lệnh Sản Xuất Mới (New Work Order)</h3>
+        <h3 style="color: var(--text-primary); font-size: 1.1rem; font-weight: 600;">Tạo Lệnh Sản Xuất Mới</h3>
         <button class="btn btn-secondary btn-sm" onclick="closeModal('modal-create-wo')">✕</button>
       </div>
 
@@ -1605,24 +1558,24 @@
 
   <!-- Modal: Green Tire Label Preview -->
   <div class="modal-backdrop" id="modal-gt-label">
-    <div class="modal-content" style="max-width: 500px; text-align: center;">
-      <div style="border: 2px dashed #38bdf8; padding: 1.5rem; border-radius: 8px; background: #0b1329;">
-        <div style="font-size: 0.75rem; letter-spacing: 0.1em; color: #94a3b8; margin-bottom: 0.5rem;">NHÃN LỐP SỐNG &bull; GREEN TIRE BARCODE</div>
-        <h2 id="lbl-gt-barcode" style="color: #38bdf8; font-family: var(--font-mono); letter-spacing: 2px; margin-bottom: 0.5rem;">GT-XXXXXXXX</h2>
+    <div class="modal-content" style="max-width: 480px; text-align: center;">
+      <div style="border: 2px dashed var(--m365-blue); padding: 1.5rem; border-radius: 4px; background: var(--bg-subtle);">
+        <div style="font-size: 0.75rem; letter-spacing: 0.1em; color: var(--text-secondary); margin-bottom: 0.5rem; font-weight: 600;">NHÃN LỐP SỐNG &bull; GREEN TIRE BARCODE</div>
+        <h2 id="lbl-gt-barcode" style="color: var(--m365-blue); font-family: var(--font-mono); letter-spacing: 2px; margin-bottom: 0.5rem;">GT-XXXXXXXX</h2>
 
         <!-- Barcode Graphic simulation -->
-        <div style="height: 48px; background: repeating-linear-gradient(90deg, #fff 0, #fff 3px, #000 3px, #000 6px, #fff 6px, #fff 10px, #000 10px, #000 12px); margin: 0.75rem auto; width: 85%;"></div>
+        <div style="height: 48px; background: repeating-linear-gradient(90deg, #000 0, #000 3px, #fff 3px, #fff 6px, #000 6px, #000 10px, #fff 10px, #fff 12px); margin: 0.75rem auto; width: 85%;"></div>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; text-align: left; font-size: 0.82rem; margin-top: 1rem; color: #cbd5e1;">
-          <div>Kích Cỡ: <strong id="lbl-tire-size" style="color: #fff;">--</strong></div>
-          <div>Trọng Lượng: <strong id="lbl-weight" style="color: #fff;">-- kg</strong></div>
-          <div>Trạm Máy: <strong id="lbl-machine" style="color: #fff;">--</strong></div>
-          <div>Công Nhân: <strong id="lbl-op" style="color: #fff;">--</strong></div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; text-align: left; font-size: 0.82rem; margin-top: 1rem; color: var(--text-primary);">
+          <div>Kích Cỡ: <strong id="lbl-tire-size">--</strong></div>
+          <div>Trọng Lượng: <strong id="lbl-weight">-- kg</strong></div>
+          <div>Trạm Máy: <strong id="lbl-machine">--</strong></div>
+          <div>Công Nhân: <strong id="lbl-op">--</strong></div>
         </div>
       </div>
 
       <div style="margin-top: 1.25rem; display: flex; justify-content: center; gap: 0.75rem;">
-        <button class="btn btn-success" onclick="closeModal('modal-gt-label')">✓ In Nhãn & Hoàn Tất</button>
+        <button class="btn btn-success" onclick="closeModal('modal-gt-label')">In Nhãn & Hoàn Tất</button>
       </div>
     </div>
   </div>

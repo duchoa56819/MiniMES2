@@ -1,44 +1,70 @@
 /*
-  TIRE-MES 4.0 - Industrial Manufacturing Execution System Stylesheet
-  Modern Industrial Dark & High-Contrast Design System
-  Compliant with ISA-95 Level 3 Operator & Engineer Dashboards
+  TIRE-MES 4.0 - Manufacturing Execution System Stylesheet
+  Microsoft 365 & Fluent UI Design System
+  Clean, Minimal, High-Performance Enterprise Theme
 */
 
 :root {
-  --bg-primary: #0b0f19;
-  --bg-secondary: #111827;
-  --bg-card: #1f2937;
-  --bg-card-hover: #283548;
-  --bg-input: #111827;
-  --border-color: #374151;
-  --border-focus: #3b82f6;
+  /* Microsoft 365 Palette */
+  --m365-blue: #0078d4;
+  --m365-blue-hover: #106ebe;
+  --m365-blue-pressed: #005a9e;
+  --m365-blue-light: #eff6fc;
+  --m365-blue-border: #c7e0f4;
 
-  --text-primary: #f9fafb;
-  --text-secondary: #9ca3af;
-  --text-muted: #6b7280;
+  /* Neutral Surface Colors */
+  --bg-primary: #f3f2f1;          /* M365 Page Background */
+  --bg-secondary: #ffffff;
+  --bg-card: #ffffff;             /* Pure White Card Surface */
+  --bg-card-hover: #faf9f8;
+  --bg-input: #ffffff;
+  --bg-subtle: #f8f8f8;
 
-  --color-green: #10b981;
-  --color-green-bg: rgba(16, 185, 129, 0.15);
-  --color-blue: #3b82f6;
-  --color-blue-bg: rgba(59, 130, 246, 0.15);
-  --color-cyan: #06b6d4;
-  --color-cyan-bg: rgba(6, 182, 212, 0.15);
-  --color-amber: #f59e0b;
-  --color-amber-bg: rgba(245, 158, 11, 0.15);
-  --color-red: #ef4444;
-  --color-red-bg: rgba(239, 68, 68, 0.15);
-  --color-purple: #8b5cf6;
-  --color-purple-bg: rgba(139, 92, 246, 0.15);
+  /* Neutral Typography Colors */
+  --text-primary: #201f1e;        /* Dark Charcoal Primary Text */
+  --text-secondary: #605e5c;      /* M365 Secondary Gray */
+  --text-muted: #8a8886;          /* Muted Gray */
+  --text-white: #ffffff;
 
-  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.4);
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
+  /* Borders */
+  --border-color: #edebe9;        /* Subtle Fluent Divider */
+  --border-strong: #d2d0ce;
+  --border-input: #8a8886;        /* Standard Form Input Border */
+  --border-focus: #0078d4;
+
+  /* Semantic State Colors */
+  --color-green: #107c41;         /* Microsoft Green */
+  --color-green-bg: #dff6dd;
+  --color-green-border: #c7e0c4;
+
+  --color-blue: #0078d4;          /* Microsoft Blue */
+  --color-blue-bg: #eff6fc;
+  --color-blue-border: #c7e0f4;
+
+  --color-amber: #7a4100;         /* Microsoft Warning Brown-Orange */
+  --color-amber-bg: #fff4ce;
+  --color-amber-border: #fed9cc;
+
+  --color-red: #a80000;           /* Microsoft Error Red */
+  --color-red-bg: #fde7e9;
+  --color-red-border: #f3b2b8;
+
+  --color-purple: #5c2d91;
+  --color-purple-bg: #f4edf9;
+  --color-purple-border: #decceb;
+
+  /* Typography */
+  --font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "Consolas", "Courier New", monospace;
+
+  /* Fluent Depth (Subtle Shadows) */
+  --shadow-sm: 0 1.6px 3.6px 0 rgba(0, 0, 0, 0.08), 0 0.3px 0.9px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 3.2px 7.2px 0 rgba(0, 0, 0, 0.1), 0 0.6px 1.8px 0 rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 6.4px 14.4px 0 rgba(0, 0, 0, 0.12), 0 1.2px 3.6px 0 rgba(0, 0, 0, 0.08);
+
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 4px;
 }
 
 * {
@@ -51,162 +77,181 @@ body {
   font-family: var(--font-family);
   background-color: var(--bg-primary);
   color: var(--text-primary);
-  line-height: 1.5;
+  line-height: 1.45;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* TOP NAVBAR */
+/* ========================================================================= */
+/* 1. MICROSOFT 365 SUITE HEADER                                             */
+/* ========================================================================= */
 .navbar {
-  background-color: var(--bg-secondary);
-  border-bottom: 1px solid var(--border-color);
-  padding: 0.75rem 1.5rem;
+  background-color: var(--m365-blue);
+  color: #ffffff;
+  height: 48px;
+  padding: 0 1.25rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
   position: sticky;
   top: 0;
   z-index: 50;
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
 }
 
 .nav-brand {
   display: flex;
   align-items: center;
-  gap: 0.85rem;
+  gap: 0.75rem;
 }
 
 .brand-logo {
-  width: 36px;
-  height: 36px;
-  background: linear-gradient(135deg, #2563eb, #06b6d4);
-  border-radius: var(--radius-md);
+  width: 28px;
+  height: 28px;
+  background: #ffffff;
+  color: var(--m365-blue);
+  border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 800;
-  font-size: 1.2rem;
-  color: #fff;
-  box-shadow: 0 0 12px rgba(37, 99, 235, 0.5);
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: -0.05em;
 }
 
 .brand-text h1 {
-  font-size: 1.15rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  font-size: 1rem;
+  font-weight: 600;
   color: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .brand-text p {
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-  font-family: var(--font-mono);
+  display: none; /* Hide verbose subtitle in M365 top bar */
 }
 
 .nav-status {
   display: flex;
   align-items: center;
-  gap: 1.25rem;
+  gap: 1rem;
 }
 
 .status-badge {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.35rem 0.75rem;
-  background: rgba(16, 185, 129, 0.1);
-  border: 1px solid rgba(16, 185, 129, 0.3);
-  border-radius: 9999px;
-  font-size: 0.8rem;
-  color: var(--color-green);
+  gap: 0.4rem;
+  padding: 2px 8px;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  color: #ffffff;
   font-weight: 500;
 }
 
 .pulse-dot {
-  width: 8px;
-  height: 8px;
-  background-color: var(--color-green);
+  width: 6px;
+  height: 6px;
+  background-color: #ffffff;
   border-radius: 50%;
-  box-shadow: 0 0 8px var(--color-green);
-  animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-  70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
-  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
 }
 
 .shift-info {
-  font-size: 0.82rem;
-  color: var(--text-secondary);
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.9);
   display: flex;
   gap: 0.75rem;
-  font-family: var(--font-mono);
+  align-items: center;
 }
 
 .shift-info span {
-  color: #38bdf8;
+  color: #ffffff;
   font-weight: 600;
 }
 
-/* NAVIGATION TABS */
+.btn-header-reset {
+  background: transparent;
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  padding: 3px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.btn-header-reset:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* ========================================================================= */
+/* 2. FLUENT PIVOT NAVIGATION TABS                                           */
+/* ========================================================================= */
 .nav-tabs-bar {
-  background-color: #162032;
+  background-color: #ffffff;
   border-bottom: 1px solid var(--border-color);
-  padding: 0 1.5rem;
+  padding: 0 1.25rem;
   display: flex;
-  gap: 0.5rem;
+  gap: 0.25rem;
   overflow-x: auto;
 }
 
 .tab-btn {
-  padding: 0.85rem 1.15rem;
+  padding: 0.65rem 0.9rem;
   background: none;
   border: none;
-  border-bottom: 3px solid transparent;
+  border-bottom: 2px solid transparent;
   color: var(--text-secondary);
-  font-size: 0.88rem;
-  font-weight: 600;
+  font-size: 0.85rem;
+  font-weight: 500;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  transition: all 0.2s ease;
+  gap: 0.4rem;
   white-space: nowrap;
+  transition: color 0.15s ease, border-color 0.15s ease;
 }
 
 .tab-btn:hover {
-  color: #fff;
-  background-color: rgba(255, 255, 255, 0.03);
+  color: var(--text-primary);
+  background-color: var(--bg-subtle);
 }
 
 .tab-btn.active {
-  color: #38bdf8;
-  border-bottom-color: #38bdf8;
-  background-color: rgba(56, 189, 248, 0.08);
+  color: var(--m365-blue);
+  font-weight: 600;
+  border-bottom-color: var(--m365-blue);
+  background: none;
 }
 
 .tab-btn .badge {
-  background-color: var(--border-color);
+  background-color: var(--bg-primary);
   color: var(--text-secondary);
-  font-size: 0.72rem;
-  padding: 0.15rem 0.45rem;
-  border-radius: 9999px;
-  font-weight: 700;
+  border: 1px solid var(--border-color);
+  font-size: 0.7rem;
+  padding: 1px 5px;
+  border-radius: 10px;
+  font-weight: 600;
 }
 
 .tab-btn.active .badge {
-  background-color: #0284c7;
-  color: #fff;
+  background-color: var(--m365-blue-light);
+  color: var(--m365-blue);
+  border-color: var(--m365-blue-border);
 }
 
-/* MAIN CONTENT */
+/* ========================================================================= */
+/* 3. MAIN CONTENT CONTAINER                                                 */
+/* ========================================================================= */
 .main-container {
   flex: 1;
-  padding: 1.5rem;
-  max-width: 1600px;
+  padding: 1rem 1.25rem;
+  max-width: 1680px;
   margin: 0 auto;
   width: 100%;
 }
@@ -217,165 +262,145 @@ body {
 
 .tab-pane.active {
   display: block;
-  animation: fadeIn 0.25s ease-in-out;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-/* CARDS & CONTAINERS */
+/* ========================================================================= */
+/* 4. CARDS & CONTAINERS                                                     */
+/* ========================================================================= */
 .card {
   background-color: var(--bg-card);
   border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
-  padding: 1.25rem;
+  border-radius: var(--radius-md);
+  padding: 1rem 1.25rem;
   box-shadow: var(--shadow-sm);
-  margin-bottom: 1.25rem;
+  margin-bottom: 1rem;
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .card-title {
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.45rem;
 }
 
 .card-subtitle {
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   color: var(--text-secondary);
+  margin-top: 2px;
 }
 
-/* KPI GRID */
+/* ========================================================================= */
+/* 5. KPI METRICS (FLUENT COMPACT METRIC CARDS)                              */
+/* ========================================================================= */
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 1rem;
-  margin-bottom: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
 }
 
 .kpi-card {
-  background: linear-gradient(145deg, #1f2937, #192231);
+  background-color: #ffffff;
   border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
-  padding: 1.15rem;
-  position: relative;
-  overflow: hidden;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border-top: 3px solid var(--m365-blue);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1rem;
+  box-shadow: var(--shadow-sm);
 }
 
-.kpi-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-  border-color: #4b5563;
-}
-
-.kpi-card::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 4px;
-  height: 100%;
-}
-
-.kpi-card.blue::before { background-color: var(--color-blue); }
-.kpi-card.green::before { background-color: var(--color-green); }
-.kpi-card.amber::before { background-color: var(--color-amber); }
-.kpi-card.red::before { background-color: var(--color-red); }
-.kpi-card.cyan::before { background-color: var(--color-cyan); }
-.kpi-card.purple::before { background-color: var(--color-purple); }
+.kpi-card.blue { border-top-color: var(--m365-blue); }
+.kpi-card.green { border-top-color: var(--color-green); }
+.kpi-card.amber { border-top-color: var(--color-amber); }
+.kpi-card.red { border-top-color: var(--color-red); }
+.kpi-card.cyan { border-top-color: #0078d4; }
+.kpi-card.purple { border-top-color: #5c2d91; }
 
 .kpi-title {
-  font-size: 0.8rem;
+  font-size: 0.72rem;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
   color: var(--text-secondary);
   font-weight: 600;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.35rem;
 }
 
 .kpi-value {
-  font-size: 1.85rem;
-  font-weight: 800;
-  color: #ffffff;
-  font-family: var(--font-mono);
+  font-size: 1.65rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-family: var(--font-family);
   display: flex;
   align-items: baseline;
-  gap: 0.35rem;
+  gap: 0.25rem;
 }
 
 .kpi-unit {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-secondary);
 }
 
 .kpi-foot {
-  margin-top: 0.5rem;
+  margin-top: 0.4rem;
   font-size: 0.75rem;
   color: var(--text-secondary);
   display: flex;
   justify-content: space-between;
+  border-top: 1px solid var(--border-color);
+  padding-top: 0.35rem;
 }
 
-/* ISA-95 MANUFACTURING PROCESS PIPELINE */
+/* ========================================================================= */
+/* 6. ISA-95 PROCESS FLOW STEPS                                              */
+/* ========================================================================= */
 .pipeline-container {
   display: flex;
   align-items: stretch;
-  gap: 0.75rem;
+  gap: 0.5rem;
   overflow-x: auto;
-  padding-bottom: 0.5rem;
-  margin-bottom: 1.5rem;
+  padding-bottom: 0.25rem;
+  margin-bottom: 1rem;
 }
 
 .pipeline-step {
   flex: 1;
-  min-width: 200px;
-  background-color: var(--bg-card);
+  min-width: 170px;
+  background-color: #ffffff;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
-  padding: 1rem;
-  position: relative;
-  transition: all 0.2s;
-}
-
-.pipeline-step:hover {
-  border-color: #38bdf8;
+  padding: 0.75rem;
 }
 
 .step-num {
   font-size: 0.7rem;
-  font-weight: 800;
-  color: #38bdf8;
+  font-weight: 700;
+  color: var(--m365-blue);
   text-transform: uppercase;
-  margin-bottom: 0.25rem;
-  font-family: var(--font-mono);
+  margin-bottom: 0.2rem;
 }
 
 .step-title {
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: #fff;
-  margin-bottom: 0.4rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
 }
 
 .step-desc {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   color: var(--text-secondary);
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.5rem;
   line-height: 1.3;
 }
 
@@ -383,153 +408,195 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 0.75rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-  padding-top: 0.5rem;
+  font-size: 0.72rem;
+  border-top: 1px solid var(--border-color);
+  padding-top: 0.4rem;
 }
 
-/* BUTTONS */
+/* ========================================================================= */
+/* 7. FLUENT ENTERPRISE BUTTONS                                              */
+/* ========================================================================= */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  padding: 0.55rem 1rem;
-  font-size: 0.85rem;
+  gap: 0.4rem;
+  padding: 5px 12px;
+  font-size: 0.82rem;
   font-weight: 600;
   border-radius: var(--radius-md);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background 0.15s ease, border-color 0.15s ease;
   border: 1px solid transparent;
   text-decoration: none;
+  font-family: inherit;
 }
 
 .btn-primary {
-  background-color: #2563eb;
-  color: #fff;
+  background-color: var(--m365-blue);
+  color: #ffffff;
+  border-color: var(--m365-blue);
 }
 .btn-primary:hover {
-  background-color: #1d4ed8;
-}
-
-.btn-success {
-  background-color: #059669;
-  color: #fff;
-}
-.btn-success:hover {
-  background-color: #047857;
-}
-
-.btn-warning {
-  background-color: #d97706;
-  color: #fff;
-}
-.btn-warning:hover {
-  background-color: #b45309;
-}
-
-.btn-danger {
-  background-color: #dc2626;
-  color: #fff;
-}
-.btn-danger:hover {
-  background-color: #b91c1c;
+  background-color: var(--m365-blue-hover);
+  border-color: var(--m365-blue-hover);
 }
 
 .btn-secondary {
-  background-color: #374151;
-  color: #f3f4f6;
-  border-color: #4b5563;
+  background-color: #ffffff;
+  color: var(--text-primary);
+  border-color: var(--border-input);
 }
 .btn-secondary:hover {
-  background-color: #4b5563;
+  background-color: var(--bg-primary);
+}
+
+.btn-success {
+  background-color: var(--color-green);
+  color: #ffffff;
+  border-color: var(--color-green);
+}
+.btn-success:hover {
+  background-color: #0e6b37;
+}
+
+.btn-warning {
+  background-color: #fff4ce;
+  color: var(--color-amber);
+  border-color: #fed9cc;
+}
+.btn-warning:hover {
+  background-color: #ffe6a3;
+}
+
+.btn-danger {
+  background-color: var(--color-danger);
+  color: #ffffff;
+  border-color: var(--color-danger);
+}
+.btn-danger:hover {
+  background-color: #8f0000;
 }
 
 .btn-sm {
-  padding: 0.35rem 0.7rem;
-  font-size: 0.78rem;
+  padding: 3px 8px;
+  font-size: 0.75rem;
 }
 
 .btn-lg {
-  padding: 0.8rem 1.6rem;
-  font-size: 1rem;
+  padding: 8px 18px;
+  font-size: 0.92rem;
 }
 
-/* TABLES */
+/* ========================================================================= */
+/* 8. FLUENT DATA TABLES                                                     */
+/* ========================================================================= */
 .table-responsive {
   overflow-x: auto;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-color);
+  background-color: #ffffff;
 }
 
 .table {
   width: 100%;
   border-collapse: collapse;
   text-align: left;
-  font-size: 0.85rem;
+  font-size: 0.82rem;
 }
 
 .table th {
-  background-color: #162032;
+  background-color: #f3f2f1;
   color: var(--text-secondary);
   font-weight: 600;
-  padding: 0.75rem 1rem;
+  padding: 0.6rem 0.85rem;
   border-bottom: 1px solid var(--border-color);
-  text-transform: uppercase;
-  font-size: 0.72rem;
-  letter-spacing: 0.05em;
+  font-size: 0.75rem;
+  letter-spacing: 0.02em;
 }
 
 .table td {
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 0.55rem 0.85rem;
+  border-bottom: 1px solid var(--border-color);
   color: var(--text-primary);
 }
 
 .table tr:hover td {
-  background-color: rgba(255, 255, 255, 0.02);
+  background-color: #f8f8f8;
 }
 
-/* BADGES */
+/* ========================================================================= */
+/* 9. FLUENT STATUS TAGS & PILLS                                             */
+/* ========================================================================= */
 .status-pill {
   display: inline-block;
-  padding: 0.2rem 0.55rem;
-  border-radius: 9999px;
-  font-size: 0.72rem;
-  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: var(--radius-sm);
+  font-size: 0.7rem;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.02em;
 }
 
-.pill-green { background: var(--color-green-bg); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
-.pill-blue { background: var(--color-blue-bg); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
-.pill-cyan { background: var(--color-cyan-bg); color: #22d3ee; border: 1px solid rgba(6, 182, 212, 0.3); }
-.pill-amber { background: var(--color-amber-bg); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
-.pill-red { background: var(--color-red-bg); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
-.pill-purple { background: var(--color-purple-bg); color: #c084fc; border: 1px solid rgba(139, 92, 246, 0.3); }
-.pill-gray { background: rgba(107, 114, 128, 0.2); color: #9ca3af; border: 1px solid rgba(107, 114, 128, 0.3); }
+.pill-green {
+  background-color: var(--color-green-bg);
+  color: var(--color-green);
+  border: 1px solid var(--color-green-border);
+}
 
-/* FORMS & INPUTS */
+.pill-blue, .pill-cyan {
+  background-color: var(--m365-blue-light);
+  color: var(--m365-blue);
+  border: 1px solid var(--m365-blue-border);
+}
+
+.pill-amber {
+  background-color: var(--color-amber-bg);
+  color: var(--color-amber);
+  border: 1px solid var(--color-amber-border);
+}
+
+.pill-red {
+  background-color: var(--color-danger-bg);
+  color: var(--color-danger);
+  border: 1px solid var(--color-danger-border);
+}
+
+.pill-purple {
+  background-color: var(--color-purple-bg);
+  color: var(--color-purple);
+  border: 1px solid var(--color-purple-border);
+}
+
+.pill-gray {
+  background-color: #f3f2f1;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+}
+
+/* ========================================================================= */
+/* 10. FORMS & INPUTS                                                        */
+/* ========================================================================= */
 .form-group {
-  margin-bottom: 1rem;
+  margin-bottom: 0.85rem;
 }
 
 .form-label {
   display: block;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 600;
-  color: var(--text-secondary);
-  margin-bottom: 0.35rem;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
 }
 
 .form-control {
   width: 100%;
-  padding: 0.6rem 0.85rem;
-  background-color: var(--bg-input);
-  border: 1px solid var(--border-color);
+  padding: 5px 8px;
+  background-color: #ffffff;
+  border: 1px solid var(--border-input);
   border-radius: var(--radius-md);
-  color: #fff;
-  font-size: 0.88rem;
+  color: var(--text-primary);
+  font-size: 0.82rem;
   font-family: inherit;
   transition: border-color 0.15s ease;
 }
@@ -537,131 +604,134 @@ body {
 .form-control:focus {
   outline: none;
   border-color: var(--border-focus);
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
 }
 
 .form-control.input-error {
-  border-color: var(--color-red);
-  background-color: rgba(239, 68, 68, 0.05);
+  border-color: var(--color-danger);
+  background-color: var(--color-danger-bg);
 }
 
-/* CURING PRESS SCADA GRID */
+/* ========================================================================= */
+/* 11. CURING PRESS SCADA GRID                                               */
+/* ========================================================================= */
 .curing-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
-  gap: 1.25rem;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 0.85rem;
 }
 
 .press-card {
-  background-color: var(--bg-card);
+  background-color: #ffffff;
   border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
-  padding: 1.15rem;
-  box-shadow: var(--shadow-md);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1rem;
+  box-shadow: var(--shadow-sm);
 }
 
 .press-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .cavity-container {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1rem;
+  gap: 0.75rem;
 }
 
 .cavity-box {
-  background: #151d2c;
+  background: #faf9f8;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
-  padding: 0.85rem;
+  padding: 0.75rem;
   position: relative;
-  transition: all 0.2s ease;
 }
 
 .cavity-box.state-curing {
-  border-color: #06b6d4;
-  box-shadow: 0 0 10px rgba(6, 182, 212, 0.2);
+  border-color: var(--m365-blue);
+  background: var(--m365-blue-light);
 }
 
 .cavity-box.state-completed {
-  border-color: #10b981;
-  box-shadow: 0 0 10px rgba(16, 185, 129, 0.2);
+  border-color: var(--color-green);
+  background: var(--color-green-bg);
 }
 
 .cavity-box.state-loaded {
-  border-color: #f59e0b;
+  border-color: #fed9cc;
+  background: var(--color-amber-bg);
 }
 
 .gauge-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.5rem;
-  margin: 0.65rem 0;
+  gap: 0.4rem;
+  margin: 0.5rem 0;
 }
 
 .gauge-item {
-  background: #0f1523;
-  padding: 0.45rem 0.6rem;
+  background: #ffffff;
+  padding: 0.35rem 0.5rem;
   border-radius: var(--radius-sm);
-  border: 1px solid rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-color);
 }
 
 .gauge-label {
-  font-size: 0.68rem;
-  color: var(--text-muted);
+  font-size: 0.65rem;
+  color: var(--text-secondary);
   text-transform: uppercase;
 }
 
 .gauge-val {
-  font-size: 1rem;
-  font-weight: 700;
-  font-family: var(--font-mono);
-  color: #38bdf8;
+  font-size: 0.95rem;
+  font-weight: 600;
+  font-family: var(--font-family);
+  color: var(--text-primary);
 }
 
-/* PROGRESS BAR */
+/* ========================================================================= */
+/* 12. PROGRESS BARS                                                         */
+/* ========================================================================= */
 .progress-track {
   width: 100%;
-  height: 8px;
-  background-color: #273549;
-  border-radius: 9999px;
+  height: 6px;
+  background-color: #edebe9;
+  border-radius: 2px;
   overflow: hidden;
-  margin: 0.5rem 0;
+  margin: 0.4rem 0;
 }
 
 .progress-bar {
   height: 100%;
-  background: linear-gradient(90deg, #0284c7, #38bdf8);
-  border-radius: 9999px;
-  transition: width 0.3s ease;
+  background-color: var(--m365-blue);
+  transition: width 0.2s ease;
 }
 
 .progress-bar.success {
-  background: linear-gradient(90deg, #059669, #34d399);
+  background-color: var(--color-green);
 }
 
-/* MODAL */
+/* ========================================================================= */
+/* 13. MODALS                                                                */
+/* ========================================================================= */
 .modal-backdrop {
   position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
   height: 100vh;
-  background-color: rgba(0, 0, 0, 0.75);
-  backdrop-filter: blur(4px);
+  background-color: rgba(0, 0, 0, 0.4);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 100;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.2s ease;
+  transition: opacity 0.15s ease;
 }
 
 .modal-backdrop.active {
@@ -670,146 +740,144 @@ body {
 }
 
 .modal-content {
-  background-color: #1e293b;
-  border: 1px solid #475569;
-  border-radius: var(--radius-xl);
+  background-color: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
   width: 95%;
-  max-width: 650px;
-  max-height: 90vh;
+  max-width: 620px;
+  max-height: 88vh;
   overflow-y: auto;
-  padding: 1.75rem;
+  padding: 1.5rem;
   box-shadow: var(--shadow-lg);
-  transform: translateY(12px);
-  transition: transform 0.2s ease;
+  color: var(--text-primary);
 }
 
-.modal-backdrop.active .modal-content {
-  transform: translateY(0);
-}
-
-/* GENEALOGY DIGITAL TIRE PASSPORT */
+/* ========================================================================= */
+/* 14. GENEALOGY PASSPORT                                                    */
+/* ========================================================================= */
 .passport-card {
-  background: linear-gradient(160deg, #1e293b, #0f172a);
-  border: 2px solid #38bdf8;
-  border-radius: var(--radius-xl);
-  padding: 2rem;
-  box-shadow: 0 0 25px rgba(56, 189, 248, 0.15);
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-left: 4px solid var(--m365-blue);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  box-shadow: var(--shadow-sm);
   position: relative;
-  overflow: hidden;
 }
 
 .passport-watermark {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%) rotate(-25deg);
-  font-size: 4.5rem;
-  font-weight: 900;
-  color: rgba(56, 189, 248, 0.03);
-  pointer-events: none;
-  white-space: nowrap;
+  display: none; /* Removed redundant watermark */
 }
 
 .passport-stamp {
   position: absolute;
-  top: 1.5rem;
-  right: 1.5rem;
-  border: 3px double #10b981;
-  color: #10b981;
-  padding: 0.5rem 1rem;
-  font-weight: 800;
-  font-size: 0.85rem;
-  letter-spacing: 0.08em;
-  border-radius: var(--radius-md);
-  transform: rotate(4deg);
+  top: 1rem;
+  right: 1rem;
+  border: 1px solid var(--color-green);
+  background: var(--color-green-bg);
+  color: var(--color-green);
+  padding: 3px 8px;
+  font-weight: 600;
+  font-size: 0.75rem;
+  border-radius: var(--radius-sm);
   text-transform: uppercase;
 }
 
 .timeline-tree {
   position: relative;
-  padding-left: 2rem;
-  margin-top: 1.5rem;
+  padding-left: 1.5rem;
+  margin-top: 1rem;
 }
 
 .timeline-tree::before {
   content: "";
   position: absolute;
   top: 0;
-  left: 0.75rem;
+  left: 0.45rem;
   width: 2px;
   height: 100%;
-  background-color: #334155;
+  background-color: var(--border-color);
 }
 
 .timeline-node {
   position: relative;
-  margin-bottom: 1.75rem;
+  margin-bottom: 1.25rem;
 }
 
 .timeline-node::before {
   content: "";
   position: absolute;
   top: 0.25rem;
-  left: -2rem;
-  width: 14px;
-  height: 14px;
+  left: -1.5rem;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
-  background-color: #0284c7;
-  border: 3px solid #0f172a;
-  box-shadow: 0 0 8px #0284c7;
+  background-color: var(--m365-blue);
+  border: 2px solid #ffffff;
 }
 
 .timeline-node.passed::before {
   background-color: var(--color-green);
-  box-shadow: 0 0 8px var(--color-green);
 }
 
 .timeline-node.failed::before {
-  background-color: var(--color-red);
-  box-shadow: 0 0 8px var(--color-red);
+  background-color: var(--color-danger);
 }
 
 .timeline-title {
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: #f1f5f9;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.timeline-desc {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 0.65rem 0.8rem;
+  margin-top: 0.35rem;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+/* ========================================================================= */
+/* 15. ALERTS & BANNERS                                                      */
+/* ========================================================================= */
+.alarm-banner {
+  background: var(--color-danger-bg);
+  border: 1px solid var(--color-danger-border);
+  border-left: 4px solid var(--color-danger);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem 1rem;
+  color: var(--color-danger);
+  font-size: 0.82rem;
+  margin-bottom: 0.75rem;
   display: flex;
   align-items: center;
   gap: 0.5rem;
 }
 
-.timeline-desc {
-  background: rgba(15, 23, 42, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: var(--radius-md);
-  padding: 0.85rem;
-  margin-top: 0.5rem;
-  font-size: 0.82rem;
-  color: #cbd5e1;
-}
-
-/* POKA-YOKE ALARM BOX */
-.alarm-banner {
-  background: rgba(239, 68, 68, 0.15);
-  border: 1px solid #ef4444;
-  border-radius: var(--radius-md);
-  padding: 1rem;
-  color: #fca5a5;
-  font-size: 0.9rem;
-  margin-bottom: 1rem;
+/* Clean Info Banner */
+.info-banner {
+  background: var(--m365-blue-light);
+  border: 1px solid var(--m365-blue-border);
+  border-left: 4px solid var(--m365-blue);
+  border-radius: var(--radius-sm);
+  padding: 0.6rem 0.85rem;
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  margin-bottom: 0.75rem;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  animation: shake 0.4s ease-in-out;
+  justify-content: space-between;
 }
 
-@keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-4px); }
-  75% { transform: translateX(4px); }
-}
-
-/* RESPONSIVE */
+/* ========================================================================= */
+/* 16. RESPONSIVE                                                            */
+/* ========================================================================= */
 @media (max-width: 900px) {
   .pipeline-container {
     flex-direction: column;

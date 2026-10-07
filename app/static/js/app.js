@@ -190,10 +190,10 @@ function renderQualityPareto(pareto) {
     </div>
     <div style="display: flex; flex-direction: column; gap: 0.5rem;">
       ${pareto.slice(0, 4).map(p => `
-        <div style="background: #111827; padding: 0.55rem 0.8rem; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; border-left: 3px solid ${p.severity === 'CRITICAL' ? '#ef4444' : '#f59e0b'};">
+        <div style="background: var(--bg-subtle); padding: 0.55rem 0.8rem; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border-color); border-left: 3px solid ${p.severity === 'CRITICAL' ? '#a80000' : '#7a4100'};">
           <div>
-            <div style="font-size: 0.82rem; font-weight: 700; color: #fff;">${p.defect_code}: ${p.defect_name_vi}</div>
-            <div style="font-size: 0.72rem; color: #94a3b8;">${p.defect_name_en}</div>
+            <div style="font-size: 0.82rem; font-weight: 600; color: var(--text-primary);">${p.defect_code}: ${p.defect_name_vi}</div>
+            <div style="font-size: 0.72rem; color: var(--text-secondary);">${p.defect_name_en}</div>
           </div>
           <span class="status-pill ${p.severity === 'CRITICAL' ? 'pill-red' : 'pill-amber'}">
             ${p.defect_count} lần
@@ -709,11 +709,11 @@ function drawLiveWaveformCanvas() {
   const h = canvas.height;
 
   // Clear background
-  ctx.fillStyle = '#070a12';
+  ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, w, h);
 
   // Draw grid lines
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+  ctx.strokeStyle = '#edebe9';
   ctx.lineWidth = 1;
   for (let x = 0; x < w; x += 50) {
     ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
@@ -722,9 +722,9 @@ function drawLiveWaveformCanvas() {
     ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
   }
 
-  // Draw Temperature Line (Orange, Setpoint 170C -> center at y = 35)
+  // Draw Temperature Line (Warm Orange, Setpoint 170C -> center at y = 35)
   if (waveformBuffer.temps.length > 1) {
-    ctx.strokeStyle = '#f59e0b';
+    ctx.strokeStyle = '#d83b01';
     ctx.lineWidth = 2;
     ctx.beginPath();
     const stepX = w / (waveformBuffer.temps.length - 1);
@@ -737,9 +737,9 @@ function drawLiveWaveformCanvas() {
     ctx.stroke();
   }
 
-  // Draw Bladder Pressure Line (Cyan, Setpoint 21 bar -> center at y = 80)
+  // Draw Bladder Pressure Line (Fluent Blue, Setpoint 21 bar -> center at y = 80)
   if (waveformBuffer.pressures.length > 1) {
-    ctx.strokeStyle = '#06b6d4';
+    ctx.strokeStyle = '#0078d4';
     ctx.lineWidth = 2;
     ctx.beginPath();
     const stepX = w / (waveformBuffer.pressures.length - 1);
@@ -950,13 +950,13 @@ async function loadInspectionQueue() {
     }
 
     list.innerHTML = queue.map(tire => `
-      <div onclick="selectTireForQC('${tire.tire_serial}')" style="background: #111827; padding: 0.85rem; border-radius: 6px; border: 1px solid var(--border-color); cursor: pointer; transition: all 0.2s;" onmouseover="this.style.borderColor='#38bdf8'" onmouseout="this.style.borderColor='var(--border-color)'">
+      <div onclick="selectTireForQC('${tire.tire_serial}')" style="background: #ffffff; padding: 0.85rem; border-radius: 4px; border: 1px solid var(--border-color); cursor: pointer; transition: all 0.15s;" onmouseover="this.style.borderColor='var(--m365-blue)'" onmouseout="this.style.borderColor='var(--border-color)'">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
-          <strong style="color: #38bdf8; font-family: var(--font-mono);">${tire.tire_serial}</strong>
+          <strong style="color: var(--m365-blue); font-family: var(--font-mono);">${tire.tire_serial}</strong>
           <span class="status-pill pill-amber" style="font-size: 0.68rem;">CHỜ KCS</span>
         </div>
-        <div style="font-size: 0.85rem; color: #fff; font-weight: 600;">${tire.tire_size} - ${tire.pattern_name}</div>
-        <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 0.25rem;">
+        <div style="font-size: 0.85rem; color: var(--text-primary); font-weight: 600;">${tire.tire_size} - ${tire.pattern_name}</div>
+        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem;">
           Lò: <strong>${tire.press_id}-${tire.cavity_side}</strong> &bull; Ra lò: ${tire.cure_end_time.split(' ')[1] || tire.cure_end_time}
         </div>
       </div>
@@ -1423,29 +1423,29 @@ async function showMasterSubTab(type) {
       const res = await fetch('/api/master/documents');
       const docs = await res.json();
       container.innerHTML = `
-        <div style="margin-bottom: 1rem; color: #94a3b8; font-size: 0.85rem;">
-          MODULE 4: DOCUMENT CONTROL (Quản lý Quy trình Thao tác Chuẩn e-SOP, Bản vẽ Kỹ thuật Mặt cắt Lốp & Hướng dẫn KCS)
+        <div style="margin-bottom: 1rem; color: var(--text-secondary); font-size: 0.85rem;">
+          Quản lý Quy trình Thao tác Chuẩn (e-SOP) và Bản vẽ Kỹ thuật Mặt cắt Lốp
         </div>
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 1rem;">
           ${docs.map(d => `
-            <div class="card" style="background: #151d2c; border: 1px solid var(--border-color); margin-bottom: 0;">
+            <div class="card" style="background: #ffffff; border: 1px solid var(--border-color); margin-bottom: 0;">
               <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
                 <div>
                   <span class="status-pill ${d.category === 'DRAWING' ? 'pill-purple' : d.category === 'SOP' ? 'pill-blue' : 'pill-amber'}" style="font-size: 0.7rem;">
                     ${d.category}
                   </span>
-                  <h4 style="font-size: 0.95rem; color: #fff; margin-top: 0.35rem;">${d.title}</h4>
+                  <h4 style="font-size: 0.95rem; color: var(--text-primary); margin-top: 0.35rem; font-weight: 600;">${d.title}</h4>
                 </div>
-                <span style="font-family: var(--font-mono); font-size: 0.75rem; color: #38bdf8;">${d.revision}</span>
+                <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--m365-blue);">${d.revision}</span>
               </div>
-              <div style="font-size: 0.78rem; color: #cbd5e1; margin-bottom: 0.75rem; line-height: 1.3;">
+              <div style="font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 0.75rem; line-height: 1.4;">
                 ${d.summary}
               </div>
-              <div style="background: #0d131f; padding: 0.65rem; border-radius: 6px; font-size: 0.75rem; color: #94a3b8; margin-bottom: 0.75rem; max-height: 100px; overflow-y: auto;">
+              <div style="background: var(--bg-subtle); padding: 0.65rem; border-radius: 4px; border: 1px solid var(--border-color); font-size: 0.75rem; color: var(--text-primary); margin-bottom: 0.75rem; max-height: 100px; overflow-y: auto;">
                 ${d.content_html}
               </div>
-              <div style="display: flex; justify-content: space-between; font-size: 0.72rem; color: #64748b; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 0.5rem;">
-                <span>Phê duyệt: <strong style="color: #cbd5e1;">${d.approved_by}</strong></span>
+              <div style="display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--text-muted); border-top: 1px solid var(--border-color); padding-top: 0.5rem;">
+                <span>Phê duyệt: <strong>${d.approved_by}</strong></span>
                 <span>Ngày hiệu lực: ${d.effective_date}</span>
               </div>
             </div>
@@ -1499,33 +1499,33 @@ async function loadGatewayConnectors() {
 
     grid.innerHTML = connectors.map(c => {
       return `
-        <div class="card" style="margin-bottom: 0; background: #162032; border: 1px solid var(--border-color);">
+        <div class="card" style="margin-bottom: 0; background: #ffffff; border: 1px solid var(--border-color);">
           <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem;">
             <div>
-              <div style="font-size: 0.75rem; font-weight: 800; color: #38bdf8; font-family: var(--font-mono);">${c.connector_id}</div>
-              <h4 style="font-size: 1rem; color: #fff; font-weight: 700;">${protoIcons[c.protocol_type] || '⚡'} ${c.name}</h4>
-              <div style="font-size: 0.78rem; color: #cbd5e1; margin-top: 2px;">Thiết bị đích: <strong>${c.target_equipment}</strong></div>
+              <div style="font-size: 0.75rem; font-weight: 700; color: var(--m365-blue); font-family: var(--font-mono);">${c.connector_id}</div>
+              <h4 style="font-size: 1rem; color: var(--text-primary); font-weight: 600;">${protoIcons[c.protocol_type] || '⚡'} ${c.name}</h4>
+              <div style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 2px;">Thiết bị đích: <strong>${c.target_equipment}</strong></div>
             </div>
             <div style="text-align: right;">
               <span class="status-pill pill-green" id="pill-${c.connector_id}">${c.status}</span>
-              <div style="font-size: 0.72rem; color: #94a3b8; font-family: var(--font-mono); margin-top: 4px;" id="ping-${c.connector_id}">
+              <div style="font-size: 0.72rem; color: var(--text-secondary); font-family: var(--font-mono); margin-top: 4px;" id="ping-${c.connector_id}">
                 Độ trễ: ${c.last_ping_ms}ms
               </div>
             </div>
           </div>
 
           <!-- Connection parameters -->
-          <div style="background: #0f1523; padding: 0.65rem 0.85rem; border-radius: 6px; font-size: 0.78rem; font-family: var(--font-mono); margin-bottom: 0.75rem; border: 1px solid rgba(255, 255, 255, 0.05);">
-            <div>Endpoint: <span style="color: #38bdf8;">${c.endpoint_url}</span></div>
-            <div>Cổng: <span style="color: #f1f5f9;">${c.port}</span> &bull; Quét: <span style="color: #f1f5f9;">${c.scan_rate_ms}ms</span></div>
+          <div style="background: var(--bg-subtle); padding: 0.65rem 0.85rem; border-radius: 4px; font-size: 0.78rem; font-family: var(--font-mono); margin-bottom: 0.75rem; border: 1px solid var(--border-color);">
+            <div>Endpoint: <span style="color: var(--m365-blue);">${c.endpoint_url}</span></div>
+            <div>Cổng: <span style="color: var(--text-primary);">${c.port}</span> &bull; Quét: <span style="color: var(--text-primary);">${c.scan_rate_ms}ms</span></div>
           </div>
 
-          <div style="font-size: 0.78rem; color: #94a3b8; margin-bottom: 0.75rem; line-height: 1.3;">
+          <div style="font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 0.75rem; line-height: 1.4;">
             ${c.description}
           </div>
 
           <!-- Sample Payload preview -->
-          <div style="background: #090d16; padding: 0.5rem 0.75rem; border-radius: 4px; font-size: 0.72rem; font-family: var(--font-mono); color: #a5f3fc; margin-bottom: 0.85rem; overflow-x: auto; white-space: pre-wrap; max-height: 60px;">
+          <div style="background: var(--bg-subtle); padding: 0.5rem 0.75rem; border-radius: 4px; font-size: 0.72rem; font-family: var(--font-mono); color: var(--text-primary); margin-bottom: 0.85rem; border: 1px solid var(--border-color); overflow-x: auto; white-space: pre-wrap; max-height: 60px;">
 ${c.sample_payload}
           </div>
 
@@ -1800,7 +1800,7 @@ function renderAiScatterCanvas(cycles) {
   ctx.clearRect(0, 0, w, h);
 
   // Background
-  ctx.fillStyle = '#070a13';
+  ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, w, h);
 
   const padding = { top: 30, right: 40, bottom: 40, left: 60 };
@@ -1815,7 +1815,7 @@ function renderAiScatterCanvas(cycles) {
   const toScreenY = (y) => padding.top + plotH - ((y - minY) / (maxY - minY)) * plotH;
 
   // Draw Grid Lines
-  ctx.strokeStyle = '#1e293b';
+  ctx.strokeStyle = '#edebe9';
   ctx.lineWidth = 1;
 
   for (let x = 0; x <= maxX; x += 15) {
@@ -1825,8 +1825,8 @@ function renderAiScatterCanvas(cycles) {
     ctx.lineTo(sx, padding.top + plotH);
     ctx.stroke();
 
-    ctx.fillStyle = '#64748b';
-    ctx.font = '10px monospace';
+    ctx.fillStyle = '#605e5c';
+    ctx.font = '10px "Segoe UI", sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText(`${x}s`, sx, padding.top + plotH + 15);
   }
@@ -1838,8 +1838,8 @@ function renderAiScatterCanvas(cycles) {
     ctx.lineTo(padding.left + plotW, sy);
     ctx.stroke();
 
-    ctx.fillStyle = '#64748b';
-    ctx.font = '10px monospace';
+    ctx.fillStyle = '#605e5c';
+    ctx.font = '10px "Segoe UI", sans-serif';
     ctx.textAlign = 'right';
     ctx.fillText(`${y}m`, padding.left - 8, sy + 3);
   }
@@ -1847,7 +1847,7 @@ function renderAiScatterCanvas(cycles) {
   // Draw Warning Threshold Boundaries
   // 1. Takt Creep threshold: X = +15s
   const threshX = toScreenX(15);
-  ctx.strokeStyle = 'rgba(245, 158, 11, 0.4)';
+  ctx.strokeStyle = '#d83b01';
   ctx.setLineDash([4, 4]);
   ctx.beginPath();
   ctx.moveTo(threshX, padding.top);
@@ -1856,7 +1856,7 @@ function renderAiScatterCanvas(cycles) {
 
   // 2. WIP Shelf Dwell threshold: Y = 180 min
   const threshY = toScreenY(180);
-  ctx.strokeStyle = 'rgba(239, 68, 68, 0.4)';
+  ctx.strokeStyle = '#a80000';
   ctx.beginPath();
   ctx.moveTo(padding.left, threshY);
   ctx.lineTo(padding.left + plotW, threshY);
@@ -1864,25 +1864,25 @@ function renderAiScatterCanvas(cycles) {
   ctx.setLineDash([]);
 
   // Axis Labels
-  ctx.fillStyle = '#94a3b8';
-  ctx.font = '11px sans-serif';
+  ctx.fillStyle = '#201f1e';
+  ctx.font = '11px "Segoe UI", sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('Độ Lệch Chu Kỳ Máy Thực Tế So Với Định Mức: Takt Deviation (giây)', padding.left + plotW / 2, h - 8);
+  ctx.fillText('Độ Lệch Chu Kỳ Máy Thực Tế So Với Định Mức (giây)', padding.left + plotW / 2, h - 8);
 
   ctx.save();
   ctx.translate(16, padding.top + plotH / 2);
   ctx.rotate(-Math.PI / 2);
   ctx.textAlign = 'center';
-  ctx.fillText('Thời Gian Chờ Đệm: WIP Dwell Time (phút)', 0, 0);
+  ctx.fillText('Thời Gian Chờ Đệm WIP (phút)', 0, 0);
   ctx.restore();
 
   // Draw Threshold Labels
-  ctx.fillStyle = '#f59e0b';
-  ctx.font = '9px monospace';
+  ctx.fillStyle = '#d83b01';
+  ctx.font = '9px "Segoe UI", sans-serif';
   ctx.textAlign = 'left';
   ctx.fillText('Ngưỡng Trôi Takt (+15s)', threshX + 4, padding.top + 12);
 
-  ctx.fillStyle = '#ef4444';
+  ctx.fillStyle = '#a80000';
   ctx.textAlign = 'right';
   ctx.fillText('Ngưỡng Lão Hóa WIP (>180m)', padding.left + plotW - 6, threshY - 6);
 
@@ -1902,16 +1902,16 @@ function renderAiScatterCanvas(cycles) {
     ctx.arc(sx, sy, radius, 0, 2 * Math.PI);
 
     if (c.severity === 'CRITICAL' || score >= 0.75) {
-      ctx.fillStyle = 'rgba(239, 68, 68, 0.85)';
-      ctx.strokeStyle = '#f87171';
+      ctx.fillStyle = 'rgba(168, 0, 0, 0.75)';
+      ctx.strokeStyle = '#a80000';
       ctx.lineWidth = 2;
     } else if (c.severity === 'WARNING' || score >= 0.5) {
-      ctx.fillStyle = 'rgba(245, 158, 11, 0.75)';
-      ctx.strokeStyle = '#fbbf24';
+      ctx.fillStyle = 'rgba(216, 59, 1, 0.7)';
+      ctx.strokeStyle = '#d83b01';
       ctx.lineWidth = 1.5;
     } else {
-      ctx.fillStyle = 'rgba(16, 185, 129, 0.65)';
-      ctx.strokeStyle = '#34d399';
+      ctx.fillStyle = 'rgba(16, 124, 65, 0.65)';
+      ctx.strokeStyle = '#107c41';
       ctx.lineWidth = 1;
     }
 
@@ -1920,8 +1920,8 @@ function renderAiScatterCanvas(cycles) {
 
     // Machine label for anomalies
     if (c.is_anomaly || score >= 0.5) {
-      ctx.fillStyle = '#f8fafc';
-      ctx.font = 'bold 9px monospace';
+      ctx.fillStyle = '#201f1e';
+      ctx.font = 'bold 9px "Segoe UI", sans-serif';
       ctx.textAlign = 'left';
       ctx.fillText(`${c.machine_id} (${score})`, sx + radius + 4, sy + 3);
     }
@@ -2218,21 +2218,21 @@ function renderBottleneckTimeline(horizons) {
     else if (bli >= 0.50) pillClass = 'pill-yellow';
 
     return `
-      <div style="background: #090e1a; border: 1px solid ${isShift ? '#ef4444' : '#1e293b'}; border-radius: 8px; padding: 1rem; position: relative;">
+      <div style="background: #ffffff; border: 1px solid ${isShift ? '#a80000' : 'var(--border-color)'}; border-radius: 4px; padding: 1rem; position: relative;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-          <strong style="color: #38bdf8; font-size: 0.9rem;">Mốc T+${h.horizon_hours}h (${h.horizon_time})</strong>
+          <strong style="color: var(--m365-blue); font-size: 0.9rem;">Mốc T+${h.horizon_hours}h (${h.horizon_time})</strong>
           <span class="status-pill ${pillClass}">BLI: ${Number(bli).toFixed(2)}</span>
         </div>
-        <div style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 0.35rem;">Điểm nghẽn dự báo:</div>
-        <div style="font-size: 0.95rem; font-weight: 600; color: #fff; margin-bottom: 0.5rem;">
+        <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.35rem;">Điểm nghẽn dự báo:</div>
+        <div style="font-size: 0.95rem; font-weight: 600; color: var(--text-primary); margin-bottom: 0.5rem;">
           ${h.predicted_bottleneck_station}
         </div>
-        <div style="font-size: 0.78rem; color: #cbd5e1; margin-bottom: 0.5rem; line-height: 1.4;">
+        <div style="font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 0.5rem; line-height: 1.4;">
           ${h.predicted_bottleneck_name}
         </div>
-        <div style="font-size: 0.75rem; color: #94a3b8; border-top: 1px dashed #1e293b; padding-top: 0.4rem; display: flex; justify-content: space-between;">
+        <div style="font-size: 0.75rem; color: var(--text-secondary); border-top: 1px solid var(--border-color); padding-top: 0.4rem; display: flex; justify-content: space-between;">
           <span>WIP Đệm: <strong>${h.buffer_fill_pct}%</strong></span>
-          <span>${isShift ? '<strong style="color: #f87171;">⚠️ Dịch chuyển</strong>' : '<span style="color: #34d399;">✓ Ổn định</span>'}</span>
+          <span>${isShift ? '<strong style="color: #a80000;">Dịch chuyển</strong>' : '<span style="color: #107c41;">Ổn định</span>'}</span>
         </div>
       </div>
     `;
@@ -2249,11 +2249,11 @@ function renderBottleneckTopologyCanvas(forecastData) {
   ctx.clearRect(0, 0, w, h);
 
   // Background
-  ctx.fillStyle = '#070a13';
+  ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, w, h);
 
   // Grid dots
-  ctx.fillStyle = '#1e293b';
+  ctx.fillStyle = '#edebe9';
   for (let x = 20; x < w; x += 30) {
     for (let y = 20; y < h; y += 30) {
       ctx.fillRect(x, y, 1.5, 1.5);
@@ -2285,11 +2285,11 @@ function renderBottleneckTopologyCanvas(forecastData) {
     ctx.lineTo(p2.x, p2.y);
 
     if (isDivertedPath) {
-      ctx.strokeStyle = '#ec4899';
-      ctx.lineWidth = 3;
+      ctx.strokeStyle = '#d83b01';
+      ctx.lineWidth = 2.5;
       ctx.setLineDash([6, 4]);
     } else {
-      ctx.strokeStyle = 'rgba(56, 189, 248, 0.45)';
+      ctx.strokeStyle = '#0078d4';
       ctx.lineWidth = 1.5;
       ctx.setLineDash([]);
     }
@@ -2304,7 +2304,7 @@ function renderBottleneckTopologyCanvas(forecastData) {
     ctx.save();
     ctx.translate(midX, midY);
     ctx.rotate(angle);
-    ctx.fillStyle = isDivertedPath ? '#ec4899' : '#38bdf8';
+    ctx.fillStyle = isDivertedPath ? '#d83b01' : '#0078d4';
     ctx.beginPath();
     ctx.moveTo(0, 0);
     ctx.lineTo(-7, -4);
@@ -2313,8 +2313,8 @@ function renderBottleneckTopologyCanvas(forecastData) {
     ctx.fill();
 
     if (label) {
-      ctx.font = 'bold 9px monospace';
-      ctx.fillStyle = isDivertedPath ? '#f472b6' : '#94a3b8';
+      ctx.font = 'bold 9px "Segoe UI", sans-serif';
+      ctx.fillStyle = isDivertedPath ? '#d83b01' : '#605e5c';
       ctx.fillText(label, -15, -8);
     }
     ctx.restore();
@@ -2349,22 +2349,26 @@ function renderBottleneckTopologyCanvas(forecastData) {
     const ry = n.y - nodeH / 2;
 
     // Determine colors
-    let bgCol = '#0f172a';
-    let borderCol = '#334155';
-    let textCol = '#38bdf8';
+    let bgCol = '#ffffff';
+    let borderCol = '#d2d0ce';
+    let textCol = '#0078d4';
+    let titleCol = '#201f1e';
 
     if (n.bli >= 0.70) {
-      bgCol = 'rgba(239, 68, 68, 0.25)';
-      borderCol = '#ef4444';
-      textCol = '#f87171';
+      bgCol = '#fde7e9';
+      borderCol = '#a80000';
+      textCol = '#a80000';
+      titleCol = '#a80000';
     } else if (n.bli >= 0.50) {
-      bgCol = 'rgba(245, 158, 11, 0.2)';
-      borderCol = '#f59e0b';
-      textCol = '#fbbf24';
+      bgCol = '#fff4ce';
+      borderCol = '#7a4100';
+      textCol = '#7a4100';
+      titleCol = '#7a4100';
     } else if (n.isAlt && isDiverted) {
-      bgCol = 'rgba(16, 185, 129, 0.25)';
-      borderCol = '#10b981';
-      textCol = '#34d399';
+      bgCol = '#dff6dd';
+      borderCol = '#107c41';
+      textCol = '#107c41';
+      titleCol = '#107c41';
     }
 
     // Node Box
@@ -2372,23 +2376,23 @@ function renderBottleneckTopologyCanvas(forecastData) {
     ctx.strokeStyle = borderCol;
     ctx.lineWidth = n.bli >= 0.70 ? 2 : 1;
     ctx.beginPath();
-    ctx.roundRect(rx, ry, nodeW, nodeH, 6);
+    ctx.roundRect(rx, ry, nodeW, nodeH, 4);
     ctx.fill();
     ctx.stroke();
 
     // Node Text
-    ctx.fillStyle = '#fff';
-    ctx.font = 'bold 10px sans-serif';
+    ctx.fillStyle = titleCol;
+    ctx.font = '600 10px "Segoe UI", sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText(n.label, n.x, n.y - 6);
 
-    ctx.fillStyle = '#94a3b8';
-    ctx.font = '9px monospace';
+    ctx.fillStyle = '#605e5c';
+    ctx.font = '9px "Segoe UI", sans-serif';
     ctx.fillText(n.sub, n.x, n.y + 7);
 
     // BLI Tag
     ctx.fillStyle = textCol;
-    ctx.font = 'bold 8.5px monospace';
+    ctx.font = 'bold 8.5px "Segoe UI", sans-serif';
     ctx.fillText(`BLI: ${(n.bli * 100).toFixed(0)}%`, n.x, n.y + 18);
   });
 }
@@ -2563,7 +2567,7 @@ function renderGlobalShapCanvas(features) {
   ctx.clearRect(0, 0, w, h);
 
   // Background
-  ctx.fillStyle = '#070a13';
+  ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, w, h);
 
   if (!features || features.length === 0) return;
@@ -2576,7 +2580,7 @@ function renderGlobalShapCanvas(features) {
   const rowH = (h - padding.top - padding.bottom) / top12.length;
 
   // Grid lines
-  ctx.strokeStyle = '#1e293b';
+  ctx.strokeStyle = '#edebe9';
   ctx.lineWidth = 1;
   for (let step = 0; step <= 4; step++) {
     const val = (maxVal / 4) * step;
@@ -2586,8 +2590,8 @@ function renderGlobalShapCanvas(features) {
     ctx.lineTo(x, h - padding.bottom);
     ctx.stroke();
 
-    ctx.fillStyle = '#64748b';
-    ctx.font = '10px monospace';
+    ctx.fillStyle = '#605e5c';
+    ctx.font = '10px "Segoe UI", sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText(val.toFixed(3), x, h - padding.bottom + 15);
   }
@@ -2598,38 +2602,29 @@ function renderGlobalShapCanvas(features) {
     const barLen = (f.mean_abs_shap / maxVal) * chartW;
     const barH = rowH * 0.62;
 
-    // Gradient bar color based on rank
-    let grad = ctx.createLinearGradient(padding.left, 0, padding.left + barLen, 0);
-    if (idx < 2) {
-      grad.addColorStop(0, '#f43f5e');
-      grad.addColorStop(1, '#ef4444');
-    } else if (idx < 5) {
-      grad.addColorStop(0, '#f59e0b');
-      grad.addColorStop(1, '#fbbf24');
-    } else {
-      grad.addColorStop(0, '#0284c7');
-      grad.addColorStop(1, '#38bdf8');
-    }
+    let barColor = '#0078d4';
+    if (idx < 2) barColor = '#a80000';
+    else if (idx < 5) barColor = '#d83b01';
 
-    ctx.fillStyle = grad;
+    ctx.fillStyle = barColor;
     ctx.beginPath();
-    ctx.roundRect(padding.left, y + (rowH - barH) / 2, Math.max(4, barLen), barH, 4);
+    ctx.roundRect(padding.left, y + (rowH - barH) / 2, Math.max(4, barLen), barH, 2);
     ctx.fill();
 
     // Feature Name label on the left
-    ctx.fillStyle = '#f8fafc';
-    ctx.font = 'bold 11px sans-serif';
+    ctx.fillStyle = '#201f1e';
+    ctx.font = '600 11px "Segoe UI", sans-serif';
     ctx.textAlign = 'right';
     ctx.fillText(`${idx + 1}. ${f.feature_name}`, padding.left - 12, y + rowH / 2 + 3);
 
     // Area tag
-    ctx.fillStyle = '#94a3b8';
-    ctx.font = '9px monospace';
+    ctx.fillStyle = '#605e5c';
+    ctx.font = '9px "Segoe UI", sans-serif';
     ctx.fillText(`[${f.area}]`, padding.left - 12, y + rowH / 2 + 13);
 
     // Value and share text on the right
-    ctx.fillStyle = '#cbd5e1';
-    ctx.font = 'bold 10px monospace';
+    ctx.fillStyle = '#201f1e';
+    ctx.font = '600 10px "Segoe UI", sans-serif';
     ctx.textAlign = 'left';
     ctx.fillText(`${f.importance_share_pct}% (${f.mean_abs_shap.toFixed(3)})`, padding.left + barLen + 8, y + rowH / 2 + 4);
   });
@@ -2655,23 +2650,22 @@ async function loadDecisionTreeRules() {
       const pillClass = isCrit ? 'pill-red' : 'pill-yellow';
 
       return `
-        <div style="background: #090e1a; border: 1.5px solid ${borderCol}; border-radius: 8px; padding: 1.25rem;">
+        <div style="background: #ffffff; border: 1px solid ${borderCol}; border-radius: 4px; padding: 1.25rem;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
-            <div style="font-size: 0.95rem; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px;">
-              <span>🌲</span>
-              <span>QUY TẮC CÔNG NGHỆ #${i + 1} (${r.rule_id})</span>
+            <div style="font-size: 0.95rem; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+              <span>Quy Tắc Công Nghệ #${i + 1} (${r.rule_id})</span>
             </div>
-            <span class="status-pill ${pillClass}">XÁC SUẤT LỖI: ${r.defect_probability_pct}%</span>
+            <span class="status-pill ${pillClass}">Xác suất lỗi: ${r.defect_probability_pct}%</span>
           </div>
 
-          <div style="background: #040711; border: 1px solid #1e293b; border-radius: 6px; padding: 0.75rem; margin-bottom: 0.75rem; font-family: var(--font-mono); font-size: 0.82rem; color: #38bdf8; line-height: 1.6;">
+          <div style="background: var(--bg-subtle); border: 1px solid var(--border-color); border-radius: 4px; padding: 0.75rem; margin-bottom: 0.75rem; font-family: var(--font-mono); font-size: 0.82rem; color: var(--text-primary); line-height: 1.6;">
             <strong>IF (NẾU):</strong><br>
             ${r.conditions.map(c => `&bull; ${c}`).join('<br>')}<br>
-            <strong style="color: #f87171;">THEN (THÌ):</strong> Tỷ lệ phát sinh phế phẩm vọt lên <strong>${r.defect_probability_pct}%</strong> (${r.samples_affected} mẻ vi phạm)!
+            <strong style="color: #a80000;">THEN (THÌ):</strong> Tỷ lệ phế phẩm tăng lên <strong>${r.defect_probability_pct}%</strong> (${r.samples_affected} mẻ vi phạm)
           </div>
 
-          <div style="font-size: 0.82rem; color: #cbd5e1; line-height: 1.5;">
-            <strong style="color: #fbbf24;">Hành động khắc phục IATF 16949:</strong> ${r.action}
+          <div style="font-size: 0.82rem; color: var(--text-secondary); line-height: 1.5;">
+            <strong style="color: #7a4100;">Hành động khắc phục:</strong> ${r.action}
           </div>
         </div>
       `;
@@ -2755,24 +2749,24 @@ async function explainCurrentSample(sampleId = null) {
         </div>
 
         <!-- Waterfall Force Bars -->
-        <div style="background: #090e1a; border: 1px solid #1e293b; border-radius: 6px; padding: 1rem; margin-bottom: 1rem;">
-          <div style="font-size: 0.88rem; font-weight: 600; color: #fff; margin-bottom: 0.75rem; display: flex; justify-content: space-between;">
-            <span>Biểu Đồ Lực Đóng Góp SHAP (Waterfall Decomposition):</span>
-            <span style="font-size: 0.8rem; color: #94a3b8;">Xác suất nền (Base Value): ${(data.base_rate * 100).toFixed(1)}%</span>
+        <div style="background: #ffffff; border: 1px solid var(--border-color); border-radius: 4px; padding: 1rem; margin-bottom: 1rem;">
+          <div style="font-size: 0.88rem; font-weight: 600; color: var(--text-primary); margin-bottom: 0.75rem; display: flex; justify-content: space-between;">
+            <span>Biểu Đồ Đóng Góp SHAP (Waterfall Breakdown):</span>
+            <span style="font-size: 0.8rem; color: var(--text-secondary);">Xác suất nền: ${(data.base_rate * 100).toFixed(1)}%</span>
           </div>
 
           <div style="margin-bottom: 0.75rem;">
-            <div style="font-size: 0.8rem; font-weight: 600; color: #f87171; margin-bottom: 0.4rem;">
-              🔺 Các Yếu Tố Kéo Tăng Nguy Cơ Lỗi (Positive Drivers &bull; Phá hủy chất lượng):
+            <div style="font-size: 0.8rem; font-weight: 600; color: #a80000; margin-bottom: 0.4rem;">
+              Yếu Tố Làm Tăng Nguy Cơ Lỗi:
             </div>
             ${topPos.map(p => `
-              <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.82rem; padding: 0.35rem 0; border-bottom: 1px dashed #1e293b;">
+              <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.82rem; padding: 0.35rem 0; border-bottom: 1px solid var(--border-color);">
                 <div>
-                  <strong style="color: #fff;">${p.feature_name}</strong>: 
-                  <span style="color: #f87171; font-family: var(--font-mono);">${p.actual_value} ${p.unit}</span>
-                  <span style="color: #64748b; font-size: 0.75rem;">(Chuẩn: ${p.nominal_value} ${p.unit}, Lệch: ${p.deviation > 0 ? '+' : ''}${p.deviation})</span>
+                  <strong style="color: var(--text-primary);">${p.feature_name}</strong>: 
+                  <span style="color: #a80000; font-family: var(--font-mono);">${p.actual_value} ${p.unit}</span>
+                  <span style="color: var(--text-muted); font-size: 0.75rem;">(Chuẩn: ${p.nominal_value} ${p.unit}, Lệch: ${p.deviation > 0 ? '+' : ''}${p.deviation})</span>
                 </div>
-                <div style="color: #f87171; font-weight: 700; font-family: var(--font-mono);">
+                <div style="color: #a80000; font-weight: 700; font-family: var(--font-mono);">
                   +${(p.shap_value * 100).toFixed(1)}% rủi ro
                 </div>
               </div>
@@ -2780,17 +2774,17 @@ async function explainCurrentSample(sampleId = null) {
           </div>
 
           <div>
-            <div style="font-size: 0.8rem; font-weight: 600; color: #34d399; margin-bottom: 0.4rem;">
-              🔻 Các Yếu Tố Triệt Tiêu Nguy Cơ Lỗi (Negative Drivers &bull; Vận hành chuẩn):
+            <div style="font-size: 0.8rem; font-weight: 600; color: #107c41; margin-bottom: 0.4rem;">
+              Yếu Tố Triệt Tiêu Nguy Cơ Lỗi (Vận hành chuẩn):
             </div>
             ${topNeg.map(n => `
-              <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.82rem; padding: 0.35rem 0; border-bottom: 1px dashed #1e293b;">
+              <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.82rem; padding: 0.35rem 0; border-bottom: 1px solid var(--border-color);">
                 <div>
-                  <strong style="color: #fff;">${n.feature_name}</strong>: 
-                  <span style="color: #34d399; font-family: var(--font-mono);">${n.actual_value} ${n.unit}</span>
-                  <span style="color: #64748b; font-size: 0.75rem;">(Chuẩn: ${n.nominal_value} ${n.unit})</span>
+                  <strong style="color: var(--text-primary);">${n.feature_name}</strong>: 
+                  <span style="color: #107c41; font-family: var(--font-mono);">${n.actual_value} ${n.unit}</span>
+                  <span style="color: var(--text-muted); font-size: 0.75rem;">(Chuẩn: ${n.nominal_value} ${n.unit})</span>
                 </div>
-                <div style="color: #34d399; font-weight: 700; font-family: var(--font-mono);">
+                <div style="color: #107c41; font-weight: 700; font-family: var(--font-mono);">
                   ${(n.shap_value * 100).toFixed(1)}% rủi ro
                 </div>
               </div>
@@ -2923,7 +2917,7 @@ function renderGraphTopology(topoData) {
   const height = canvas.height;
 
   // Clear background
-  ctx.fillStyle = '#070d19';
+  ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, width, height);
 
   // Draw Column Background Gradients & Labels
@@ -2935,14 +2929,14 @@ function renderGraphTopology(topoData) {
     'LỆNH SẢN XUẤT (WO)'
   ];
 
-  ctx.font = '10px "Inter", sans-serif';
+  ctx.font = '10px "Segoe UI", sans-serif';
   ctx.textAlign = 'center';
 
   for (let c = 0; c < 5; c++) {
     const colX = 80 + c * (width - 160) / 4;
 
     // Subtle vertical column guide line
-    ctx.strokeStyle = 'rgba(30, 41, 59, 0.4)';
+    ctx.strokeStyle = '#edebe9';
     ctx.lineWidth = 1;
     ctx.setLineDash([4, 4]);
     ctx.beginPath();
@@ -2952,7 +2946,7 @@ function renderGraphTopology(topoData) {
     ctx.setLineDash([]);
 
     // Column Header Tag
-    ctx.fillStyle = '#64748b';
+    ctx.fillStyle = '#605e5c';
     ctx.fillText(colNames[c], colX, 18);
   }
 
@@ -2975,13 +2969,13 @@ function renderGraphTopology(topoData) {
     ctx.lineTo(v.x, v.y);
 
     if (isHighRisk) {
-      ctx.strokeStyle = 'rgba(239, 68, 68, 0.65)';
+      ctx.strokeStyle = 'rgba(168, 0, 0, 0.7)';
       ctx.lineWidth = 2.2;
     } else if (isMediumRisk) {
-      ctx.strokeStyle = 'rgba(245, 158, 11, 0.45)';
+      ctx.strokeStyle = 'rgba(216, 59, 1, 0.5)';
       ctx.lineWidth = 1.6;
     } else {
-      ctx.strokeStyle = 'rgba(100, 116, 139, 0.18)';
+      ctx.strokeStyle = 'rgba(0, 0, 0, 0.12)';
       ctx.lineWidth = 0.8;
     }
     ctx.stroke();
@@ -2989,16 +2983,16 @@ function renderGraphTopology(topoData) {
 
   // 2. Draw Nodes
   topoData.nodes.forEach(node => {
-    // Outer Pulsing Glow for Suspect or Critical nodes
+    // Ring for Suspect or Critical nodes
     if (node.is_suspect) {
       ctx.beginPath();
       ctx.arc(node.x, node.y, 16, 0, 2 * Math.PI);
-      ctx.fillStyle = 'rgba(239, 68, 68, 0.35)';
+      ctx.fillStyle = 'rgba(168, 0, 0, 0.15)';
       ctx.fill();
 
       ctx.beginPath();
       ctx.arc(node.x, node.y, 22, 0, 2 * Math.PI);
-      ctx.strokeStyle = 'rgba(239, 68, 68, 0.8)';
+      ctx.strokeStyle = 'rgba(168, 0, 0, 0.6)';
       ctx.lineWidth = 1.5;
       ctx.setLineDash([3, 3]);
       ctx.stroke();
@@ -3006,7 +3000,7 @@ function renderGraphTopology(topoData) {
     } else if (node.is_critical) {
       ctx.beginPath();
       ctx.arc(node.x, node.y, 14, 0, 2 * Math.PI);
-      ctx.fillStyle = 'rgba(249, 115, 22, 0.3)';
+      ctx.fillStyle = 'rgba(216, 59, 1, 0.15)';
       ctx.fill();
     }
 
@@ -3014,7 +3008,7 @@ function renderGraphTopology(topoData) {
     const radius = node.node_type === 'WORK_ORDER' || node.node_type === 'PARENT_BATCH' ? 9 : 6.5;
     ctx.beginPath();
     ctx.arc(node.x, node.y, radius, 0, 2 * Math.PI);
-    ctx.fillStyle = node.color || '#64748b';
+    ctx.fillStyle = node.color || '#605e5c';
     ctx.fill();
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 1.2;
@@ -3022,8 +3016,8 @@ function renderGraphTopology(topoData) {
 
     // Node Short Label
     if (node.node_type === 'WORK_ORDER' || node.node_type === 'PARENT_BATCH' || node.is_suspect || node.is_critical) {
-      ctx.fillStyle = node.is_suspect ? '#fca5a5' : (node.is_critical ? '#fdba74' : '#e2e8f0');
-      ctx.font = '9px "JetBrains Mono", monospace';
+      ctx.fillStyle = node.is_suspect ? '#a80000' : (node.is_critical ? '#d83b01' : '#201f1e');
+      ctx.font = '9px "Segoe UI", sans-serif';
       ctx.textAlign = 'center';
       const shortId = node.id.replace(/^(LOT:|BATCH:|MACHINE:|WO:|TIRE:)/, '');
       ctx.fillText(shortId, node.x, node.y - radius - 3);
@@ -3181,25 +3175,25 @@ function renderGraphOutbreakResults(data) {
     else if (vectorText === 'ISOLATED_INDEPENDENT_LINE') vectorText = 'Chuyền Độc Lập An Toàn';
 
     rowsHtml += `
-      <tr style="${wo.risk_tier === 'CRITICAL' ? 'background: rgba(239, 68, 68, 0.08);' : ''}">
-        <td><strong style="color: #fff; font-family: var(--font-mono);">${wo.wo_id}</strong></td>
+      <tr style="${wo.risk_tier === 'CRITICAL' ? 'background: #fde7e9;' : ''}">
+        <td><strong style="color: var(--m365-blue); font-family: var(--font-mono);">${wo.wo_id}</strong></td>
         <td>${wo.sku}</td>
-        <td><span class="badge" style="background: #1e293b; color: #cbd5e1;">${wo.assigned_machine || '--'}</span></td>
-        <td><span class="badge" style="background: #0284c7; color: #fff;">${wo.status}</span></td>
+        <td><span class="badge" style="background: var(--bg-subtle); color: var(--text-primary); border: 1px solid var(--border-color);">${wo.assigned_machine || '--'}</span></td>
+        <td><span class="badge" style="background: var(--m365-blue-light); color: var(--m365-blue); border: 1px solid var(--m365-blue-border);">${wo.status}</span></td>
         <td>
           <div style="display: flex; align-items: center; gap: 0.5rem;">
-            <div style="flex: 1; height: 6px; background: #1e293b; border-radius: 3px; overflow: hidden;">
+            <div style="flex: 1; height: 6px; background: var(--bg-subtle); border-radius: 3px; border: 1px solid var(--border-color); overflow: hidden;">
               <div style="width: ${wo.risk_score_pct}%; height: 100%; background: ${barColor};"></div>
             </div>
             <strong style="color: ${barColor}; font-family: var(--font-mono); font-size: 0.8rem; width: 44px; text-align: right;">${wo.risk_score_pct}%</strong>
           </div>
         </td>
         <td>${tierBadge}</td>
-        <td><span style="font-size: 0.78rem; color: #cbd5e1;">${vectorText}</span></td>
-        <td><strong style="color: ${wo.tires_at_risk > 0 ? '#fca5a5' : '#94a3b8'}; font-family: var(--font-mono);">${wo.tires_at_risk} lốp</strong></td>
+        <td><span style="font-size: 0.78rem; color: var(--text-secondary);">${vectorText}</span></td>
+        <td><strong style="color: ${wo.tires_at_risk > 0 ? '#a80000' : 'var(--text-secondary)'}; font-family: var(--font-mono);">${wo.tires_at_risk} lốp</strong></td>
         <td>
           <button class="btn btn-secondary btn-sm" onclick="showTrajectoryForWO('${wo.wo_id}')" style="font-size: 0.75rem; padding: 0.2rem 0.5rem;">
-            🔍 Xem Chuỗi Lây Nhiễm
+            Xem Chuỗi Lây Nhiễm
           </button>
         </td>
       </tr>
@@ -3383,27 +3377,27 @@ async function loadPipelineFrames() {
       const proto = f.protocol;
       if (proto === 'OPC_UA') {
         return `
-          <div style="background: rgba(16, 185, 129, 0.08); border-left: 3px solid #10b981; padding: 0.35rem 0.6rem; border-radius: 4px; display: flex; justify-content: space-between; align-items: center;">
+          <div style="background: var(--bg-subtle); border: 1px solid var(--border-color); border-left: 3px solid #107c41; padding: 0.35rem 0.6rem; border-radius: 2px; display: flex; justify-content: space-between; align-items: center;">
             <div>
-              <span style="color: #10b981; font-weight: 700;">[OPC-UA]</span>
-              <span style="color: #cbd5e1;">${f.node_id}</span>
-              <strong style="color: #38bdf8; margin-left: 0.5rem;">= ${f.value}</strong>
+              <span style="color: #107c41; font-weight: 700;">[OPC-UA]</span>
+              <span style="color: var(--text-primary);">${f.node_id}</span>
+              <strong style="color: var(--m365-blue); margin-left: 0.5rem;">= ${f.value}</strong>
             </div>
-            <div style="font-size: 0.7rem; color: #94a3b8;">
-              <span style="color: #34d399;">${f.status_code}</span> &bull; ⏱️ ${f.latency_ms}ms
+            <div style="font-size: 0.7rem; color: var(--text-secondary);">
+              <span style="color: #107c41;">${f.status_code}</span> &bull; ${f.latency_ms}ms
             </div>
           </div>
         `;
       } else if (proto === 'MODBUS_TCP') {
         return `
-          <div style="background: rgba(6, 182, 212, 0.08); border-left: 3px solid #06b6d4; padding: 0.35rem 0.6rem; border-radius: 4px; display: flex; justify-content: space-between; align-items: center;">
+          <div style="background: var(--bg-subtle); border: 1px solid var(--border-color); border-left: 3px solid #0078d4; padding: 0.35rem 0.6rem; border-radius: 2px; display: flex; justify-content: space-between; align-items: center;">
             <div>
-              <span style="color: #06b6d4; font-weight: 700;">[MODBUS-TCP]</span>
-              <span style="color: #cbd5e1;">Unit ${f.unit_id} &bull; Reg ${f.register_address} (${f.raw_hex})</span>
-              <strong style="color: #f59e0b; margin-left: 0.5rem;">= ${f.scaled_engineering_value}</strong>
-              <span style="color: #94a3b8; font-size: 0.72rem; margin-left: 0.4rem;">(${f.description})</span>
+              <span style="color: #0078d4; font-weight: 700;">[MODBUS-TCP]</span>
+              <span style="color: var(--text-primary);">Unit ${f.unit_id} &bull; Reg ${f.register_address} (${f.raw_hex})</span>
+              <strong style="color: #7a4100; margin-left: 0.5rem;">= ${f.scaled_engineering_value}</strong>
+              <span style="color: var(--text-secondary); font-size: 0.72rem; margin-left: 0.4rem;">(${f.description})</span>
             </div>
-            <div style="font-size: 0.7rem; color: #94a3b8;">
+            <div style="font-size: 0.7rem; color: var(--text-secondary);">
               Port 502 &bull; ${f.timestamp ? f.timestamp.split(' ')[1] : ''}
             </div>
           </div>
@@ -3411,13 +3405,13 @@ async function loadPipelineFrames() {
       } else if (proto === 'MQTT_SPARKPLUG_B') {
         const m = f.metrics && f.metrics[0] ? f.metrics[0] : {};
         return `
-          <div style="background: rgba(168, 85, 247, 0.08); border-left: 3px solid #a855f7; padding: 0.35rem 0.6rem; border-radius: 4px; display: flex; justify-content: space-between; align-items: center;">
+          <div style="background: var(--bg-subtle); border: 1px solid var(--border-color); border-left: 3px solid #5c2d91; padding: 0.35rem 0.6rem; border-radius: 2px; display: flex; justify-content: space-between; align-items: center;">
             <div>
-              <span style="color: #a855f7; font-weight: 700;">[SPARKPLUG-B]</span>
-              <span style="color: #cbd5e1;">${f.topic}</span>
-              <strong style="color: #c084fc; margin-left: 0.5rem;">${m.name}: ${m.value} ${m.unit || ''}</strong>
+              <span style="color: #5c2d91; font-weight: 700;">[SPARKPLUG-B]</span>
+              <span style="color: var(--text-primary);">${f.topic}</span>
+              <strong style="color: #5c2d91; margin-left: 0.5rem;">${m.name}: ${m.value} ${m.unit || ''}</strong>
             </div>
-            <div style="font-size: 0.7rem; color: #94a3b8;">
+            <div style="font-size: 0.7rem; color: var(--text-secondary);">
               Seq #${f.seq}
             </div>
           </div>

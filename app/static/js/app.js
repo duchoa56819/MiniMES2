@@ -65,6 +65,7 @@ function switchTab(tabId) {
   // Specific tab refreshes
   if (tabId === 'dashboard') loadDashboard();
   if (tabId === 'work-orders') loadWorkOrders();
+  if (tabId === 'tbm') initTbmStation();
   if (tabId === 'curing') loadCuringPresses();
   if (tabId === 'quality') loadInspectionQueue();
   if (tabId === 'master-data') showMasterSubTab('products');
@@ -264,11 +265,14 @@ async function loadWorkOrders() {
           <td><span class="status-pill ${statusPill}">${wo.status}</span></td>
           <td>
             ${wo.status === 'IN_PROGRESS' ? `
-              <button class="btn btn-secondary btn-sm" onclick="setWOStatus('${wo.wo_id}', 'COMPLETED')">Hoàn Tất</button>
+              <div style="display: flex; gap: 0.35rem;">
+                <button class="btn btn-primary btn-sm" onclick="goToTbmWithWO('${wo.wo_id}')" title="Chuyển sang trạm Thành Hình với lệnh này">Vào Thành Hình</button>
+                <button class="btn btn-secondary btn-sm" onclick="setWOStatus('${wo.wo_id}', 'COMPLETED')">Hoàn Tất</button>
+              </div>
             ` : wo.status === 'RELEASED' ? `
-              <button class="btn btn-primary btn-sm" onclick="setWOStatus('${wo.wo_id}', 'IN_PROGRESS')">Kích Hoạt</button>
+              <button class="btn btn-primary btn-sm" onclick="activateAndGoToTbm('${wo.wo_id}')" title="Kích hoạt lệnh và đưa trực tiếp vào trạm Thành Hình">Kích Hoạt</button>
             ` : `
-              <span style="color: #64748b; font-size: 0.75rem;">Đã Đóng</span>
+              <span style="color: var(--text-secondary); font-size: 0.75rem;">Đã Đóng</span>
             `}
           </td>
         </tr>
@@ -277,6 +281,32 @@ async function loadWorkOrders() {
   } catch (err) {
     console.error('Error loading work orders:', err);
   }
+}
+
+async function activateAndGoToTbm(wo_id) {
+  try {
+    const res = await fetch(`/api/work-orders/${wo_id}/status`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'IN_PROGRESS' })
+    });
+    if (res.ok) {
+      await loadWorkOrders();
+      loadDashboard();
+      switchTab('tbm');
+      await initTbmStation(wo_id);
+    } else {
+      const err = await res.json();
+      alert(`Lỗi kích hoạt lệnh sản xuất: ${err.detail || 'Không thể kích hoạt'}`);
+    }
+  } catch (err) {
+    alert('Lỗi: ' + err);
+  }
+}
+
+async function goToTbmWithWO(wo_id) {
+  switchTab('tbm');
+  await initTbmStation(wo_id);
 }
 
 async function setWOStatus(wo_id, newStatus) {
@@ -341,7 +371,7 @@ async function submitCreateWO() {
 // ============================================================================
 // TAB 3: TBM BUILDING TERMINAL (POKA-YOKE)
 // ============================================================================
-async function initTbmStation() {
+async function initTbmStation(selectedWoId = null) {
   try {
     // 1. Load active work orders into dropdown
     const res = await fetch('/api/work-orders?status=IN_PROGRESS');
@@ -352,6 +382,7 @@ async function initTbmStation() {
 
     if (wos.length === 0) {
       woSelect.innerHTML = '<option value="">Không có lệnh IN_PROGRESS</option>';
+      state.activeTbmWO = null;
       return;
     }
 
@@ -361,7 +392,13 @@ async function initTbmStation() {
       </option>
     `).join('');
 
-    onTbmWOChange();
+    if (selectedWoId && wos.some(w => w.wo_id === selectedWoId)) {
+      woSelect.value = selectedWoId;
+    } else if (state.activeTbmWO && wos.some(w => w.wo_id === state.activeTbmWO.wo_id)) {
+      woSelect.value = state.activeTbmWO.wo_id;
+    }
+
+    await onTbmWOChange();
   } catch (err) {
     console.error('Error initializing TBM:', err);
   }

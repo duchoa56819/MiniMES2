@@ -214,12 +214,12 @@ function renderRecentEvents(events) {
     if (ev.event_type === 'QUALITY_INSPECTED') pillClass = 'pill-green';
 
     return `
-      <div style="padding: 0.55rem 0.75rem; border-bottom: 1px solid rgba(255, 255, 255, 0.05); display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem;">
+      <div style="padding: 0.55rem 0.75rem; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem;">
         <div>
           <span class="status-pill ${pillClass}" style="margin-right: 0.5rem; font-size: 0.68rem;">${ev.location}</span>
-          <span style="color: #f1f5f9;">${ev.message}</span>
+          <span style="color: var(--text-primary); font-weight: 500;">${ev.message}</span>
         </div>
-        <span style="color: #64748b; font-family: var(--font-mono); font-size: 0.72rem;">${ev.event_time.split(' ')[1] || ev.event_time}</span>
+        <span style="color: var(--text-secondary); font-family: var(--font-mono); font-size: 0.72rem;">${ev.event_time.split(' ')[1] || ev.event_time}</span>
       </div>
     `;
   }).join('');
@@ -637,8 +637,8 @@ async function loadCuringPresses(silent = false) {
         <div class="press-card">
           <div class="press-header">
             <div>
-              <div style="font-size: 1.05rem; font-weight: 800; color: #fff;">${pressId} &bull; ${pInfo.machine_name}</div>
-              <div style="font-size: 0.75rem; color: #94a3b8;">${pInfo.model}</div>
+              <div style="font-size: 1.02rem; font-weight: 700; color: var(--text-primary);">${pressId} &bull; ${pInfo.machine_name}</div>
+              <div style="font-size: 0.75rem; color: var(--text-secondary);">${pInfo.model}</div>
             </div>
           </div>
 
@@ -674,12 +674,12 @@ async function updateLiveTelemetryStream() {
     if (tbody && data.latest_records) {
       tbody.innerHTML = data.latest_records.slice(0, 5).map(r => `
         <tr>
-          <td><strong style="color: #38bdf8; font-family: var(--font-mono);">#${r.id}</strong></td>
-          <td><span style="font-family: var(--font-mono); color: #cbd5e1;">${r.timestamp}</span></td>
+          <td><strong style="color: var(--m365-blue); font-family: var(--font-mono);">#${r.id}</strong></td>
+          <td><span style="font-family: var(--font-mono); color: var(--text-primary); font-weight: 500;">${r.timestamp}</span></td>
           <td><strong>${r.press_id}-${r.cavity_side}</strong></td>
-          <td><span style="color: #f59e0b; font-weight: 700;">${r.mold_temp.toFixed(1)} &deg;C</span></td>
-          <td><span style="color: #06b6d4; font-weight: 700;">${r.bladder_press.toFixed(1)} bar</span></td>
-          <td><span>${r.steam_press.toFixed(1)} bar</span></td>
+          <td><span style="color: #d83b01; font-weight: 700;">${r.mold_temp.toFixed(1)} &deg;C</span></td>
+          <td><span style="color: #0078d4; font-weight: 700;">${r.bladder_press.toFixed(1)} bar</span></td>
+          <td><span style="color: var(--text-primary);">${r.steam_press.toFixed(1)} bar</span></td>
           <td><span class="status-pill pill-cyan" style="font-size: 0.68rem;">${r.phase}</span></td>
           <td><span class="status-pill pill-green" style="font-size: 0.68rem;">COMMITTED</span></td>
         </tr>
@@ -712,60 +712,176 @@ function drawLiveWaveformCanvas() {
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, w, h);
 
-  // Draw grid lines
+  // Chart padding for axes & labels
+  const padLeft = 60;   // Left Y-axis: Nhiệt độ (°C)
+  const padRight = 60;  // Right Y-axis: Áp suất (bar)
+  const padTop = 22;
+  const padBottom = 26; // Bottom X-axis: Thời gian (s)
+  const plotW = w - padLeft - padRight;
+  const plotH = h - padTop - padBottom;
+
+  // Scales definition
+  const tempMin = 166.0, tempMax = 174.0;   // Setpoint 170.0 C
+  const pressMin = 19.0, pressMax = 23.0;   // Setpoint 21.0 bar
+
+  const toYTemp = (t) => padTop + plotH - ((t - tempMin) / (tempMax - tempMin)) * plotH;
+  const toYPress = (p) => padTop + plotH - ((p - pressMin) / (pressMax - pressMin)) * plotH;
+
+  // 1. Draw Horizontal Grid Lines and Y-Axis Ticks
+  const tempTicks = [168.0, 170.0, 172.0];
+  const pressTicks = [20.0, 21.0, 22.0];
+
+  // Axis Titles
+  ctx.font = 'bold 10px "Segoe UI", sans-serif';
+  ctx.fillStyle = '#d83b01';
+  ctx.textAlign = 'left';
+  ctx.fillText('Nhiệt độ (°C)', 8, padTop - 7);
+
+  ctx.fillStyle = '#0078d4';
+  ctx.textAlign = 'right';
+  ctx.fillText('Áp suất (bar)', w - 8, padTop - 7);
+
+  // Background grid lines across plot
+  tempTicks.forEach((tVal, idx) => {
+    const y = toYTemp(tVal);
+    const pVal = pressTicks[idx];
+
+    // Grid line
+    ctx.beginPath();
+    ctx.moveTo(padLeft, y);
+    ctx.lineTo(padLeft + plotW, y);
+    if (tVal === 170.0) {
+      ctx.strokeStyle = '#d2d0ce';
+      ctx.setLineDash([3, 3]);
+    } else {
+      ctx.strokeStyle = '#edebe9';
+      ctx.setLineDash([]);
+    }
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Left Y-axis label (°C)
+    ctx.fillStyle = '#d83b01';
+    ctx.font = tVal === 170.0 ? 'bold 10px "Segoe UI", sans-serif' : '10px "Segoe UI", sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(`${tVal.toFixed(1)}°`, padLeft - 6, y + 3.5);
+
+    // Right Y-axis label (bar)
+    ctx.fillStyle = '#0078d4';
+    ctx.font = pVal === 21.0 ? 'bold 10px "Segoe UI", sans-serif' : '10px "Segoe UI", sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(`${pVal.toFixed(1)}`, padLeft + plotW + 6, y + 3.5);
+  });
+
+  // Outer bounds (top and bottom plot border)
   ctx.strokeStyle = '#edebe9';
   ctx.lineWidth = 1;
-  for (let x = 0; x < w; x += 50) {
-    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
-  }
-  for (let y = 0; y < h; y += 25) {
-    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
-  }
+  ctx.beginPath();
+  ctx.moveTo(padLeft, padTop); ctx.lineTo(padLeft + plotW, padTop);
+  ctx.moveTo(padLeft, padTop + plotH); ctx.lineTo(padLeft + plotW, padTop + plotH);
+  ctx.stroke();
 
-  // Draw Temperature Line (Warm Orange, Setpoint 170C -> center at y = 35)
-  if (waveformBuffer.temps.length > 1) {
+  // Left & Right Axis vertical boundary lines
+  ctx.strokeStyle = '#d2d0ce';
+  ctx.beginPath();
+  ctx.moveTo(padLeft, padTop); ctx.lineTo(padLeft, padTop + plotH);
+  ctx.moveTo(padLeft + plotW, padTop); ctx.lineTo(padLeft + plotW, padTop + plotH);
+  ctx.stroke();
+
+  // 2. Bottom X-Axis Ticks & Labels
+  const xTicks = [
+    { offsetRatio: 0.00, label: '-90s' },
+    { offsetRatio: 0.25, label: '-60s' },
+    { offsetRatio: 0.50, label: '-45s' },
+    { offsetRatio: 0.75, label: '-15s' },
+    { offsetRatio: 1.00, label: '0s (Hiện tại)' }
+  ];
+
+  ctx.font = '10px "Segoe UI", sans-serif';
+  ctx.fillStyle = '#605e5c';
+  xTicks.forEach(xt => {
+    const x = padLeft + xt.offsetRatio * plotW;
+    // Tick mark
+    ctx.beginPath();
+    ctx.moveTo(x, padTop + plotH);
+    ctx.lineTo(x, padTop + plotH + 4);
+    ctx.strokeStyle = '#d2d0ce';
+    ctx.stroke();
+
+    // Tick label
+    ctx.textAlign = xt.offsetRatio === 1.0 ? 'right' : (xt.offsetRatio === 0.0 ? 'left' : 'center');
+    ctx.fillText(xt.label, x, padTop + plotH + 16);
+  });
+
+  // 3. Draw Temperature Curve (Warm Orange)
+  if (waveformBuffer.temps.length > 0) {
+    const len = waveformBuffer.temps.length;
+    const stepX = len > 1 ? plotW / (len - 1) : plotW;
+
     ctx.strokeStyle = '#d83b01';
     ctx.lineWidth = 2;
     ctx.beginPath();
-    const stepX = w / (waveformBuffer.temps.length - 1);
     waveformBuffer.temps.forEach((t, i) => {
-      // Map 168C - 172C to y
-      const y = 35 - (t - 170.0) * 18;
-      if (i === 0) ctx.moveTo(0, y);
-      else ctx.lineTo(i * stepX, y);
+      const clampedT = Math.max(tempMin, Math.min(tempMax, t));
+      const x = padLeft + (len > 1 ? i * stepX : plotW);
+      const y = toYTemp(clampedT);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
     });
     ctx.stroke();
+
+    // Latest point indicator & tag
+    const lastT = waveformBuffer.temps[len - 1];
+    const lastX = padLeft + plotW;
+    const lastY = toYTemp(Math.max(tempMin, Math.min(tempMax, lastT)));
+    ctx.fillStyle = '#d83b01';
+    ctx.beginPath();
+    ctx.arc(lastX, lastY, 3.5, 0, 2 * Math.PI);
+    ctx.fill();
   }
 
-  // Draw Bladder Pressure Line (Fluent Blue, Setpoint 21 bar -> center at y = 80)
-  if (waveformBuffer.pressures.length > 1) {
+  // 4. Draw Bladder Pressure Curve (Fluent Blue)
+  if (waveformBuffer.pressures.length > 0) {
+    const len = waveformBuffer.pressures.length;
+    const stepX = len > 1 ? plotW / (len - 1) : plotW;
+
     ctx.strokeStyle = '#0078d4';
     ctx.lineWidth = 2;
     ctx.beginPath();
-    const stepX = w / (waveformBuffer.pressures.length - 1);
     waveformBuffer.pressures.forEach((p, i) => {
-      // Map 20 - 22 bar to y
-      const y = 80 - (p - 21.0) * 20;
-      if (i === 0) ctx.moveTo(0, y);
-      else ctx.lineTo(i * stepX, y);
+      const clampedP = Math.max(pressMin, Math.min(pressMax, p));
+      const x = padLeft + (len > 1 ? i * stepX : plotW);
+      const y = toYPress(clampedP);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
     });
     ctx.stroke();
+
+    // Latest point indicator
+    const lastP = waveformBuffer.pressures[len - 1];
+    const lastX = padLeft + plotW;
+    const lastY = toYPress(Math.max(pressMin, Math.min(pressMax, lastP)));
+    ctx.fillStyle = '#0078d4';
+    ctx.beginPath();
+    ctx.arc(lastX, lastY, 3.5, 0, 2 * Math.PI);
+    ctx.fill();
   }
 }
 
 function renderCavityBox(cav) {
   let stateClass = 'state-empty';
   let pillClass = 'pill-gray';
-  let stateText = 'TRỐNG (EMPTY)';
+  let stateText = 'TRỐNG';
 
   if (cav.state === 'CURING') {
     stateClass = 'state-curing';
-    pillClass = 'pill-cyan';
+    pillClass = 'pill-blue';
     stateText = 'ĐANG LƯU HÓA';
   } else if (cav.state === 'COMPLETED') {
     stateClass = 'state-completed';
     pillClass = 'pill-green';
-    stateText = 'ĐÃ CHÍN (XONG)';
+    stateText = 'ĐÃ CHÍN';
   } else if (cav.state === 'LOADED') {
     stateClass = 'state-loaded';
     pillClass = 'pill-amber';
@@ -780,35 +896,39 @@ function renderCavityBox(cav) {
   const t_ss = cav.cure_target_seconds % 60;
   const targetFormatted = `${t_mm}:${t_ss < 10 ? '0' : ''}${t_ss}`;
 
+  // Robust numeric formatting: exactly 1 decimal digit to prevent overflow
+  const mTemp = (typeof cav.mold_temp_c === 'number' ? cav.mold_temp_c : Number(cav.mold_temp_c || 0)).toFixed(1);
+  const bPress = (typeof cav.bladder_press_bar === 'number' ? cav.bladder_press_bar : Number(cav.bladder_press_bar || 0)).toFixed(1);
+
   return `
     <div class="cavity-box ${stateClass}">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
-        <strong style="color: #38bdf8;">HỘC ${cav.cavity_side}</strong>
+        <strong style="color: var(--m365-blue); font-size: 0.88rem;">HỘC ${cav.cavity_side}</strong>
         <span class="status-pill ${pillClass}">${stateText}</span>
       </div>
 
-      <div style="font-size: 0.75rem; color: #cbd5e1; margin-bottom: 0.25rem;">
-        Khuôn: <strong style="color: #fff;">${cav.mold_id}</strong>
+      <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.25rem;">
+        Khuôn: <strong style="color: var(--text-primary);">${cav.mold_id}</strong>
       </div>
 
-      <div style="font-size: 0.72rem; color: #94a3b8; font-family: var(--font-mono); margin-bottom: 0.4rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+      <div style="font-size: 0.72rem; color: var(--text-secondary); font-family: var(--font-mono); margin-bottom: 0.4rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
         ${cav.current_gt_barcode ? `Lốp: ${cav.current_gt_barcode}` : '(Chưa nạp lốp sống)'}
       </div>
 
-      <!-- Gauges -->
+      <!-- Gauges with guaranteed single-line fit -->
       <div class="gauge-row">
         <div class="gauge-item">
           <div class="gauge-label">Nhiệt độ khuôn</div>
-          <div class="gauge-val">${cav.mold_temp_c}&deg;C</div>
+          <div class="gauge-val">${mTemp}&deg;C</div>
         </div>
         <div class="gauge-item">
           <div class="gauge-label">Áp suất bàng</div>
-          <div class="gauge-val">${cav.bladder_press_bar} bar</div>
+          <div class="gauge-val">${bPress} bar</div>
         </div>
       </div>
 
       <!-- Progress -->
-      <div style="display: flex; justify-content: space-between; font-size: 0.72rem; color: #94a3b8;">
+      <div style="display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--text-secondary);">
         <span>${timeFormatted} / ${targetFormatted}</span>
         <span>${cav.progress_percent}%</span>
       </div>
@@ -817,9 +937,9 @@ function renderCavityBox(cav) {
       </div>
 
       <!-- Bladder Cycle Counter -->
-      <div style="font-size: 0.7rem; color: ${cav.bladder_cycle_count > 300 ? '#f59e0b' : '#64748b'}; margin-top: 0.35rem; display: flex; justify-content: space-between;">
+      <div style="font-size: 0.7rem; color: ${cav.bladder_cycle_count > 300 ? '#d83b01' : 'var(--text-secondary)'}; margin-top: 0.35rem; display: flex; justify-content: space-between;">
         <span>Tuổi thọ bàng:</span>
-        <strong>${cav.bladder_cycle_count} / 350 lần</strong>
+        <strong style="color: var(--text-primary);">${cav.bladder_cycle_count} / 350 lần</strong>
       </div>
 
       <!-- Action Buttons -->
@@ -1131,14 +1251,14 @@ function renderPassport(data) {
         <div style="font-size: 0.8rem; font-weight: 800; color: #38bdf8; letter-spacing: 0.1em; text-transform: uppercase;">
           CHỨNG CHỈ SẢN PHẨM SỐ &bull; DIGITAL TIRE PASSPORT (ISA-95)
         </div>
-        <h2 style="font-size: 1.8rem; font-weight: 900; color: #fff; font-family: var(--font-mono); margin: 0.25rem 0;">
+        <h2 style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary); font-family: var(--font-mono); margin: 0.25rem 0;">
           ${tire ? tire.tire_serial : gt.gt_barcode}
         </h2>
         <div style="font-size: 1rem; color: #e2e8f0; font-weight: 600;">
           ${(tire && tire.tire_size) || (gt && gt.tire_size)} - ${(tire && tire.pattern_name) || (gt && gt.pattern_name)}
         </div>
         <div style="font-size: 0.8rem; color: #94a3b8; margin-top: 0.25rem;">
-          Mã vạch lốp sống: <strong style="color: #38bdf8; font-family: var(--font-mono);">${gt ? gt.gt_barcode : 'N/A'}</strong> &bull; Lệnh sản xuất: <strong>${gt ? gt.wo_id : 'N/A'}</strong>
+          Mã vạch lốp sống: <strong style="color: var(--m365-blue); font-family: var(--font-mono);">${gt ? gt.gt_barcode : 'N/A'}</strong> &bull; Lệnh sản xuất: <strong>${gt ? gt.wo_id : 'N/A'}</strong>
         </div>
       </div>
 
@@ -1184,7 +1304,7 @@ function renderPassport(data) {
                   ${data.components_lineage.map(c => `
                     <tr>
                       <td><strong>${c.component_type}</strong></td>
-                      <td><span style="font-family: var(--font-mono); color: #38bdf8;">${c.lot_id}</span></td>
+                      <td><span style="font-family: var(--font-mono); color: var(--m365-blue);">${c.lot_id}</span></td>
                       <td>${c.spec_code || '--'} (${c.compound_code})</td>
                       <td>${c.storage_location}</td>
                       <td><span class="status-pill pill-green">ĐẠT (VALID)</span></td>
@@ -1206,7 +1326,7 @@ function renderPassport(data) {
               <div>Máy đóng lốp: <strong>${gt ? gt.tbm_machine_id : 'TBM-01'}</strong> (${gt ? gt.tbm_machine_name : 'VMI Uni-Stage'})</div>
               <div>Công nhân vận hành: <strong>${gt ? gt.operator_name : 'Nguyễn Văn Hùng'}</strong> (${gt ? gt.operator_id : 'OP-1001'})</div>
               <div>Thời gian đóng: <strong>${gt ? gt.build_timestamp : '--'}</strong></div>
-              <div>Trọng lượng thực tế: <strong style="color: #38bdf8;">${gt ? gt.actual_weight_kg : '--'} kg</strong> (Chuẩn: ${(gt && gt.standard_weight_kg) || 9.25} kg)</div>
+              <div>Trọng lượng thực tế: <strong style="color: var(--m365-blue);">${gt ? gt.actual_weight_kg : '--'} kg</strong> (Chuẩn: ${(gt && gt.standard_weight_kg) || 9.25} kg)</div>
             </div>
             <div style="margin-top: 0.35rem; font-size: 0.75rem; color: #34d399;">
               ✓ Xác nhận Poka-Yoke: ${gt ? gt.poka_yoke_status : 'VERIFIED_PASS'} &bull; Áp lực con lăn miết đạt chuẩn 4.2 bar.
@@ -1253,7 +1373,7 @@ function renderPassport(data) {
                 <div>Lực đồng đều RFV: <strong>${qc.uniformity_rfv_n} N</strong> (&le; 80 N)</div>
                 <div>Mất cân bằng động: <strong>${qc.dynamic_balance_g} g</strong> (&le; 30 g)</div>
               </div>
-              <div style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid rgba(255,255,255,0.05); font-weight: 600; color: #f1f5f9;">
+              <div style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid var(--border-color); font-weight: 600; color: var(--text-primary);">
                 Kết luận nghiệm thu: <span style="color: ${gradeColor};">[${qc.final_grade}]</span> - ${qc.disposition_notes}
               </div>
             ` : `
@@ -1308,7 +1428,7 @@ async function showMasterSubTab(type) {
             <tbody>
               ${prods.map(p => `
                 <tr>
-                  <td><strong style="color: #38bdf8; font-family: var(--font-mono);">${p.sku}</strong></td>
+                  <td><strong style="color: var(--m365-blue); font-family: var(--font-mono);">${p.sku}</strong></td>
                   <td><strong>${p.tire_size}</strong></td>
                   <td>${p.pattern_name}</td>
                   <td><span class="status-pill pill-purple">${p.segment}</span></td>
@@ -1343,7 +1463,7 @@ async function showMasterSubTab(type) {
             <tbody>
               ${eq.map(e => `
                 <tr>
-                  <td><strong style="color: #38bdf8; font-family: var(--font-mono);">${e.machine_id}</strong></td>
+                  <td><strong style="color: var(--m365-blue); font-family: var(--font-mono);">${e.machine_id}</strong></td>
                   <td>${e.machine_name}</td>
                   <td>${e.area_name}</td>
                   <td>${e.model}</td>
@@ -1408,7 +1528,7 @@ async function showMasterSubTab(type) {
             <tbody>
               ${ops.map(o => `
                 <tr>
-                  <td><strong style="color: #38bdf8; font-family: var(--font-mono);">${o.badge_id}</strong></td>
+                  <td><strong style="color: var(--m365-blue); font-family: var(--font-mono);">${o.badge_id}</strong></td>
                   <td>${o.full_name}</td>
                   <td><span class="status-pill pill-blue">${o.role}</span></td>
                   <td>${o.current_shift}</td>
@@ -2016,7 +2136,7 @@ async function evaluateLiveCycleSim() {
     resultBox.innerHTML = `
       <div style="background: ${bgCol}; border: 1.5px solid ${borderCol}; border-radius: 8px; padding: 1.25rem;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
-          <div style="font-size: 1rem; font-weight: 600; color: #fff; display: flex; align-items: center; gap: 8px;">
+          <div style="font-size: 1rem; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
             <span>${icon}</span>
             <span>Kết Quả Giám Định AI Chu Kỳ: ${data.machine_id}</span>
           </div>
@@ -2024,15 +2144,15 @@ async function evaluateLiveCycleSim() {
         </div>
 
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem; background: rgba(0,0,0,0.3); padding: 0.75rem; border-radius: 6px; margin-bottom: 0.75rem; font-size: 0.82rem;">
-          <div>Điểm Ensemble Score: <strong style="color: #fff; font-size: 0.95rem;">${data.ensemble_anomaly_score}</strong></div>
-          <div>iForest Score: <strong style="color: #38bdf8;">${data.isolation_forest_score}</strong></div>
+          <div>Điểm Ensemble Score: <strong style="color: var(--text-primary); font-size: 0.95rem;">${data.ensemble_anomaly_score}</strong></div>
+          <div>iForest Score: <strong style="color: var(--m365-blue);">${data.isolation_forest_score}</strong></div>
           <div>Autoencoder Loss: <strong style="color: #c084fc;">${data.autoencoder_loss}</strong> (Ngưỡng: ${data.threshold})</div>
           <div>Phán Quyết: <strong style="color: ${borderCol};">${data.is_anomaly ? 'BẤT THƯỜNG / DỊ BIỆT' : 'BÌNH THƯỜNG'}</strong></div>
         </div>
 
         <div style="font-size: 0.88rem; color: #e2e8f0; margin-bottom: 0.5rem; line-height: 1.5;">
           <strong>Chẩn đoán nguyên nhân gốc rễ (Root Cause):</strong><br>
-          <span style="color: #f8fafc;">${data.root_cause_diagnosis}</span>
+          <span style="color: var(--text-primary); font-weight: 500;">${data.root_cause_diagnosis}</span>
         </div>
 
         <div style="font-size: 0.85rem; color: #94a3b8; background: rgba(255,255,255,0.05); padding: 0.6rem 0.8rem; border-radius: 4px; line-height: 1.5;">
@@ -2076,16 +2196,16 @@ async function loadAiAnomalyLogs() {
 
       return `
         <tr>
-          <td style="font-family: var(--font-mono); font-size: 0.82rem; color: #38bdf8;">${l.entity_id || 'CYC-' + l.id}</td>
-          <td><strong style="color: #fff;">${l.entity_type}</strong></td>
-          <td style="font-size: 0.8rem; color: #94a3b8;">${l.timestamp ? l.timestamp.replace('T', ' ').substring(0, 19) : '--'}</td>
-          <td style="font-family: var(--font-mono);"><strong style="color: #f8fafc;">${Number(l.anomaly_score).toFixed(3)}</strong></td>
+          <td style="font-family: var(--font-mono); font-size: 0.82rem; color: var(--m365-blue);">${l.entity_id || 'CYC-' + l.id}</td>
+          <td><strong style="color: var(--text-primary);">${l.entity_type}</strong></td>
+          <td style="font-size: 0.8rem; color: var(--text-secondary);">${l.timestamp ? l.timestamp.replace('T', ' ').substring(0, 19) : '--'}</td>
+          <td style="font-family: var(--font-mono);"><strong style="color: var(--text-primary);">${Number(l.anomaly_score).toFixed(3)}</strong></td>
           <td><span class="status-pill ${pillClass}">${l.severity}</span></td>
-          <td style="max-width: 280px; font-size: 0.82rem; color: #e2e8f0; line-height: 1.4;">${l.root_cause_diagnosis || '--'}</td>
-          <td style="max-width: 250px; font-size: 0.8rem; color: #94a3b8; line-height: 1.4;">${l.mitigation_action || '--'}</td>
+          <td style="max-width: 280px; font-size: 0.82rem; color: var(--text-primary); line-height: 1.4;">${l.root_cause_diagnosis || '--'}</td>
+          <td style="max-width: 250px; font-size: 0.8rem; color: var(--text-secondary); line-height: 1.4;">${l.mitigation_action || '--'}</td>
           <td>
             ${isAcked
-              ? '<span style="color: #10b981; font-size: 0.8rem; font-weight: 500;">✓ Đã xác nhận</span>'
+              ? '<span style="color: #107c41; font-size: 0.8rem; font-weight: 500;">✓ Đã xác nhận</span>'
               : `<button class="btn btn-secondary btn-sm" onclick="acknowledgeAiAnomaly(${l.id})">Xác nhận</button>`
             }
           </td>
@@ -2468,14 +2588,14 @@ async function loadDynamicRoutingRules() {
 
       return `
         <tr>
-          <td style="font-family: var(--font-mono); font-size: 0.82rem; color: #38bdf8;">${r.rule_id}</td>
-          <td><strong style="color: #fff;">${r.source_station}</strong></td>
-          <td><span style="color: #cbd5e1;">${r.target_station}</span></td>
+          <td style="font-family: var(--font-mono); font-size: 0.82rem; color: var(--m365-blue);">${r.rule_id}</td>
+          <td><strong style="color: var(--text-primary);">${r.source_station}</strong></td>
+          <td><span style="color: var(--text-secondary);">${r.target_station}</span></td>
           <td><strong style="color: #34d399;">${r.alternate_station}</strong></td>
           <td><span class="status-pill pill-purple">${r.material_type}</span></td>
           <td style="font-family: var(--font-mono); font-weight: 600;">${r.divert_ratio_pct}%</td>
           <td><span class="status-pill ${pillClass}">${statusText}</span></td>
-          <td style="color: #38bdf8; font-family: var(--font-mono);">+${r.throughput_gain_forecast_pct}% OEE</td>
+          <td style="color: var(--m365-blue); font-family: var(--font-mono); font-weight: 600;">+${r.throughput_gain_forecast_pct}% OEE</td>
           <td>
             ${isDiv
               ? `<button class="btn btn-secondary btn-sm" onclick="resetAiRouting()">Tắt Bẻ Ghi</button>`
@@ -2729,7 +2849,7 @@ async function explainCurrentSample(sampleId = null) {
       <div style="background: ${bgCol}; border: 1.5px solid ${borderCol}; border-radius: 8px; padding: 1.25rem; margin-bottom: 1.25rem;">
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1rem;">
           <div>
-            <div style="font-size: 1.1rem; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px;">
+            <div style="font-size: 1.1rem; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
               <span>${isHigh ? '🚨' : '✅'}</span>
               <span>Giám Định SHAP Chi Tiết: ${meta.tire_serial || 'MẺ SẢN XUẤT'}</span>
             </div>
@@ -2797,7 +2917,7 @@ async function explainCurrentSample(sampleId = null) {
           <div style="color: #38bdf8; font-weight: 700; margin-bottom: 0.3rem;">📋 CHẨN ĐOÁN KỸ THUẬT & KHUYẾN NGHỊ KHẮC PHỤC (IATF 16949 / CAPA):</div>
           <div style="color: #e2e8f0; margin-bottom: 0.4rem;"><strong>Chẩn đoán:</strong> ${rec.diagnosis || '--'}</div>
           <div style="color: #fca5a5; margin-bottom: 0.4rem;"><strong>Nguyên nhân gốc rễ:</strong> ${rec.root_cause || '--'}</div>
-          <div style="color: #cbd5e1; white-space: pre-line;"><strong style="color: #fbbf24;">Biện pháp xử lý:</strong><br>${rec.corrective_action || '--'}</div>
+          <div style="color: var(--text-primary); white-space: pre-line;"><strong style="color: #7a4100;">Biện pháp xử lý:</strong><br>${rec.corrective_action || '--'}</div>
         </div>
       </div>
     `;
@@ -3049,8 +3169,8 @@ function renderGraphTopology(topoData) {
         tooltip.style.top = `${evt.clientY - rect.top + 10}px`;
         tooltip.innerHTML = `
           <div style="font-weight: 700; color: ${hovered.color}; margin-bottom: 2px;">${hovered.label}</div>
-          <div style="font-size: 0.72rem; color: #94a3b8;">Loại nút: <strong>${hovered.display_type}</strong></div>
-          <div style="font-size: 0.72rem; color: #cbd5e1;">Xác suất rủi ro lây nhiễm: <strong style="color: ${hovered.risk_score >= 0.7 ? '#ef4444' : (hovered.risk_score >= 0.45 ? '#f59e0b' : '#10b981')}">${(hovered.risk_score * 100).toFixed(1)}%</strong></div>
+          <div style="font-size: 0.72rem; color: var(--text-secondary);">Loại nút: <strong>${hovered.display_type}</strong></div>
+          <div style="font-size: 0.72rem; color: var(--text-secondary);">Xác suất rủi ro lây nhiễm: <strong style="color: ${hovered.risk_score >= 0.7 ? '#a80000' : (hovered.risk_score >= 0.45 ? '#d83b01' : '#107c41')}">${(hovered.risk_score * 100).toFixed(1)}%</strong></div>
         `;
       } else {
         tooltip.style.display = 'none';
@@ -3155,17 +3275,17 @@ function renderGraphOutbreakResults(data) {
     let barColor = '#10b981';
 
     if (wo.risk_tier === 'CRITICAL') {
-      tierBadge = '<span class="badge" style="background: #ef4444; color: #fff;">CRITICAL (DỪNG MÁY)</span>';
-      barColor = '#ef4444';
+      tierBadge = '<span class="status-pill pill-red">CRITICAL (DỪNG MÁY)</span>';
+      barColor = '#a80000';
     } else if (wo.risk_tier === 'HIGH_RISK') {
-      tierBadge = '<span class="badge" style="background: #f97316; color: #fff;">HIGH (SIẾT CHẶT NDT)</span>';
-      barColor = '#f97316';
+      tierBadge = '<span class="status-pill pill-amber">HIGH (SIẾT CHẶT NDT)</span>';
+      barColor = '#d83b01';
     } else if (wo.risk_tier === 'MEDIUM_RISK') {
-      tierBadge = '<span class="badge" style="background: #eab308; color: #1e293b;">MEDIUM (TĂNG MẪU)</span>';
-      barColor = '#eab308';
+      tierBadge = '<span class="status-pill pill-yellow">MEDIUM (TĂNG MẪU)</span>';
+      barColor = '#7a4100';
     } else {
-      tierBadge = '<span class="badge" style="background: #64748b; color: #fff;">LOW (GIÁM SÁT)</span>';
-      barColor = '#64748b';
+      tierBadge = '<span class="status-pill pill-gray">LOW (GIÁM SÁT)</span>';
+      barColor = '#605e5c';
     }
 
     let vectorText = wo.primary_transmission_vector;
@@ -3235,7 +3355,7 @@ function showTrajectoryForWO(woId) {
     html += `
       <div style="background: rgba(30, 41, 59, 0.8); border: 1px solid ${badgeColor}; padding: 0.5rem 0.75rem; border-radius: 6px; font-size: 0.8rem;">
         <div style="color: ${badgeColor}; font-size: 0.7rem; font-weight: 700; text-transform: uppercase;">${step.node_type}</div>
-        <div style="color: #fff; font-weight: 600;">${step.label}</div>
+        <div style="color: var(--text-primary); font-weight: 600;">${step.label}</div>
       </div>
     `;
 

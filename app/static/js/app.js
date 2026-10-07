@@ -677,6 +677,7 @@ async function updateLiveTelemetryStream() {
           <td><strong style="color: var(--m365-blue); font-family: var(--font-mono);">#${r.id}</strong></td>
           <td><span style="font-family: var(--font-mono); color: var(--text-primary); font-weight: 500;">${r.timestamp}</span></td>
           <td><strong>${r.press_id}-${r.cavity_side}</strong></td>
+          <td><strong style="font-family: var(--font-mono); font-size: 0.8rem; color: ${r.tire_code ? 'var(--m365-blue)' : 'var(--text-secondary)'};">${r.tire_code || '<span style="color: var(--text-secondary); font-weight: normal;">(Chưa nạp)</span>'}</strong></td>
           <td><span style="color: #d83b01; font-weight: 700;">${r.mold_temp.toFixed(1)} &deg;C</span></td>
           <td><span style="color: #0078d4; font-weight: 700;">${r.bladder_press.toFixed(1)} bar</span></td>
           <td><span style="color: var(--text-primary);">${r.steam_press.toFixed(1)} bar</span></td>
@@ -874,18 +875,27 @@ function renderCavityBox(cav) {
   let pillClass = 'pill-gray';
   let stateText = 'TRỐNG';
 
-  if (cav.state === 'CURING') {
+  const hasTire = Boolean(cav.current_gt_barcode);
+  const isCuring = cav.state === 'CURING' && hasTire;
+  const isCompleted = cav.state === 'COMPLETED' && hasTire;
+  const isLoaded = cav.state === 'LOADED' && hasTire;
+
+  if (isCuring) {
     stateClass = 'state-curing';
     pillClass = 'pill-blue';
     stateText = 'ĐANG LƯU HÓA';
-  } else if (cav.state === 'COMPLETED') {
+  } else if (isCompleted) {
     stateClass = 'state-completed';
     pillClass = 'pill-green';
     stateText = 'ĐÃ CHÍN';
-  } else if (cav.state === 'LOADED') {
+  } else if (isLoaded) {
     stateClass = 'state-loaded';
     pillClass = 'pill-amber';
     stateText = 'ĐÃ NẠP LỐP';
+  } else {
+    stateClass = 'state-empty';
+    pillClass = 'pill-gray';
+    stateText = 'TRỐNG';
   }
 
   const mm = Math.floor(cav.cure_elapsed_seconds / 60);
@@ -912,7 +922,7 @@ function renderCavityBox(cav) {
       </div>
 
       <div style="font-size: 0.72rem; color: var(--text-secondary); font-family: var(--font-mono); margin-bottom: 0.4rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-        ${cav.current_gt_barcode ? `Lốp: ${cav.current_gt_barcode}` : '(Chưa nạp lốp sống)'}
+        ${hasTire ? `Lốp: <strong style="color: var(--m365-blue);">${cav.current_gt_barcode}</strong>` : '(Chưa nạp lốp sống)'}
       </div>
 
       <!-- Gauges with guaranteed single-line fit -->
@@ -923,17 +933,17 @@ function renderCavityBox(cav) {
         </div>
         <div class="gauge-item">
           <div class="gauge-label">Áp suất bàng</div>
-          <div class="gauge-val">${bPress} bar</div>
+          <div class="gauge-val">${hasTire ? bPress : '0.0'} bar</div>
         </div>
       </div>
 
       <!-- Progress -->
       <div style="display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--text-secondary);">
-        <span>${timeFormatted} / ${targetFormatted}</span>
-        <span>${cav.progress_percent}%</span>
+        <span>${hasTire ? `${timeFormatted} / ${targetFormatted}` : '0:00 / ' + targetFormatted}</span>
+        <span>${hasTire ? cav.progress_percent : 0}%</span>
       </div>
       <div class="progress-track">
-        <div class="progress-bar ${cav.state === 'COMPLETED' ? 'success' : ''}" style="width: ${cav.progress_percent}%;"></div>
+        <div class="progress-bar ${isCompleted ? 'success' : ''}" style="width: ${hasTire ? cav.progress_percent : 0}%;"></div>
       </div>
 
       <!-- Bladder Cycle Counter -->
@@ -944,19 +954,19 @@ function renderCavityBox(cav) {
 
       <!-- Action Buttons -->
       <div style="margin-top: 0.75rem; display: flex; flex-direction: column; gap: 0.35rem;">
-        ${cav.state === 'EMPTY' ? `
+        ${!hasTire ? `
           <button class="btn btn-primary btn-sm" onclick="promptLoadTire('${cav.press_id}', '${cav.cavity_side}')">
             + Nạp Lốp Sống
           </button>
-        ` : cav.state === 'LOADED' ? `
+        ` : isLoaded ? `
           <button class="btn btn-warning btn-sm" onclick="startCuringCycle('${cav.press_id}', '${cav.cavity_side}')">
             🔥 Bắt Đầu Ép Lưu Hóa
           </button>
-        ` : cav.state === 'CURING' ? `
+        ` : isCuring ? `
           <button class="btn btn-secondary btn-sm" onclick="simulateFastCure('${cav.press_id}', '${cav.cavity_side}')" title="Tua nhanh thời gian chín để demo">
             ⏩ Tua Nhanh Chín (Demo)
           </button>
-        ` : cav.state === 'COMPLETED' ? `
+        ` : isCompleted ? `
           <button class="btn btn-success btn-sm" onclick="unloadCuredTire('${cav.press_id}', '${cav.cavity_side}')">
             📦 Dỡ Lốp Chín & Cấp Sê-ri
           </button>
@@ -967,27 +977,44 @@ function renderCavityBox(cav) {
 }
 
 async function promptLoadTire(press_id, cavity_side) {
-  // Find available built green tires
   try {
-    const res = await fetch('/api/work-orders');
-    // Fetch latest green tire built
-    const evRes = await fetch('/api/dashboard/recent-events');
-    const events = await evRes.json();
-    const latestGT = events.find(e => e.event_type === 'GREEN_TIRE_BUILT');
-    const defaultGT = latestGT ? latestGT.ref_id : 'GT-202610-0001';
+    let defaultGT = '';
+    let promptMsg = `Nạp lốp sống vào lò ${press_id} hộc ${cavity_side}:\n`;
 
-    const gt_barcode = prompt(`Nạp lốp sống vào lò ${press_id} hộc ${cavity_side}:\nNhập mã vạch lốp sống:`, defaultGT);
+    // Fetch available built green tires from buffer
+    try {
+      const availRes = await fetch('/api/curing/available-green-tires');
+      if (availRes.ok) {
+        const available = await availRes.json();
+        if (available && available.length > 0) {
+          defaultGT = available[0].gt_barcode;
+          promptMsg += `\nLốp sống chờ nạp gần nhất: ${defaultGT} (${available[0].tire_size || ''})`;
+        }
+      }
+    } catch (_) {}
+
+    if (!defaultGT) {
+      // Fallback to recent events or standard format
+      const evRes = await fetch('/api/dashboard/recent-events');
+      const events = await evRes.json();
+      const latestGT = events.find(e => e.event_type === 'GREEN_TIRE_BUILT');
+      defaultGT = latestGT ? latestGT.ref_id : 'GT-202610-0001';
+    }
+
+    promptMsg += `\n\nNhập hoặc xác nhận mã vạch lốp sống:`;
+
+    const gt_barcode = prompt(promptMsg, defaultGT);
     if (!gt_barcode) return;
 
     const loadRes = await fetch('/api/curing/load', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ press_id, cavity_side, gt_barcode })
+      body: JSON.stringify({ press_id, cavity_side, gt_barcode: gt_barcode.trim() })
     });
 
     const data = await loadRes.json();
     if (loadRes.ok) {
-      loadCuringPresses();
+      await loadCuringPresses();
     } else {
       alert(`Lỗi nạp lốp: ${data.detail || 'Không thể nạp'}`);
     }
@@ -1004,7 +1031,7 @@ async function startCuringCycle(press_id, cavity_side) {
       body: JSON.stringify({ press_id, cavity_side })
     });
     if (res.ok) {
-      loadCuringPresses();
+      await loadCuringPresses();
     } else {
       const err = await res.json();
       alert(`Lỗi: ${err.detail}`);
@@ -1021,11 +1048,14 @@ async function simulateFastCure(press_id, cavity_side) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ press_id, cavity_side })
     });
+    const data = await res.json();
     if (res.ok) {
-      loadCuringPresses();
+      await loadCuringPresses();
+    } else {
+      alert(`Không thể tua nhanh: ${data.detail || 'Lỗi xử lý'}`);
     }
   } catch (err) {
-    alert('Lỗi: ' + err);
+    alert('Lỗi kết nối máy chủ: ' + err);
   }
 }
 

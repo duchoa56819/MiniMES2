@@ -306,6 +306,8 @@ class PLCPipelineSimulator:
                 elapsed = cav["cure_elapsed_seconds"]
                 target = cav["cure_target_seconds"]
 
+                gt_barcode = cav["current_gt_barcode"]
+
                 # Apply physics according to scenario
                 if self.scenario == "DEFECT_SPIKE" and p_id == "CP-02":
                     # Severe Bladder Pressure Drop fault injection!
@@ -323,6 +325,16 @@ class PLCPipelineSimulator:
                     s_press = round(15.1 + random.gauss(0, 0.2), 1)
 
                 if state == "CURING":
+                    # Critical Check: A cavity without a green tire MUST NOT cure!
+                    if not gt_barcode:
+                        cursor.execute("""
+                            UPDATE curing_press_cavities
+                            SET state = 'EMPTY', cure_elapsed_seconds = 0,
+                                bladder_press_bar = 0.0, current_tire_serial = NULL
+                            WHERE press_id = ? AND cavity_side = ?
+                        """, (p_id, side))
+                        continue
+
                     new_elapsed = elapsed + int(self.tick_interval_sec)
                     if new_elapsed >= target:
                         # Cycle completed: transition to COMPLETED
@@ -340,19 +352,47 @@ class PLCPipelineSimulator:
                             WHERE press_id = ? AND cavity_side = ?
                         """, (new_elapsed, m_temp, b_press, s_press, p_id, side))
 
-                    # Log high-resolution telemetry point
+                    # Log high-resolution telemetry point with tire_code
                     cursor.execute("""
                         INSERT INTO curing_telemetry_history (
-                            press_id, cavity_side, timestamp, mold_temp, bladder_press, steam_press, phase
-                        ) VALUES (?, ?, ?, ?, ?, ?, 'HIGH_PRESSURE_CURE')
-                    """, (p_id, side, now_str, m_temp, b_press, s_press))
+                            press_id, cavity_side, timestamp, mold_temp, bladder_press, steam_press, phase, tire_code
+                        ) VALUES (?, ?, ?, ?, ?, ?, 'HIGH_PRESSURE_CURE', ?)
+                    """, (p_id, side, now_str, m_temp, b_press, s_press, gt_barcode))
 
                 elif state == "COMPLETED":
-                    # Automatic unload cured tire & trigger QC inspection directly into DB
-                    if random.random() < 0.35:
+                    # If ghost completed cavity without green tire, reset to EMPTY
+                    if not gt_barcode:
+                        cursor.execute("""
+                            UPDATE curing_press_cavities
+                            SET state = 'EMPTY', cure_elapsed_seconds = 0,
+                                bladder_press_bar = 0.0, current_tire_serial = NULL
+                            WHERE press_id = ? AND cavity_side = ?
+                        """, (p_id, side))
+                        continue
+
+                    # Automatic unload in background with realistic pacing
+                    if random.random() < 0.10:
                         self._simulate_curing_and_qc(cursor, p_id, side, cav, now_str)
 
-                curing_updates.append((p_id, side, m_temp, b_press))
+                elif state == "EMPTY":
+                    # Factory automation: If cavity is empty and green tires are waiting in buffer, auto-feed
+                    if self.total_ticks % 10 == 0:
+                        avail_gt = cursor.execute("""
+                            SELECT gt_barcode, sku FROM production_green_tires
+                            WHERE status IN ('BUILT', 'BUFFER')
+                            ORDER BY build_timestamp ASC LIMIT 1
+                        """).fetchone()
+                        if avail_gt:
+                            gt_code = avail_gt["gt_barcode"]
+                            cursor.execute("""
+                                UPDATE curing_press_cavities
+                                SET state = 'CURING', current_gt_barcode = ?, cure_elapsed_seconds = 0,
+                                    cure_start_time = ?, mold_temp_c = 170.0, bladder_press_bar = 21.0, steam_press_bar = 15.1
+                                WHERE press_id = ? AND cavity_side = ?
+                            """, (gt_code, now_str, p_id, side))
+                            cursor.execute("UPDATE production_green_tires SET status = 'IN_CURING' WHERE gt_barcode = ?", (gt_code,))
+
+                curing_updates.append((p_id, side, m_temp, b_press if state == "CURING" else 0.0))
 
             # Periodic Banbury Batch Telemetry (Every 8 ticks)
             if self.total_ticks % 8 == 0:
@@ -475,6 +515,17 @@ class PLCPipelineSimulator:
 
     def _simulate_curing_and_qc(self, cursor, p_id: str, side: str, cav: Any, now_str: str):
         """Unloads completed tire, stamps permanent serial, and runs QC auto-inspection."""
+        gt_barcode = cav["current_gt_barcode"] if isinstance(cav, dict) else cav["current_gt_barcode"]
+        if not gt_barcode:
+            cursor.execute("""
+                UPDATE curing_press_cavities
+                SET state = 'EMPTY', cure_elapsed_seconds = 0,
+                    mold_temp_c = 170.0, bladder_press_bar = 0.0, steam_press_bar = 15.0,
+                    current_gt_barcode = NULL, current_tire_serial = NULL
+                WHERE press_id = ? AND cavity_side = ?
+            """, (p_id, side))
+            return
+
         now = datetime.now()
         date_prefix = now.strftime('%Y%m%d')
 
@@ -483,34 +534,18 @@ class PLCPipelineSimulator:
         """, (f"{now.strftime('%Y-%m-%d')}%",)).fetchone()[0]
         tire_serial = f"VN-T-{date_prefix}-{(100 + count_cured + 1):05d}"
 
-        # Fetch an uncured green tire
-        gt_cand = cursor.execute("""
-            SELECT gt_barcode FROM production_green_tires
-            WHERE gt_barcode NOT IN (SELECT gt_barcode FROM production_cured_tires)
-            ORDER BY build_timestamp ASC LIMIT 1
-        """).fetchone()
-
-        if not gt_cand:
-            # Generate a new green tire right away so curing can proceed
-            self._simulate_tbm_green_tire_build(cursor, now_str)
-            gt_cand = cursor.execute("""
-                SELECT gt_barcode FROM production_green_tires
-                WHERE gt_barcode NOT IN (SELECT gt_barcode FROM production_cured_tires)
-                ORDER BY build_timestamp DESC LIMIT 1
-            """).fetchone()
-
-        gt_barcode = gt_cand["gt_barcode"] if gt_cand else None
-        if not gt_barcode:
-            return
+        # Fetch SKU from green tire
+        gt_row = cursor.execute("SELECT sku FROM production_green_tires WHERE gt_barcode = ?", (gt_barcode,)).fetchone()
+        sku = gt_row["sku"] if gt_row else "PCR-205-55R16-91V"
 
         cursor.execute("""
             INSERT OR REPLACE INTO production_cured_tires (
                 tire_serial, gt_barcode, sku, press_id, cavity_side, mold_id,
                 curing_recipe_id, cure_start_time, cure_end_time, actual_cure_sec,
                 avg_mold_temp_c, avg_bladder_press_bar, cure_quality_result, status
-            ) VALUES (?, ?, 'PCR-205-55R16-91V', ?, ?, 'MOLD-PCR-01', 'RCP-PCR-205-55R16',
+            ) VALUES (?, ?, ?, ?, ?, 'MOLD-PCR-01', 'RCP-PCR-205-55R16',
                       ?, ?, 780, 170.0, 21.0, 'PASS', 'INSPECTED')
-        """, (tire_serial, gt_barcode, p_id, side, now_str, now_str))
+        """, (tire_serial, gt_barcode, sku, p_id, side, now_str, now_str))
 
         cursor.execute("UPDATE production_green_tires SET status = 'CURED' WHERE gt_barcode = ?", (gt_barcode,))
 
@@ -539,12 +574,13 @@ class PLCPipelineSimulator:
             rfv, grade, passed
         ))
 
+        # Reset cavity to EMPTY (awaiting next green tire load)
         cursor.execute("""
             UPDATE curing_press_cavities
-            SET state = 'CURING', cure_elapsed_seconds = 0,
-                mold_temp_c = 170.0, bladder_press_bar = 21.0, steam_press_bar = 15.1,
+            SET state = 'EMPTY', cure_elapsed_seconds = 0,
+                mold_temp_c = 170.0, bladder_press_bar = 0.0, steam_press_bar = 15.0,
                 bladder_cycle_count = bladder_cycle_count + 1,
-                current_gt_barcode = NULL
+                current_gt_barcode = NULL, current_tire_serial = NULL
             WHERE press_id = ? AND cavity_side = ?
         """, (p_id, side))
 

@@ -62,11 +62,12 @@ def simulator_tick():
                         WHERE press_id = ? AND cavity_side = ?
                     """, (new_elapsed, new_temp, new_bladder, new_steam, press_id, side))
 
-                # Log telemetry point
+                # Log telemetry point with tire_code
+                gt_barcode = cav["current_gt_barcode"]
                 cursor.execute("""
-                    INSERT INTO curing_telemetry_history (press_id, cavity_side, timestamp, mold_temp, bladder_press, steam_press, phase)
-                    VALUES (?, ?, ?, ?, ?, ?, 'HIGH_PRESSURE_CURE')
-                """, (press_id, side, now_str, new_temp, new_bladder, new_steam))
+                    INSERT INTO curing_telemetry_history (press_id, cavity_side, timestamp, mold_temp, bladder_press, steam_press, phase, tire_code)
+                    VALUES (?, ?, ?, ?, ?, ?, 'HIGH_PRESSURE_CURE', ?)
+                """, (press_id, side, now_str, new_temp, new_bladder, new_steam, gt_barcode))
 
 
 from app.services.plc_pipeline_simulator import plc_pipeline

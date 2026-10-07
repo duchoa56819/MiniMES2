@@ -30,12 +30,34 @@ def list_curing_cavities():
         result = []
         for r in rows:
             d = dict(r)
+            # Enforce clean state: if no green tire loaded, cavity must be EMPTY
+            if not d.get("current_gt_barcode") and d.get("state") == "CURING":
+                d["state"] = "EMPTY"
+                d["cure_elapsed_seconds"] = 0
+                d["bladder_press_bar"] = 0.0
             target = d["cure_target_seconds"]
             elapsed = d["cure_elapsed_seconds"]
             d["progress_percent"] = min(100.0, round((elapsed / target * 100), 1)) if target > 0 else 0.0
             d["remaining_seconds"] = max(0, target - elapsed)
             result.append(d)
         return result
+
+
+@router.get("/available-green-tires")
+def get_available_green_tires():
+    """Returns green tires that have been built but not yet cured or loaded into curing."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        rows = cursor.execute("""
+            SELECT gt.gt_barcode, gt.wo_id, gt.sku, gt.build_timestamp, gt.actual_weight_kg,
+                   p.tire_size, p.pattern_name
+            FROM production_green_tires gt
+            JOIN master_products p ON gt.sku = p.sku
+            WHERE gt.status IN ('BUILT', 'BUFFER')
+            ORDER BY gt.build_timestamp DESC
+            LIMIT 20
+        """).fetchall()
+        return [dict(r) for r in rows]
 
 
 @router.post("/load")
@@ -147,8 +169,14 @@ def simulate_fast_cure(req: CuringStartRequest):
             WHERE press_id = ? AND cavity_side = ?
         """, (req.press_id, req.cavity_side)).fetchone()
 
-        if not cav or cav["state"] not in ("CURING", "LOADED"):
-            raise HTTPException(status_code=400, detail="Hộc khuôn không ở trạng thái lưu hóa!")
+        if not cav:
+            raise HTTPException(status_code=404, detail="Không tìm thấy hộc khuôn lưu hóa!")
+
+        if not cav["current_gt_barcode"]:
+            raise HTTPException(status_code=400, detail="Hộc khuôn hiện chưa nạp lốp sống (EMPTY)! Vui lòng bấm '+ Nạp Lốp Sống' trước khi lưu hóa.")
+
+        if cav["state"] not in ("CURING", "LOADED"):
+            raise HTTPException(status_code=400, detail=f"Hộc khuôn đang ở trạng thái {cav['state']}, không thể tua nhanh!")
 
         target = cav["cure_target_seconds"]
         cursor.execute("""
@@ -159,7 +187,11 @@ def simulate_fast_cure(req: CuringStartRequest):
             WHERE press_id = ? AND cavity_side = ?
         """, (target, req.press_id, req.cavity_side))
 
-        return {"success": True, "message": f"Đã mô phỏng hoàn tất lưu hóa lò {req.press_id}-{req.cavity_side}!"}
+        return {
+            "success": True,
+            "message": f"Đã tua nhanh hoàn tất lưu hóa lò {req.press_id}-{req.cavity_side}! Lốp {cav['current_gt_barcode']} đã chín 100%, sẵn sàng dỡ khuôn.",
+            "gt_barcode": cav["current_gt_barcode"]
+        }
 
 
 @router.post("/unload")

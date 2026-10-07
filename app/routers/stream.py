@@ -72,7 +72,7 @@ def get_stream_stats():
 
         # Latest 12 points
         latest_rows = cursor.execute("""
-            SELECT id, press_id, cavity_side, timestamp, mold_temp, bladder_press, steam_press, phase
+            SELECT id, press_id, cavity_side, timestamp, mold_temp, bladder_press, steam_press, phase, tire_code
             FROM curing_telemetry_history
             ORDER BY id DESC LIMIT 12
         """).fetchall()

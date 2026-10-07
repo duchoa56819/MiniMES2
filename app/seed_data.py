@@ -401,9 +401,9 @@ def seed_database():
         telemetry = []
         for minute in range(20):
             t_str = (now - timedelta(minutes=20 - minute)).strftime("%Y-%m-%d %H:%M:%S")
-            telemetry.append(("CP-01", "L", t_str, 170.0 + (minute % 3)*0.2 - 0.1, 21.0 + (minute % 2)*0.1, 15.2, "HIGH_PRESSURE_CURE"))
-            telemetry.append(("CP-01", "R", t_str, 169.8 + (minute % 4)*0.15, 20.9 + (minute % 3)*0.1, 15.1, "HIGH_PRESSURE_CURE"))
-        cursor.executemany("INSERT INTO curing_telemetry_history (press_id, cavity_side, timestamp, mold_temp, bladder_press, steam_press, phase) VALUES (?, ?, ?, ?, ?, ?, ?)", telemetry)
+            telemetry.append(("CP-01", "L", t_str, 170.0 + (minute % 3)*0.2 - 0.1, 21.0 + (minute % 2)*0.1, 15.2, "HIGH_PRESSURE_CURE", "GT-202610-0019"))
+            telemetry.append(("CP-01", "R", t_str, 169.8 + (minute % 4)*0.15, 20.9 + (minute % 3)*0.1, 15.1, "HIGH_PRESSURE_CURE", "GT-202610-0020"))
+        cursor.executemany("INSERT INTO curing_telemetry_history (press_id, cavity_side, timestamp, mold_temp, bladder_press, steam_press, phase, tire_code) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", telemetry)
 
         # =====================================================================
         # 14. INDUSTRIAL PROTOCOL GATEWAY CONNECTORS

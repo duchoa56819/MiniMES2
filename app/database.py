@@ -361,7 +361,8 @@ def init_db(force: bool = False):
                 mold_temp REAL NOT NULL,
                 bladder_press REAL NOT NULL,
                 steam_press REAL NOT NULL,
-                phase TEXT CHECK(phase IN ('SHAPING', 'HIGH_PRESSURE_CURE', 'EXHAUST', 'IDLE')) NOT NULL
+                phase TEXT CHECK(phase IN ('SHAPING', 'HIGH_PRESSURE_CURE', 'EXHAUST', 'IDLE')) NOT NULL,
+                tire_code TEXT
             );
 
             CREATE TABLE IF NOT EXISTS gateway_connectors (
@@ -567,6 +568,22 @@ def init_db(force: bool = False):
             CREATE INDEX IF NOT EXISTS idx_graph_runs_suspect ON graph_risk_propagation_runs(suspect_node_id);
             CREATE INDEX IF NOT EXISTS idx_graph_scores_run ON graph_order_risk_scores(run_id);
         """)
+
+        # Migration: ensure tire_code column exists in curing_telemetry_history
+        try:
+            cursor.execute("ALTER TABLE curing_telemetry_history ADD COLUMN tire_code TEXT")
+        except Exception:
+            pass
+
+        # Sanity check: Ensure empty cavities without green tires are not stuck in CURING state
+        try:
+            cursor.execute("""
+                UPDATE curing_press_cavities
+                SET state = 'EMPTY', cure_elapsed_seconds = 0, bladder_press_bar = 0.0, current_tire_serial = NULL
+                WHERE (current_gt_barcode IS NULL OR current_gt_barcode = '') AND state = 'CURING'
+            """)
+        except Exception:
+            pass
 
 
 if __name__ == "__main__":

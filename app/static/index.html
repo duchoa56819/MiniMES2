@@ -516,7 +516,15 @@
         <div style="display: grid; grid-template-columns: 1fr 1.8fr; gap: 1.5rem;">
           <!-- Left: Inspection Queue -->
           <div>
-            <h4 style="color: var(--text-primary); font-size: 0.9rem; font-weight: 600; margin-bottom: 0.75rem;">HÀNG ĐỢI LỐP CHỜ KIỂM TRA</h4>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+              <h4 style="color: var(--text-primary); font-size: 0.9rem; font-weight: 600; margin: 0;">HÀNG ĐỢI LỐP CHỜ KIỂM TRA</h4>
+              <span id="badge-qc-queue" class="status-pill pill-amber" style="font-size: 0.7rem;">0</span>
+            </div>
+
+            <button class="btn btn-secondary btn-sm" style="width: 100%; margin-bottom: 0.75rem; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 0.4rem;" onclick="runAutoPilotQueue()">
+              <span>🤖</span> Phân Loại Tự Động Toàn Bộ (Auto-Pilot)
+            </button>
+
             <div id="inspection-queue-list" style="max-height: 520px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.5rem;">
               <!-- Populated by JS -->
             </div>
@@ -529,40 +537,186 @@
             </div>
 
             <div id="qc-active-form" style="display: none;">
-              <!-- Tire header -->
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border-color);">
+              <!-- Tire header & Automated Scanner Toolbar -->
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border-color); flex-wrap: wrap; gap: 0.75rem;">
                 <div>
-                  <h3 id="qc-tire-serial" style="color: var(--m365-blue); font-family: var(--font-mono); font-size: 1.15rem;">VN-T-XXXXX</h3>
-                  <div id="qc-tire-desc" style="font-size: 0.85rem; color: var(--text-secondary);">205/55R16 TURBO-GRIP T7</div>
-                </div>
-                <div style="text-align: right;">
-                  <div style="font-size: 0.75rem; color: var(--text-muted);">NGUỒN LƯU HÓA:</div>
-                  <div id="qc-press-origin" style="font-weight: 700; color: var(--text-primary);">CP-01 L</div>
-                </div>
-              </div>
-
-              <!-- Inspector Selector -->
-              <div class="form-group">
-                <label class="form-label">Kiểm Nghiệm Viên (Inspector)</label>
-                <select class="form-control" id="qc-inspector-select">
-                  <option value="OP-3001">OP-3001: Đỗ Thị Mai (KCS Trưởng - Bậc 5/5)</option>
-                  <option value="OP-3002">OP-3002: Hoàng Đức Trọng (Chuyên Viên X-Ray - Bậc 4/5)</option>
-                </select>
-              </div>
-
-              <!-- Test 1: Visual Inspection -->
-              <div style="background: #ffffff; padding: 1rem; border-radius: 4px; border: 1px solid var(--border-color); margin-bottom: 1rem;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                  <strong style="color: var(--text-primary); font-size: 0.88rem;">1. Kiểm Tra Ngoại Quan (Visual Test)</strong>
-                  <div>
-                    <label style="margin-right: 1rem;"><input type="radio" name="qc-visual-radio" value="PASS" checked onchange="toggleVisualDefectUI()"> Đạt (Pass)</label>
-                    <label><input type="radio" name="qc-visual-radio" value="FAIL" onchange="toggleVisualDefectUI()"> Không Đạt (Fail)</label>
+                  <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <h3 id="qc-tire-serial" style="color: var(--m365-blue); font-family: var(--font-mono); font-size: 1.15rem; margin: 0;">VN-T-XXXXX</h3>
+                    <span id="qc-live-status-pill" class="status-pill pill-blue">Đang kiểm định</span>
+                  </div>
+                  <div id="qc-tire-desc" style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 2px;">205/55R16 TURBO-GRIP T7</div>
+                  <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">
+                    Nguồn lò: <strong id="qc-press-origin" style="color: var(--text-primary);">CP-01 L</strong>
                   </div>
                 </div>
 
-                <div id="qc-visual-defect-row" style="display: none; margin-top: 0.75rem;">
-                  <div class="form-group">
-                    <label class="form-label">Mã Lỗi Ngoại Quan</label>
+                <!-- Fast Auto-Scan Action Controls -->
+                <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                  <select class="form-control" id="qc-scan-scenario" style="width: auto; font-size: 0.8rem; padding: 0.35rem 0.6rem; max-width: 210px;" onchange="triggerAutoScan()">
+                    <option value="AUTO">⚡ Tự động (Theo thực tế)</option>
+                    <option value="NORMAL">🟢 Đạt Chuẩn OE Hạng A</option>
+                    <option value="DEFECT_VISUAL">🟡 Thử Lỗi Ngoại Quan (Bavia)</option>
+                    <option value="DEFECT_XRAY">🔴 Thử Lỗi X-Ray (Lệch Mành)</option>
+                    <option value="DEFECT_UNIFORMITY">🟠 Thử Lỗi TUG (RFV Cao)</option>
+                    <option value="DEFECT_BALANCE">🟣 Thử Mất Cân Bằng (Rework)</option>
+                  </select>
+                  <button class="btn btn-primary btn-sm" id="btn-trigger-auto-scan" style="display: flex; align-items: center; gap: 0.35rem; font-weight: 600;" onclick="triggerAutoScan()">
+                    <span>⚡</span> Quét Lại AI & Sensor
+                  </button>
+                </div>
+              </div>
+
+              <!-- Scanning Progress Animation Banner -->
+              <div id="qc-scan-loading-banner" style="display: none; background: var(--color-blue-bg); border: 1px solid var(--color-blue-border); padding: 0.6rem 0.85rem; border-radius: 4px; margin-bottom: 1rem; font-size: 0.82rem; color: var(--m365-blue); align-items: center; gap: 0.5rem;">
+                <span style="font-weight: 600;">⚡</span>
+                <span id="qc-scan-loading-text">Đang kích hoạt camera AI Vision 360°, máy soi X-Ray và cảm biến lực TUG...</span>
+              </div>
+
+              <!-- 1. AI COMPUTER VISION 360° -->
+              <div style="background: #ffffff; padding: 0.9rem; border-radius: 4px; border: 1px solid var(--border-color); margin-bottom: 0.85rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem;">
+                  <div>
+                    <strong style="color: var(--text-primary); font-size: 0.88rem;">1. Kiểm Tra Ngoại Quan - AI Computer Vision 360°</strong>
+                    <div style="font-size: 0.72rem; color: var(--text-muted);">Mô hình YOLO-v8 TireVision (v3.2) &bull; 4 Camera Quang Học Cấp Độ Công Nghiệp</div>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span style="font-size: 0.75rem; color: var(--text-secondary);">Độ tin cậy: <strong id="ai-vision-confidence-val" style="color: var(--m365-blue);">99.4%</strong></span>
+                    <span id="ai-vision-badge" class="status-pill pill-green">ĐẠT (PASS)</span>
+                  </div>
+                </div>
+
+                <!-- 4 Cameras Grid -->
+                <div id="ai-vision-cameras-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; margin-bottom: 0.4rem;">
+                  <!-- Cam items rendered by JS -->
+                </div>
+
+                <div id="ai-vision-defect-detail" style="display: none; margin-top: 0.5rem; background: var(--color-red-bg); border: 1px solid var(--color-red-border); padding: 0.45rem 0.65rem; border-radius: 4px; font-size: 0.78rem; color: var(--color-red);">
+                  <strong>Phát hiện khuyết tật:</strong> <span id="ai-vision-defect-desc">--</span>
+                </div>
+              </div>
+
+              <!-- 2. X-RAY AUTOMATED DEFECT RECOGNITION (ADR) -->
+              <div style="background: #ffffff; padding: 0.9rem; border-radius: 4px; border: 1px solid var(--border-color); margin-bottom: 0.85rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem;">
+                  <div>
+                    <strong style="color: var(--text-primary); font-size: 0.88rem;">2. Soi Cấu Trúc Ngầm - Máy Soi X-Ray ADR (Tự Động)</strong>
+                    <div style="font-size: 0.72rem; color: var(--text-muted);">Yxlon Radiographic Neural ADR &bull; Điện áp bóng phát 160kV &bull; Quét cắt lớp vi mô</div>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span style="font-size: 0.75rem; color: var(--text-secondary);">Độ tin cậy: <strong id="xray-adr-confidence-val" style="color: var(--m365-blue);">99.2%</strong></span>
+                    <span id="xray-adr-badge" class="status-pill pill-green">KẾT CẤU CHUẨN</span>
+                  </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 0.75rem; font-size: 0.82rem; background: var(--bg-subtle); padding: 0.6rem 0.75rem; border-radius: 4px; border: 1px solid var(--border-color);">
+                  <div>
+                    <div style="font-size: 0.72rem; color: var(--text-muted);">ĐỘ LỆCH MÉP MÀNH (BELT ALIGNMENT)</div>
+                    <div style="display: flex; align-items: baseline; gap: 0.35rem; margin-top: 2px;">
+                      <strong id="xray-belt-align-disp" style="font-size: 1.05rem; font-family: var(--font-mono); color: var(--m365-blue);">0.22 mm</strong>
+                      <span style="font-size: 0.72rem; color: var(--text-secondary);">(Chuẩn OE &le; 0.8mm)</span>
+                    </div>
+                  </div>
+                  <div>
+                    <div style="font-size: 0.72rem; color: var(--text-muted);">MẬT ĐỘ MÀNH THÉP</div>
+                    <div style="font-size: 0.95rem; font-weight: 600; margin-top: 2px; color: var(--text-primary);" id="xray-cord-disp">28.5 CPI</div>
+                  </div>
+                  <div>
+                    <div style="font-size: 0.72rem; color: var(--text-muted);">DỊ VẬT KIM LOẠI</div>
+                    <div style="font-size: 0.85rem; font-weight: 600; margin-top: 2px; color: var(--color-green);" id="xray-foreign-disp">Không phát hiện</div>
+                  </div>
+                </div>
+
+                <div id="xray-defect-detail" style="display: none; margin-top: 0.5rem; background: var(--color-red-bg); border: 1px solid var(--color-red-border); padding: 0.45rem 0.65rem; border-radius: 4px; font-size: 0.78rem; color: var(--color-red);">
+                  <strong>Khuyết tật mành:</strong> <span id="xray-defect-desc">--</span>
+                </div>
+              </div>
+
+              <!-- 3. TIRE UNIFORMITY (TUG) & DYNAMIC BALANCING -->
+              <div style="background: #ffffff; padding: 0.9rem; border-radius: 4px; border: 1px solid var(--border-color); margin-bottom: 0.85rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem;">
+                  <div>
+                    <strong style="color: var(--text-primary); font-size: 0.88rem;">3. Độ Đồng Đều TUG & Cân Bằng Động (Sensor Telemetry)</strong>
+                    <div style="font-size: 0.72rem; color: var(--text-muted);">Cảm biến Piezoelectric mâm kẹp quay 60 rpm &bull; Áp suất bơm căng 2.2 bar</div>
+                  </div>
+                  <span id="tug-status-badge" class="status-pill pill-green">ĐẠT CHUẨN ĐỘNG HỌC</span>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem;">
+                  <div style="background: var(--bg-subtle); padding: 0.6rem; border-radius: 4px; border: 1px solid var(--border-color);">
+                    <div style="font-size: 0.72rem; color: var(--text-muted);">LỰC HƯỚNG TÂM RFV</div>
+                    <div style="display: flex; align-items: baseline; gap: 0.35rem; margin-top: 2px;">
+                      <strong id="disp-rfv" style="font-size: 1.05rem; font-family: var(--font-mono); color: var(--text-primary);">42.5 N</strong>
+                      <span style="font-size: 0.72rem; color: var(--text-secondary);">&le; 80N</span>
+                    </div>
+                  </div>
+                  <div style="background: var(--bg-subtle); padding: 0.6rem; border-radius: 4px; border: 1px solid var(--border-color);">
+                    <div style="font-size: 0.72rem; color: var(--text-muted);">LỰC PHƯƠNG NGANG LFV</div>
+                    <div style="display: flex; align-items: baseline; gap: 0.35rem; margin-top: 2px;">
+                      <strong id="disp-lfv" style="font-size: 1.05rem; font-family: var(--font-mono); color: var(--text-primary);">17.8 N</strong>
+                      <span style="font-size: 0.72rem; color: var(--text-secondary);">&le; 35N</span>
+                    </div>
+                  </div>
+                  <div style="background: var(--bg-subtle); padding: 0.6rem; border-radius: 4px; border: 1px solid var(--border-color);">
+                    <div style="font-size: 0.72rem; color: var(--text-muted);">MẤT CÂN BẰNG ĐỘNG</div>
+                    <div style="display: flex; align-items: baseline; gap: 0.35rem; margin-top: 2px;">
+                      <strong id="disp-balance" style="font-size: 1.05rem; font-family: var(--font-mono); color: var(--text-primary);">14.5 g</strong>
+                      <span style="font-size: 0.72rem; color: var(--text-secondary);">&le; 30g</span>
+                    </div>
+                    <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 2px;">Chấm sơn vàng: <span id="disp-balance-angle" style="font-weight: 600;">138°</span></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 4. AUTOMATED SORTER DECISION & GATE ROUTING -->
+              <div style="background: var(--color-blue-bg); border: 1px solid var(--color-blue-border); padding: 0.85rem; border-radius: 4px; margin-bottom: 1rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+                  <strong style="color: var(--m365-blue); font-size: 0.88rem;">KẾT LUẬN PHÂN LOẠI & ĐIỀU HƯỚNG BĂNG TẢI (AUTOMATED SORTER)</strong>
+                  <span id="disp-final-grade" class="status-pill pill-green" style="font-size: 0.85rem; font-weight: 700;">HẠNG A (OE FIRST CLASS)</span>
+                </div>
+                <div style="font-size: 0.82rem; color: var(--text-primary); margin-bottom: 0.25rem;">
+                  <strong>Hướng rẽ băng tải tự động:</strong> <span id="disp-sorter-lane" style="color: var(--m365-blue); font-weight: 600;">Băng tải 1: Đẩy sang Kho Thành Phẩm Thông Minh (ASRS)</span>
+                </div>
+                <div id="disp-notes" style="font-size: 0.78rem; color: var(--text-secondary);">Đạt 100% tiêu chuẩn chất lượng OE First-Class xuất khẩu</div>
+              </div>
+
+              <!-- Primary Submit Button -->
+              <button class="btn btn-primary btn-lg" style="width: 100%; font-weight: 600; display: flex; justify-content: center; align-items: center; gap: 0.5rem;" onclick="submitQCInspection()">
+                <span>✓</span> Phê Duyệt & Kích Hoạt Tay Gạt Phân Loại (Commit to MES)
+              </button>
+
+              <!-- Optional Manual Override Section (Details/Collapse) -->
+              <details style="margin-top: 0.85rem; border: 1px solid var(--border-color); border-radius: 4px; background: #ffffff;">
+                <summary style="cursor: pointer; padding: 0.6rem 0.85rem; font-size: 0.8rem; color: var(--text-secondary); font-weight: 600; user-select: none;">
+                  ⚙ Bảng Can Thiệp Thủ Công (KCS Supervisor Manual Override)
+                </summary>
+                <div style="padding: 0.85rem; border-top: 1px solid var(--border-color);">
+                  <div class="form-group" style="margin-bottom: 0.75rem;">
+                    <label class="form-label">Kiểm Nghiệm Viên (Inspector)</label>
+                    <select class="form-control" id="qc-inspector-select">
+                      <option value="OP-3001">OP-3001: Đỗ Thị Mai (KCS Trưởng - Bậc 5/5)</option>
+                      <option value="OP-3002">OP-3002: Hoàng Đức Trọng (Chuyên Viên X-Ray - Bậc 4/5)</option>
+                    </select>
+                  </div>
+
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
+                    <div>
+                      <label class="form-label">Ngoại quan thủ công</label>
+                      <div style="margin-top: 4px;">
+                        <label style="margin-right: 1rem;"><input type="radio" name="qc-visual-radio" value="PASS" checked onchange="toggleVisualDefectUI()"> Đạt</label>
+                        <label><input type="radio" name="qc-visual-radio" value="FAIL" onchange="toggleVisualDefectUI()"> Lỗi</label>
+                      </div>
+                    </div>
+                    <div>
+                      <label class="form-label">X-Ray thủ công</label>
+                      <div style="margin-top: 4px;">
+                        <label style="margin-right: 1rem;"><input type="radio" name="qc-xray-radio" value="PASS" checked onchange="toggleXrayDefectUI()"> Đạt</label>
+                        <label><input type="radio" name="qc-xray-radio" value="FAIL" onchange="toggleXrayDefectUI()"> Lỗi</label>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div id="qc-visual-defect-row" style="display: none; margin-bottom: 0.75rem;">
+                    <label class="form-label">Mã lỗi ngoại quan</label>
                     <select class="form-control" id="qc-visual-defect-select">
                       <option value="DEF-VIS-01">DEF-VIS-01: Bọt khí hông lốp (Critical -> Scrap)</option>
                       <option value="DEF-VIS-02">DEF-VIS-02: Lệch tâm gai mặt lốp (Major -> Grade B)</option>
@@ -570,65 +724,38 @@
                       <option value="DEF-VIS-04">DEF-VIS-04: Biến dạng móp tanh lốp (Critical -> Scrap)</option>
                       <option value="DEF-VIS-05">DEF-VIS-05: Khuyết cao su hoa gai (Major -> Grade B)</option>
                     </select>
+                    <input type="text" class="form-control" id="qc-visual-location" placeholder="Vị trí lỗi..." style="margin-top: 4px;">
                   </div>
-                  <div class="form-group">
-                    <label class="form-label">Vị trí khuyết tật</label>
-                    <input type="text" class="form-control" id="qc-visual-location" placeholder="Ví dụ: Hông lốp góc 90 độ, Vai lốp...">
-                  </div>
-                </div>
-              </div>
 
-              <!-- Test 2: X-Ray Inspection -->
-              <div style="background: #ffffff; padding: 1rem; border-radius: 4px; border: 1px solid var(--border-color); margin-bottom: 1rem;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                  <strong style="color: var(--text-primary); font-size: 0.88rem;">2. Soi Cấu Trúc X-Ray (X-Ray Inspection)</strong>
-                  <div>
-                    <label style="margin-right: 1rem;"><input type="radio" name="qc-xray-radio" value="PASS" checked onchange="toggleXrayDefectUI()"> Đạt (Pass)</label>
-                    <label><input type="radio" name="qc-xray-radio" value="FAIL" onchange="toggleXrayDefectUI()"> Lỗi Mành (Fail)</label>
-                  </div>
-                </div>
-
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 0.5rem;">
-                  <div class="form-group">
-                    <label class="form-label">Độ lệch mép mành Belt (mm)</label>
-                    <input type="number" step="0.1" class="form-control" id="qc-belt-align" value="0.2">
-                  </div>
-                  <div id="qc-xray-defect-col" style="display: none;">
-                    <label class="form-label">Mã Lỗi X-Ray</label>
+                  <div id="qc-xray-defect-col" style="display: none; margin-bottom: 0.75rem;">
+                    <label class="form-label">Mã lỗi X-Ray</label>
                     <select class="form-control" id="qc-xray-defect-select">
                       <option value="DEF-XRAY-01">DEF-XRAY-01: Đè mép mành thép (Critical -> Scrap)</option>
                       <option value="DEF-XRAY-02">DEF-XRAY-02: Dãn cách mành không đều (Major -> Grade B)</option>
                       <option value="DEF-XRAY-03">DEF-XRAY-03: Dị vật kim loại (Critical -> Scrap)</option>
                     </select>
                   </div>
-                </div>
-              </div>
 
-              <!-- Test 3: Uniformity & Dynamic Balancing (UF) -->
-              <div style="background: #ffffff; padding: 1rem; border-radius: 4px; border: 1px solid var(--border-color); margin-bottom: 1rem;">
-                <strong style="color: var(--text-primary); font-size: 0.88rem; display: block; margin-bottom: 0.5rem;">
-                  3. Độ Đồng Đều & Cân Bằng Động (UF / Dynamic Balancing)
-                </strong>
-                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem;">
-                  <div class="form-group">
-                    <label class="form-label">Lực RFV (N) [&le; 80N]</label>
-                    <input type="number" step="0.5" class="form-control" id="qc-rfv" value="42.5">
-                  </div>
-                  <div class="form-group">
-                    <label class="form-label">Lực LFV (N)</label>
-                    <input type="number" step="0.5" class="form-control" id="qc-lfv" value="18.0">
-                  </div>
-                  <div class="form-group">
-                    <label class="form-label">Mất cân bằng (g) [&le; 30g]</label>
-                    <input type="number" step="0.5" class="form-control" id="qc-balance" value="15.0">
+                  <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 0.5rem;">
+                    <div>
+                      <label class="form-label">Belt Align (mm)</label>
+                      <input type="number" step="0.05" class="form-control" id="qc-belt-align" value="0.2">
+                    </div>
+                    <div>
+                      <label class="form-label">RFV (N)</label>
+                      <input type="number" step="0.5" class="form-control" id="qc-rfv" value="42.5">
+                    </div>
+                    <div>
+                      <label class="form-label">LFV (N)</label>
+                      <input type="number" step="0.5" class="form-control" id="qc-lfv" value="18.0">
+                    </div>
+                    <div>
+                      <label class="form-label">Cân bằng (g)</label>
+                      <input type="number" step="0.5" class="form-control" id="qc-balance" value="15.0">
+                    </div>
                   </div>
                 </div>
-              </div>
-
-              <!-- Submit Button -->
-              <button class="btn btn-primary btn-lg" style="width: 100%;" onclick="submitQCInspection()">
-                Xác Nhận Kết Quả KCS & Phân Loại Cấp Hạng
-              </button>
+              </details>
             </div>
           </div>
         </div>

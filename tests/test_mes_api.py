@@ -164,6 +164,16 @@ def test_06_quality_inspection_grading():
     assert grade_data["passed"] is True
     print(f"[PASS] Quality Gate: Tire {tire_serial} evaluated to {grade_data['final_grade']}")
 
+    # Test Auto-Scan simulation endpoint (Industry 4.0 AI Vision & X-Ray ADR)
+    scan_res = client.get(f"/api/quality/auto-scan/{tire_serial}?scenario=NORMAL")
+    assert scan_res.status_code == 200
+    scan_data = scan_res.json()
+    assert scan_data["ai_vision"]["result"] == "PASS"
+    assert scan_data["xray_adr"]["result"] == "PASS"
+    assert scan_data["predicted_grade"] == "GRADE_A"
+    assert "LANE_1_WAREHOUSE_ASRS" in scan_data["sorter"]["lane"]
+    print(f"[PASS] AI Vision & X-Ray ADR Auto-Scan: {tire_serial} verified (AI: {scan_data['ai_vision']['confidence_pct']}%, ADR: {scan_data['xray_adr']['confidence_pct']}%)")
+
 
 def test_07_full_genealogy_passport():
     tire_serial = "VN-T-202610-00101"

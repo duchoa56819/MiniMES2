@@ -1199,21 +1199,228 @@ async function selectTireForQC(tireSerial) {
     document.getElementById('qc-active-form').style.display = 'block';
 
     document.getElementById('qc-tire-serial').textContent = tire.tire_serial;
-    document.getElementById('qc-tire-desc').textContent = `${tire.tire_size} &bull; ${tire.pattern_name} &bull; ${tire.segment}`;
+    document.getElementById('qc-tire-desc').textContent = `${tire.tire_size} • ${tire.pattern_name} • ${tire.segment}`;
     document.getElementById('qc-press-origin').textContent = `${tire.press_id} (Hộc ${tire.cavity_side})`;
 
-    // Reset fields to standard pass defaults
-    document.querySelector('input[name="qc-visual-radio"][value="PASS"]').checked = true;
-    document.querySelector('input[name="qc-xray-radio"][value="PASS"]').checked = true;
-    toggleVisualDefectUI();
-    toggleXrayDefectUI();
-
-    document.getElementById('qc-belt-align').value = '0.2';
-    document.getElementById('qc-rfv').value = '42.5';
-    document.getElementById('qc-lfv').value = '18.0';
-    document.getElementById('qc-balance').value = '15.0';
+    // Automatically trigger realistic AI Vision & Sensor Scan
+    await triggerAutoScan();
   } catch (err) {
     console.error('Error selecting QC tire:', err);
+  }
+}
+
+async function triggerAutoScan() {
+  if (!state.selectedQcTire) return;
+
+  const tireSerial = state.selectedQcTire.tire_serial;
+  const scenarioSelect = document.getElementById('qc-scan-scenario');
+  const scenario = scenarioSelect ? scenarioSelect.value : 'AUTO';
+
+  const banner = document.getElementById('qc-scan-loading-banner');
+  if (banner) banner.style.display = 'flex';
+
+  try {
+    const res = await fetch(`/api/quality/auto-scan/${tireSerial}?scenario=${scenario}`);
+    if (!res.ok) {
+      throw new Error(`Server returned ${res.status}`);
+    }
+    const data = await res.json();
+    state.activeScanResult = data;
+
+    // 1. Render AI Vision 360° Cameras
+    const aiConfEl = document.getElementById('ai-vision-confidence-val');
+    if (aiConfEl) aiConfEl.textContent = `${data.ai_vision.confidence_pct}%`;
+
+    const aiBadge = document.getElementById('ai-vision-badge');
+    if (aiBadge) {
+      if (data.ai_vision.result === 'PASS') {
+        aiBadge.textContent = 'ĐẠT (PASS)';
+        aiBadge.className = 'status-pill pill-green';
+      } else {
+        aiBadge.textContent = 'PHÁT HIỆN LỖI';
+        aiBadge.className = 'status-pill pill-red';
+      }
+    }
+
+    const camGrid = document.getElementById('ai-vision-cameras-grid');
+    if (camGrid && data.ai_vision.cameras) {
+      const camIcons = {
+        'CAM-01': '🔍',
+        'CAM-02': '📷',
+        'CAM-03': '📷',
+        'CAM-04': '🔘'
+      };
+      camGrid.innerHTML = data.ai_vision.cameras.map(c => `
+        <div style="background: ${c.status === 'PASS' ? 'var(--bg-subtle)' : 'var(--color-red-bg)'}; border: 1px solid ${c.status === 'PASS' ? 'var(--border-color)' : 'var(--color-red-border)'}; border-radius: 4px; padding: 0.5rem; text-align: center;">
+          <div style="font-size: 1.15rem; margin-bottom: 2px;">${camIcons[c.cam_id] || '📷'}</div>
+          <div style="font-size: 0.72rem; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${c.name}</div>
+          <div style="margin-top: 4px;">
+            <span class="status-pill ${c.status === 'PASS' ? 'pill-green' : 'pill-red'}" style="font-size: 0.65rem; padding: 0.15rem 0.4rem;">${c.status === 'PASS' ? '✓ ĐẠT' : '✗ LỖI'}</span>
+          </div>
+          <div style="font-size: 0.65rem; color: var(--text-muted); margin-top: 3px;">Tin cậy: ${c.confidence}%</div>
+        </div>
+      `).join('');
+    }
+
+    const aiDefectBox = document.getElementById('ai-vision-defect-detail');
+    const aiDefectDesc = document.getElementById('ai-vision-defect-desc');
+    if (aiDefectBox && aiDefectDesc) {
+      if (data.ai_vision.result === 'FAIL') {
+        aiDefectBox.style.display = 'block';
+        aiDefectDesc.textContent = `${data.ai_vision.defect_code || 'LỖI'} - ${data.ai_vision.defect_location || 'Vị trí bất thường'}`;
+      } else {
+        aiDefectBox.style.display = 'none';
+      }
+    }
+
+    // 2. Render X-Ray ADR Telemetry
+    const xrayConfEl = document.getElementById('xray-adr-confidence-val');
+    if (xrayConfEl) xrayConfEl.textContent = `${data.xray_adr.confidence_pct}%`;
+
+    const xrayBadge = document.getElementById('xray-adr-badge');
+    if (xrayBadge) {
+      if (data.xray_adr.result === 'PASS') {
+        xrayBadge.textContent = 'KẾT CẤU CHUẨN';
+        xrayBadge.className = 'status-pill pill-green';
+      } else {
+        xrayBadge.textContent = 'LỖI MÀNH THÉP';
+        xrayBadge.className = 'status-pill pill-red';
+      }
+    }
+
+    const beltDisp = document.getElementById('xray-belt-align-disp');
+    if (beltDisp) beltDisp.textContent = `${Number(data.xray_adr.belt_alignment_mm).toFixed(2)} mm`;
+
+    const cordDisp = document.getElementById('xray-cord-disp');
+    if (cordDisp) cordDisp.textContent = '28.5 CPI';
+
+    const foreignDisp = document.getElementById('xray-foreign-disp');
+    if (foreignDisp) {
+      foreignDisp.textContent = data.xray_adr.foreign_inclusions || 'Không phát hiện';
+      foreignDisp.style.color = data.xray_adr.result === 'PASS' ? 'var(--color-green)' : 'var(--color-red)';
+    }
+
+    const xrayDefectBox = document.getElementById('xray-defect-detail');
+    const xrayDefectDesc = document.getElementById('xray-defect-desc');
+    if (xrayDefectBox && xrayDefectDesc) {
+      if (data.xray_adr.result === 'FAIL') {
+        xrayDefectBox.style.display = 'block';
+        xrayDefectDesc.textContent = `${data.xray_adr.defect_code || 'LỖI X-RAY'}: ${data.xray_adr.foreign_inclusions || 'Lệch mép đai'}`;
+      } else {
+        xrayDefectBox.style.display = 'none';
+      }
+    }
+
+    // 3. Render TUG & Dynamic Balancing Telemetry
+    const rfvEl = document.getElementById('disp-rfv');
+    if (rfvEl) rfvEl.textContent = `${Number(data.uniformity_tug.rfv_n).toFixed(1)} N`;
+
+    const lfvEl = document.getElementById('disp-lfv');
+    if (lfvEl) lfvEl.textContent = `${Number(data.uniformity_tug.lfv_n).toFixed(1)} N`;
+
+    const balEl = document.getElementById('disp-balance');
+    if (balEl) balEl.textContent = `${Number(data.dynamic_balancing.dynamic_balance_g).toFixed(1)} g`;
+
+    const balAngleEl = document.getElementById('disp-balance-angle');
+    if (balAngleEl) balAngleEl.textContent = `${data.dynamic_balancing.light_spot_angle_deg}°`;
+
+    const tugBadge = document.getElementById('tug-status-badge');
+    if (tugBadge) {
+      const isDynamicPass = data.uniformity_tug.status === 'PASS' && data.dynamic_balancing.status === 'PASS';
+      tugBadge.textContent = isDynamicPass ? 'ĐẠT CHUẨN ĐỘNG HỌC' : 'VI PHẠM ĐỘNG HỌC';
+      tugBadge.className = `status-pill ${isDynamicPass ? 'pill-green' : 'pill-red'}`;
+    }
+
+    // 4. Render Sorter Decision & Final Grade
+    const gradeBadge = document.getElementById('disp-final-grade');
+    if (gradeBadge) {
+      gradeBadge.textContent = data.predicted_grade;
+      const gradeClasses = {
+        'GRADE_A': 'status-pill pill-green',
+        'GRADE_B': 'status-pill pill-blue',
+        'REWORK': 'status-pill pill-amber',
+        'SCRAP': 'status-pill pill-red'
+      };
+      gradeBadge.className = gradeClasses[data.predicted_grade] || 'status-pill pill-gray';
+    }
+
+    const sorterLaneEl = document.getElementById('disp-sorter-lane');
+    if (sorterLaneEl && data.sorter) {
+      sorterLaneEl.textContent = data.sorter.description;
+    }
+
+    const notesEl = document.getElementById('disp-notes');
+    if (notesEl) {
+      notesEl.textContent = data.disposition_notes;
+    }
+
+    // 5. Synchronize with manual override form
+    const visualRadio = document.querySelector(`input[name="qc-visual-radio"][value="${data.ai_vision.result}"]`);
+    if (visualRadio) visualRadio.checked = true;
+    toggleVisualDefectUI();
+    if (data.ai_vision.defect_code) {
+      const vSel = document.getElementById('qc-visual-defect-select');
+      if (vSel) vSel.value = data.ai_vision.defect_code;
+      const vLoc = document.getElementById('qc-visual-location');
+      if (vLoc) vLoc.value = data.ai_vision.defect_location || '';
+    }
+
+    const xrayRadio = document.querySelector(`input[name="qc-xray-radio"][value="${data.xray_adr.result}"]`);
+    if (xrayRadio) xrayRadio.checked = true;
+    toggleXrayDefectUI();
+    if (data.xray_adr.defect_code) {
+      const xSel = document.getElementById('qc-xray-defect-select');
+      if (xSel) xSel.value = data.xray_adr.defect_code;
+    }
+
+    const beltInp = document.getElementById('qc-belt-align');
+    if (beltInp) beltInp.value = data.xray_adr.belt_alignment_mm;
+
+    const rfvInp = document.getElementById('qc-rfv');
+    if (rfvInp) rfvInp.value = data.uniformity_tug.rfv_n;
+
+    const lfvInp = document.getElementById('qc-lfv');
+    if (lfvInp) lfvInp.value = data.uniformity_tug.lfv_n;
+
+    const balInp = document.getElementById('qc-balance');
+    if (balInp) balInp.value = data.dynamic_balancing.dynamic_balance_g;
+
+  } catch (err) {
+    console.error('Error during auto-scan:', err);
+  } finally {
+    if (banner) banner.style.display = 'none';
+  }
+}
+
+async function runAutoPilotQueue() {
+  const confirmRun = confirm('KÍCH HOẠT CHẾ ĐỘ KCS TỰ ĐỘNG HOÀN TOÀN (AUTO-PILOT)?\n\nHệ thống sẽ tự động kích hoạt thị giác máy tính AI Vision 360°, máy soi X-Ray ADR và cảm biến lực TUG cho toàn bộ lốp trong hàng đợi, tự động phân luồng băng tải theo chuẩn IATF 16949.');
+  if (!confirmRun) return;
+
+  try {
+    const res = await fetch('/api/quality/auto-inspect-batch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ scenario: 'AUTO' })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      alert(`KCS TỰ ĐỘNG HOÀN THÀNH!\n\n` +
+            `Số lượng lốp đã xử lý: ${data.inspected_count}\n` +
+            `- Hạng A (Xuất khẩu / OEM): ${data.summary.GRADE_A || 0}\n` +
+            `- Hạng B (Thương mại): ${data.summary.GRADE_B || 0}\n` +
+            `- Cần sửa chữa (Rework): ${data.summary.REWORK || 0}\n` +
+            `- Phế phẩm (Scrap): ${data.summary.SCRAP || 0}\n\n` +
+            `Tất cả lốp đã được điều hướng phân làn trên băng tải tự động!`);
+      state.selectedQcTire = null;
+      document.getElementById('qc-active-form').style.display = 'none';
+      document.getElementById('qc-placeholder-msg').style.display = 'block';
+      await loadInspectionQueue();
+      await loadDashboard();
+    } else {
+      alert('Lỗi: ' + data.detail);
+    }
+  } catch (err) {
+    alert('Lỗi chạy Auto-Pilot: ' + err);
   }
 }
 
@@ -1245,6 +1452,8 @@ async function submitQCInspection() {
   const uniformity_lfv_n = parseFloat(document.getElementById('qc-lfv').value);
   const dynamic_balance_g = parseFloat(document.getElementById('qc-balance').value);
 
+  const notes = state.activeScanResult ? state.activeScanResult.disposition_notes : null;
+
   try {
     const res = await fetch('/api/quality/inspect', {
       method: 'POST',
@@ -1260,7 +1469,8 @@ async function submitQCInspection() {
         belt_alignment_mm,
         uniformity_rfv_n,
         uniformity_lfv_n,
-        dynamic_balance_g
+        dynamic_balance_g,
+        disposition_notes: notes
       })
     });
 
@@ -1270,6 +1480,7 @@ async function submitQCInspection() {
 
       // Hide form & refresh
       state.selectedQcTire = null;
+      state.activeScanResult = null;
       document.getElementById('qc-active-form').style.display = 'none';
       document.getElementById('qc-placeholder-msg').style.display = 'block';
 
@@ -1286,6 +1497,7 @@ async function submitQCInspection() {
     alert('Lỗi: ' + err);
   }
 }
+
 
 // ============================================================================
 // TAB 6: 100% DIGITAL TIRE PASSPORT & GENEALOGY
